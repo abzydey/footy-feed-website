@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { Prisma } from "@prisma/client";
 
 import { prisma } from "../lib/prisma";
 
@@ -26,9 +25,7 @@ router.get("/", async (req, res) => {
   });
 
   res.json(
-    segments.map((segment: Prisma.TranscriptSegmentGetPayload<{
-      include: { episode: { include: { podcast: { select: { name: true, slug: true } } } } };
-    }>) => ({
+    segments.map((segment: any) => ({
       podcast: segment.episode.podcast.name,
       podcastSlug: segment.episode.podcast.slug,
       episodeTitle: segment.episode.title,
