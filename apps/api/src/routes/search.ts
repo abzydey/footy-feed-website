@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "../lib/prisma";
 
@@ -25,14 +26,16 @@ router.get("/", async (req, res) => {
   });
 
   res.json(
-    segments.map((s) => ({
-      podcast: s.episode.podcast.name,
-      podcastSlug: s.episode.podcast.slug,
-      episodeTitle: s.episode.title,
-      episodeId: s.episode.id,
-      audioUrl: s.episode.audioUrl,
-      startSeconds: s.startSeconds,
-      snippet: s.text,
+    segments.map((segment: Prisma.TranscriptSegmentGetPayload<{
+      include: { episode: { include: { podcast: { select: { name: true, slug: true } } } } };
+    }>) => ({
+      podcast: segment.episode.podcast.name,
+      podcastSlug: segment.episode.podcast.slug,
+      episodeTitle: segment.episode.title,
+      episodeId: segment.episode.id,
+      audioUrl: segment.episode.audioUrl,
+      startSeconds: segment.startSeconds,
+      snippet: segment.text,
     }))
   );
 });

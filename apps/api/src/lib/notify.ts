@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "./prisma";
 import { GENERAL_NEWS_TARGET_ID } from "./constants";
 
@@ -24,7 +26,7 @@ export async function notifyFollowersOfEvent(eventId: string): Promise<void> {
   const targetIds = [event.teamId, event.playerId, event.player?.teamId].filter(
     (id): id is string => Boolean(id)
   );
-  const fanOutWhere =
+  const fanOutWhere: Prisma.FollowWhereInput =
     event.type === "GENERAL_NEWS"
       ? { targetType: "LEAGUE" as const, targetId: GENERAL_NEWS_TARGET_ID }
       : {
@@ -39,7 +41,9 @@ export async function notifyFollowersOfEvent(eventId: string): Promise<void> {
   if (follows.length === 0) return;
 
   // De-dupe: a fan could follow both the player and their team.
-  const uniqueSubscribers = new Map(follows.map((f) => [f.subscriberId, f.subscriber]));
+  const uniqueSubscribers = new Map(
+    follows.map((follow: (typeof follows)[number]) => [follow.subscriberId, follow.subscriber])
+  );
 
   for (const subscriber of uniqueSubscribers.values()) {
     // TODO(alerts): replace with firebase-admin messaging.send({ token, notification: {...} })
