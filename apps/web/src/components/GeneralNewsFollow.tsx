@@ -8,9 +8,9 @@ import FollowButton from "./FollowButton";
  */
 export default function GeneralNewsFollow() {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 flex items-center justify-between gap-3">
+    <div className="rounded-xl border border-slate-800/80 bg-slate-900 p-4 flex items-center justify-between gap-3 shadow-lg shadow-black/20">
       <div>
-        <div className="text-white font-medium text-sm">General NRL News</div>
+        <div className="text-white font-display font-extrabold tracking-tight text-sm">General NRL News</div>
         <p className="text-xs text-slate-400">Breaking league-wide stories, not tied to one team.</p>
       </div>
       <FollowButton

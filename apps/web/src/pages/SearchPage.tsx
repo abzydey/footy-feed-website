@@ -30,18 +30,18 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4">
-      <h1 className="text-xl font-bold text-white mb-4">Podcast search</h1>
+      <h1 className="font-display font-extrabold text-2xl tracking-tight text-white mb-4">Podcast search</h1>
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search what's been said, e.g. 'Broncos halfback'"
-          className="flex-1 rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white placeholder:text-slate-500"
+          className="flex-1 rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet"
         />
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-medium px-4 py-2"
+          className="rounded-md bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white font-bold px-4 py-2"
         >
           Search
         </button>
@@ -57,13 +57,13 @@ export default function SearchPage() {
             href={`${r.audioUrl}#t=${Math.floor(r.startSeconds)}`}
             target="_blank"
             rel="noreferrer"
-            className="block rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 p-4"
+            className="block rounded-xl border border-slate-800/80 bg-slate-900 hover:border-brand-violet hover:bg-slate-800/80 transition-colors p-4 shadow-lg shadow-black/20"
           >
             <div className="flex justify-between text-xs text-slate-400 mb-1">
               <span>{r.podcast}</span>
               <span className="font-mono">{formatTime(r.startSeconds)}</span>
             </div>
-            <div className="text-white text-sm font-medium">{r.episodeTitle}</div>
+            <div className="text-white text-sm font-bold">{r.episodeTitle}</div>
             <p className="text-slate-300 text-sm mt-1">"{r.snippet}"</p>
           </a>
         ))}

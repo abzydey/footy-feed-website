@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4">
       <GeneralNewsFollow />
-      <h1 className="text-xl font-bold text-white">Teams</h1>
+      <h1 className="font-display font-extrabold text-2xl tracking-tight text-white">Teams</h1>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {!teams && !error && <p className="text-slate-400 text-sm">Loading…</p>}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -23,9 +23,9 @@ export default function HomePage() {
           <Link
             key={team.id}
             to={`/teams/${team.slug}`}
-            className="rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 p-4 text-center"
+            className="rounded-xl border border-slate-800/80 bg-slate-900 hover:border-brand-violet hover:bg-slate-800/80 transition-colors p-4 text-center shadow-lg shadow-black/20"
           >
-            <span className="font-medium text-white">{team.shortName}</span>
+            <span className="font-display font-extrabold text-lg tracking-tight text-white">{team.shortName}</span>
           </Link>
         ))}
       </div>

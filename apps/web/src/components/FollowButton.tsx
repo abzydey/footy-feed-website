@@ -37,7 +37,7 @@ export default function FollowButton({
 
   if (state === "following") {
     return (
-      <span className={`inline-flex items-center gap-1 ${compact ? "text-xs" : "text-sm"} text-emerald-400 font-medium`}>
+      <span className={`inline-flex items-center gap-1 rounded-full bg-brand-violet text-white font-bold ${sizeClasses}`}>
         {followingLabel}
       </span>
     );
@@ -48,7 +48,7 @@ export default function FollowButton({
       <button
         onClick={handleClick}
         disabled={state === "loading"}
-        className={`rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-medium ${sizeClasses}`}
+        className={`rounded-full border-2 border-brand-violet text-brand-violet font-bold hover:bg-brand-violet hover:text-white disabled:opacity-60 transition-colors ${sizeClasses}`}
       >
         {state === "loading" ? "Following…" : label}
       </button>

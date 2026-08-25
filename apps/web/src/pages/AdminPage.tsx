@@ -29,22 +29,22 @@ function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-4 mt-8 space-y-3">
-      <h1 className="text-xl font-bold text-white mb-2">Admin login</h1>
+      <h1 className="font-display font-extrabold text-2xl tracking-tight text-white mb-2">Admin login</h1>
       <input
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white"
+        className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet"
       />
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         type="password"
         placeholder="Password"
-        className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white"
+        className="w-full rounded-md bg-slate-900 border border-slate-800 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet"
       />
       {error && <p className="text-red-400 text-sm">{error}</p>}
-      <button className="w-full rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2">
+      <button className="w-full rounded-md bg-brand-violet hover:bg-brand-violet/90 text-white font-bold px-4 py-2">
         Log in
       </button>
     </form>
@@ -114,13 +114,13 @@ function EventForm({ token, onLogout }: { token: string; onLogout: () => void })
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-white">Admin — new update</h1>
+        <h1 className="font-display font-extrabold text-2xl tracking-tight text-white">Admin — new update</h1>
         <button onClick={onLogout} className="text-xs text-slate-400 hover:underline">
           Log out
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-slate-800 bg-slate-900 p-4">
+      <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-slate-800/80 bg-slate-900 p-4 shadow-lg shadow-black/20">
         <div className={`grid gap-3 ${isGeneralNews ? "grid-cols-1" : "grid-cols-2"}`}>
           <select
             value={type}
@@ -208,7 +208,7 @@ function EventForm({ token, onLogout }: { token: string; onLogout: () => void })
 
         <button
           disabled={status === "saving"}
-          className="w-full rounded-md bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-medium px-4 py-2"
+          className="w-full rounded-md bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white font-bold px-4 py-2"
         >
           {status === "saving" ? "Saving…" : "Publish update"}
         </button>
@@ -217,15 +217,15 @@ function EventForm({ token, onLogout }: { token: string; onLogout: () => void })
       </form>
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase mb-2">Recent entries</h2>
+        <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wide mb-2">Recent entries</h2>
         <div className="space-y-2">
           {recentEvents.map((event) => (
-            <div key={event.id} className="rounded-md border border-slate-800 bg-slate-900 p-3 text-sm">
+            <div key={event.id} className="rounded-lg border border-slate-800/80 bg-slate-900 p-3 text-sm shadow-md shadow-black/20">
               <div className="flex justify-between text-xs text-slate-500">
                 <span>{event.type}</span>
                 <span>{new Date(event.createdAt).toLocaleString()}</span>
               </div>
-              <div className="text-white font-medium">{event.headline}</div>
+              <div className="text-white font-bold">{event.headline}</div>
             </div>
           ))}
         </div>
