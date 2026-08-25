@@ -39,7 +39,7 @@ export async function notifyFollowersOfEvent(eventId: string): Promise<void> {
   if (follows.length === 0) return;
 
   // De-dupe: a fan could follow both the player and their team.
-  const uniqueSubscribers = new Map(
+  const uniqueSubscribers = new Map<string, any>(
     follows.map((follow: any) => [follow.subscriberId, follow.subscriber])
   );
 
