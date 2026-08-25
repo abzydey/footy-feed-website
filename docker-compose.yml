@@ -1,0 +1,20 @@
+version: "3.9"
+
+# Local dev database only. In production, use a managed Postgres
+# (Railway, Neon, Supabase, etc.) and point DATABASE_URL at it instead.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: footy-feed-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: footyfeed
+      POSTGRES_PASSWORD: footyfeed
+      POSTGRES_DB: footy_feed
+    ports:
+      - "5432:5432"
+    volumes:
+      - footy_feed_pgdata:/var/lib/postgresql/data
+
+volumes:
+  footy_feed_pgdata:

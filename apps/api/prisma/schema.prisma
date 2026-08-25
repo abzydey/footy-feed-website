@@ -1,0 +1,275 @@
+// Footy Feed — Phase 1 data model
+//
+// Design notes (read this before extending the schema):
+//
+// - Team / Player are the reference data. They rarely change shape once seeded
+//   (17 NRL teams, ~30 players per roster).
+// - Event is the single content table that both the brief pages and the alert
+//   pipeline read from. Every manual admin entry (injury update, lineup change,
+//   news blurb) becomes one Event row. Brief pages just query Events filtered
+//   by team/player; alerts just fan out from a newly created Event. Keeping
+//   one content table (instead of separate Injury/Lineup/News tables) is what
+//   keeps v1 lean — don't split this up prematurely.
+// - Player.currentStatus / currentStatusNote / statusUpdatedAt are a
+//   denormalized cache of "the latest INJURY-type Event for this player", so
+//   brief pages and list views don't need to join+sort Events on every read.
+//   The API layer is responsible for updating these fields whenever it writes
+//   a new INJURY event — see apps/api/src/routes/events.ts.
+// - There is no fan-facing login in v1. A Subscriber is identified by its FCM
+//   registration token (one per browser/device). This keeps the "follow a
+//   team" flow to a single permission prompt — no signup wall — which matters
+//   a lot for a cold audience testing whether this is useful at all. Email
+//   login can be layered on top later without changing this table's shape.
+// - Follow is intentionally polymorphic (targetType + targetId) rather than
+//   two nullable FK columns, so "follow a team" and "follow a player" share
+//   one table and one fan-out query. Referential integrity for targetId is
+//   enforced in the API layer, not the DB — see apps/api/src/routes/follows.ts.
+// - "General NRL News" (league-wide breaking news, not tied to one team) is
+//   just another Event type (GENERAL_NEWS) and another Follow target type
+//   (LEAGUE) — not a separate system. A GENERAL_NEWS event has teamId and
+//   playerId both null. A LEAGUE follow has no real row to point at, so
+//   targetId is always the same well-known constant (see
+//   apps/api/src/lib/constants.ts) rather than a Team/Player id.
+// - Phase 1 scope: team pages only. Player.currentStatus etc. still exist
+//   because per-player injury status is shown inline on the team page's
+//   squad list — there's just no standalone player URL/page yet.
+// - Podcast / Episode / TranscriptSegment back the search feature. Full text
+//   search in Postgres needs a tsvector + GIN index, which Prisma's schema
+//   language can't express directly — that's added in a follow-up raw SQL
+//   migration (see README "Podcast search" section) rather than modeled here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Reference data
+// ---------------------------------------------------------------------------
+
+model Team {
+  id           String   @id @default(cuid())
+  name         String // "Brisbane Broncos"
+  shortName    String // "Broncos"
+  slug         String   @unique // "broncos" — used in URLs
+  logoUrl      String?
+  primaryColor String? // hex, for simple theming on the team page
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  players Player[]
+  events  Event[]
+
+  @@map("teams")
+}
+
+model Player {
+  id       String  @id @default(cuid())
+  teamId   String?
+  team     Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  name     String
+  slug     String // unique per team, see @@unique below
+  position String? // "Fullback", "Halfback", "Prop", etc.
+  jerseyNumber Int?
+  photoUrl String?
+
+  // Denormalized "latest known status" cache — see design note at top of file.
+  currentStatus     AvailabilityStatus @default(UNKNOWN)
+  currentStatusNote String? // short free text, e.g. "Hamstring, expected back Rd 15"
+  statusUpdatedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@unique([teamId, slug])
+  @@index([teamId])
+  @@map("players")
+}
+
+// ---------------------------------------------------------------------------
+// Content — manually entered via the admin panel
+// ---------------------------------------------------------------------------
+
+enum EventType {
+  INJURY // availability/injury status update
+  LINEUP_CHANGE // team named/changed lineup
+  NEWS // short news blurb, tied to a team and/or player
+  TRANSFER // signing, release, retirement
+  GENERAL_NEWS // league-wide breaking news — no team/player, fans opt in separately
+}
+
+enum AvailabilityStatus {
+  UNKNOWN
+  AVAILABLE
+  QUESTIONABLE
+  OUT
+  INJURED
+  SUSPENDED
+}
+
+model Event {
+  id       String    @id @default(cuid())
+  type     EventType
+
+  teamId   String?
+  team     Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId String?
+  player   Player?   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  headline String // short title, shown in feeds/notifications
+  body     String // the short text summary (a sentence or two)
+
+  // Only meaningful when type = INJURY: the new status this event sets.
+  newStatus AvailabilityStatus?
+
+  sourceUrl String? // optional link to the original article/tweet
+  createdBy String? // admin email/id who entered this (from admin auth)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notifications NotificationLog[]
+
+  // Brief pages query "events for this team/player, newest first" constantly.
+  @@index([teamId, createdAt])
+  @@index([playerId, createdAt])
+  @@index([type, createdAt])
+  @@map("events")
+}
+
+// ---------------------------------------------------------------------------
+// Fans, follows, alerts
+// ---------------------------------------------------------------------------
+
+// One row per browser/device that has enabled push notifications.
+// No email/password required — see design note at top of file.
+model Subscriber {
+  id         String   @id @default(cuid())
+  fcmToken   String   @unique
+  email      String? // optional, only if a fan later chooses to add one
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  follows       Follow[]
+  notifications NotificationLog[]
+
+  @@map("subscribers")
+}
+
+enum FollowTargetType {
+  TEAM
+  PLAYER
+  LEAGUE // "General NRL News" — a category, not a specific row (see constants.ts)
+}
+
+model Follow {
+  id           String           @id @default(cuid())
+  subscriberId String
+  subscriber   Subscriber       @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  targetType   FollowTargetType
+  targetId     String // Team.id / Player.id, or the GENERAL_NEWS_TARGET_ID constant for LEAGUE
+  createdAt    DateTime         @default(now())
+
+  @@unique([subscriberId, targetType, targetId])
+  @@index([targetType, targetId]) // fan-out lookup: "who follows this team/player?"
+  @@map("follows")
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+// Records every push attempt so the alerts pipeline can avoid double-sends
+// and so the admin panel can show "sent to N subscribers" per event.
+model NotificationLog {
+  id           String              @id @default(cuid())
+  eventId      String
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  subscriberId String
+  subscriber   Subscriber          @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  status       NotificationStatus
+  error        String?
+  sentAt       DateTime            @default(now())
+
+  @@unique([eventId, subscriberId])
+  @@map("notification_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Admin panel auth (internal use only — a handful of accounts, not fans)
+// ---------------------------------------------------------------------------
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}
+
+// ---------------------------------------------------------------------------
+// Podcast search
+// ---------------------------------------------------------------------------
+
+enum TranscriptStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Podcast {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  rssUrl      String   @unique
+  description String?
+  artworkUrl  String?
+  createdAt   DateTime @default(now())
+
+  episodes Episode[]
+
+  @@map("podcasts")
+}
+
+model Episode {
+  id                String            @id @default(cuid())
+  podcastId         String
+  podcast           Podcast           @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  guid              String // unique id from the RSS feed
+  title             String
+  audioUrl          String
+  publishedAt       DateTime?
+  durationSeconds   Int?
+  transcriptStatus  TranscriptStatus  @default(PENDING)
+  createdAt         DateTime          @default(now())
+
+  segments TranscriptSegment[]
+
+  @@unique([podcastId, guid])
+  @@map("episodes")
+}
+
+model TranscriptSegment {
+  id            String   @id @default(cuid())
+  episodeId     String
+  episode       Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  startSeconds  Float
+  endSeconds    Float
+  text          String
+  createdAt     DateTime @default(now())
+
+  // Full text search (tsvector + GIN index) is added via a raw SQL migration,
+  // not here — see README "Podcast search" section.
+  @@index([episodeId])
+  @@map("transcript_segments")
+}

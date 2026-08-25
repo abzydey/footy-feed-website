@@ -1,0 +1,21 @@
+{
+  "name": "footy-feed",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Footy Feed: NRL team brief pages, follow alerts, podcast search. Phase 1 (v1) of the NRLCentral data engine.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace apps/api",
+    "dev:web": "npm run dev --workspace apps/web",
+    "build:api": "npm run build --workspace apps/api",
+    "build:web": "npm run build --workspace apps/web",
+    "db:migrate": "npm run db:migrate --workspace apps/api",
+    "db:seed": "npm run db:seed --workspace apps/api",
+    "db:studio": "npm run db:studio --workspace apps/api"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
