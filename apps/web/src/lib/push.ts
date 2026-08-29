@@ -59,6 +59,6 @@ export function onForegroundMessage(callback: (title: string, body: string) => v
   const messaging = getFirebaseMessaging();
   if (!messaging) return () => {};
   return onMessage(messaging, (payload) => {
-    callback(payload.notification?.title ?? "Footy Feed", payload.notification?.body ?? "");
+    callback(payload.notification?.title ?? "Full Set", payload.notification?.body ?? "");
   });
 }

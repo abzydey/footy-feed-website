@@ -3,5 +3,22 @@
 @tailwind utilities;
 
 body {
-  @apply bg-slate-950 text-slate-100;
+  @apply bg-app text-slate-100 font-sans;
+  /* Heavy condensed weights (extrabold/black) on a pure black background
+     otherwise show a ghosted/doubled-stroke look in Chromium on Windows —
+     this isn't an intentional effect, just missing font-smoothing. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Hides the scrollbar on horizontally-scrolling regions (filter chip row,
+   ladder table) per the design handoff — scroll still works, just no
+   visible track/thumb. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

@@ -48,7 +48,7 @@ export default function FollowButton({
       <button
         onClick={handleClick}
         disabled={state === "loading"}
-        className={`rounded-full border-2 border-brand-violet text-brand-violet font-bold hover:bg-brand-violet hover:text-white disabled:opacity-60 transition-colors ${sizeClasses}`}
+        className={`rounded-full border-2 border-brand-violet text-brand-violet font-bold hover:bg-brand-violet hover:text-white disabled:opacity-60 transition-all duration-150 active:scale-95 ${sizeClasses}`}
       >
         {state === "loading" ? "Following…" : label}
       </button>

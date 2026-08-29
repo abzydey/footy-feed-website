@@ -1,4 +1,4 @@
-// Footy Feed — Phase 1 data model
+// Full Set — Phase 1 data model
 //
 // Design notes (read this before extending the schema):
 //
@@ -30,13 +30,54 @@
 //   playerId both null. A LEAGUE follow has no real row to point at, so
 //   targetId is always the same well-known constant (see
 //   apps/api/src/lib/constants.ts) rather than a Team/Player id.
+// - GENERAL_NEWS (and the home feed built on it) is a headline aggregator,
+//   not a publisher: Full Set doesn't write original articles, it links
+//   out to them. `headline` + `body` hold the headline and a short snippet,
+//   `sourceName` holds the outlet ("Daily Telegraph"), and `sourceUrl` is
+//   the "Read more" link to the original piece. `sourceUrl`/`sourceName`
+//   exist on Event generally (any type can cite a source), but they're load-
+//   bearing for GENERAL_NEWS specifically, where the whole point is linking
+//   out rather than hosting the content.
 // - Phase 1 scope: team pages only. Player.currentStatus etc. still exist
 //   because per-player injury status is shown inline on the team page's
 //   squad list — there's just no standalone player URL/page yet.
+// - Game is a new reference-ish entity (upcoming fixtures), sitting
+//   alongside Team/Player rather than inside the Event system — it has its
+//   own identity (two teams, a kickoff time, a round) independent of any
+//   content written about it. Event gained an optional gameId, the same
+//   shape as its existing teamId/playerId links, so a lineup change/injury/
+//   news item can be tied to a specific match. This is additive: an event
+//   can reference a team, a player, a game, any combination, or (for
+//   GENERAL_NEWS/SOCIAL_POST) none of them. Game pages are a new, separate
+//   browsable surface that link back to team pages — they don't replace
+//   them.
+// - SOCIAL_POST is a new EventType, not a new table, for the same reason
+//   GENERAL_NEWS isn't one: a short tweet-style post is still "one piece of
+//   admin-entered content with a headline and a body," just rendered with a
+//   different (tweet-style) visual treatment. It reuses `headline` as the
+//   author/handle line and `body` as the post text, and — like
+//   GENERAL_NEWS — doesn't require a team or player, though it can
+//   optionally carry a teamId and/or gameId like any other event.
+// - The home page feed (apps/api/src/routes/feed.ts) queries GENERAL_NEWS
+//   events only — a clean news feed, not a mixed one. SOCIAL_POST has its
+//   own separate destination instead: apps/api/src/routes/social.ts serves
+//   every social post app-wide, and the team/game detail endpoints each
+//   return a `socialPosts` array filtered to that team's/game's own posts
+//   (teamId/gameId match) for a Social section on their pages. Three
+//   filtered reads of the same Event rows, not three tables. Team-specific
+//   types (INJURY, LINEUP_CHANGE, NEWS, TRANSFER) are excluded from both the
+//   home feed and the Social views — they already have a home on their
+//   team/game page's main event list.
 // - Podcast / Episode / TranscriptSegment back the search feature. Full text
 //   search in Postgres needs a tsvector + GIN index, which Prisma's schema
 //   language can't express directly — that's added in a follow-up raw SQL
 //   migration (see README "Podcast search" section) rather than modeled here.
+// - Episode.audioUrl is deliberately reused for the Podcasts browse page's
+//   YouTube link rather than adding a second URL column: it's already just
+//   "the URL to play this episode from," whether that's an RSS enclosure's
+//   audio file (podcast search) or a manually pasted YouTube watch URL
+//   (Podcasts browse). Podcast search only ever treats it as an opaque
+//   playback link, so it doesn't care which kind of URL is stored.
 
 generator client {
   provider = "prisma-client-js"
@@ -61,10 +102,122 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  players Player[]
-  events  Event[]
+  players     Player[]
+  events      Event[]
+  homeGames   Game[]       @relation("HomeGames")
+  awayGames   Game[]       @relation("AwayGames")
+  ladderEntry LadderEntry?
+  tries       Try[]
 
   @@map("teams")
+}
+
+// ---------------------------------------------------------------------------
+// Ladder — the current competition table. One row per team, overwritten in
+// place each round via the admin panel (same "manual, no automated
+// scraping" pattern as Game) rather than a per-round history log — the app
+// only ever needs to show the *current* standings, not track how the table
+// looked in past rounds. Rank and points differential are derived at read
+// time (see routes/ladder.ts) from competitionPoints/pointsFor/pointsAgainst
+// rather than stored, since re-deriving 17 rows on every read is trivial and
+// avoids the entries getting out of sync with a stored rank/diff column.
+// ---------------------------------------------------------------------------
+
+model LadderEntry {
+  id                String   @id @default(cuid())
+  teamId            String   @unique
+  team              Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  played            Int      @default(0)
+  wins              Int      @default(0)
+  losses            Int      @default(0)
+  draws             Int      @default(0)
+  pointsFor         Int      @default(0)
+  pointsAgainst     Int      @default(0)
+  competitionPoints Int      @default(0)
+  // Last-5 results, oldest to newest, e.g. "WWLWW" — one character per game,
+  // 'W'/'L'/'D'. No individual game-result data exists anywhere in the
+  // schema (Game is a fixture, not a result), so this is entered by hand
+  // alongside the rest of the round's ladder stats rather than derived.
+  // Optional/nullable so it renders as "no form yet" until the admin starts
+  // filling it in.
+  form              String?
+  updatedAt         DateTime @updatedAt
+
+  @@map("ladder_entries")
+}
+
+// Singleton: "the ladder reflects results through round N". Deliberately not
+// derived from LadderEntry.played — byes mean teams reach a given round
+// having played different game counts (e.g. two teams on 23 played, the
+// rest on 22, all "after Round 25"), so max(played) systematically
+// understates the real round. Set explicitly by the admin alongside the
+// rest of the ladder — see routes/adminLadder.ts.
+model LadderMeta {
+  id        String  @id @default("singleton")
+  asOfRound Int
+  // Whether asOfRound's fixtures are still being played out (mid-round
+  // results, e.g. a Friday-night game already logged with Sunday's games
+  // still to come) vs the round being fully complete — changes the ladder
+  // page's header from "Round N" to "After Round N". Also admin-set
+  // explicitly, same reasoning as asOfRound itself: not safe to derive from
+  // played counts alone (see comment above).
+  roundInProgress Boolean @default(false)
+
+  @@map("ladder_meta")
+}
+
+// ---------------------------------------------------------------------------
+// Games — upcoming fixtures. See design note at top of file: this is a new
+// entity Events optionally link to, not a replacement for team pages.
+// ---------------------------------------------------------------------------
+
+model Game {
+  id         String   @id @default(cuid())
+  homeTeamId String
+  homeTeam   Team     @relation("HomeGames", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeamId String
+  awayTeam   Team     @relation("AwayGames", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  round      String // free text — "Round 14", "Grand Final" — not every round is numbered
+  kickoffAt  DateTime
+  venue      String? // e.g. "Suncorp Stadium" — optional, admin-entered
+
+  // A game is "finished" once both scores are set (see routes/adminGames.ts
+  // POST /:id/result) — the game page switches from the upcoming-fixture
+  // view to a final scoreline + try list. Null/null, not a separate status
+  // enum, since "has a result" already fully captures the state and avoids
+  // it drifting out of sync with the scores themselves.
+  homeScore Int?
+  awayScore Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+  tries  Try[]
+
+  @@index([kickoffAt])
+  @@map("games")
+}
+
+// A single try, logged as part of a game's final result (see
+// routes/adminGames.ts POST /:id/result). scorer is free text, not a
+// Player relation — a try scorer isn't guaranteed to already exist in our
+// Player table (see schema note on Player below), and requiring that link
+// would block logging a result over a roster gap. Deliberately just
+// score + scorer + minute, per the brief: no highlight clips, player
+// stats, or team stats in this pass.
+model Try {
+  id        String   @id @default(cuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  scorer    String
+  minute    Int
+  createdAt DateTime @default(now())
+
+  @@index([gameId])
+  @@map("tries")
 }
 
 model Player {
@@ -102,6 +255,7 @@ enum EventType {
   NEWS // short news blurb, tied to a team and/or player
   TRANSFER // signing, release, retirement
   GENERAL_NEWS // league-wide breaking news — no team/player, fans opt in separately
+  SOCIAL_POST // short, tweet-style post for the home feed — see design notes above
 }
 
 enum AvailabilityStatus {
@@ -113,6 +267,16 @@ enum AvailabilityStatus {
   SUSPENDED
 }
 
+// The three team-list checkpoints the NRL publishes before kickoff. Fantasy/
+// punting users care a lot about which stage a list is at — FINAL especially,
+// since that's the last-minute-change moment — so this drives both the
+// prominent stage badge on game pages and the notify.ts urgency prefix.
+enum TeamListStage {
+  INITIAL // Tuesday release
+  TWENTY_FOUR_HOUR // locked ~24hrs before kickoff
+  FINAL // ~1.5hrs before kickoff — the "late change" moment
+}
+
 model Event {
   id       String    @id @default(cuid())
   type     EventType
@@ -121,6 +285,8 @@ model Event {
   team     Team?     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   playerId String?
   player   Player?   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId   String?
+  game     Game?     @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   headline String // short title, shown in feeds/notifications
   body     String // the short text summary (a sentence or two)
@@ -128,8 +294,22 @@ model Event {
   // Only meaningful when type = INJURY: the new status this event sets.
   newStatus AvailabilityStatus?
 
-  sourceUrl String? // optional link to the original article/tweet
-  createdBy String? // admin email/id who entered this (from admin auth)
+  // Only meaningful when type = LINEUP_CHANGE: which of the three pre-kickoff
+  // checkpoints this update represents. Drives the prominent stage badge on
+  // game pages and the FINAL-stage urgency prefix in notify.ts.
+  teamListStage TeamListStage?
+
+  sourceUrl    String? // optional link to the original article/tweet
+  sourceName   String? // human-readable outlet, e.g. "Daily Telegraph" — see design note at top of file on GENERAL_NEWS as a link-out aggregator
+  sourceAuthor String? // the journalist's byline, e.g. "Michael Chammas" — distinct from sourceName (the outlet); mainly used on GENERAL_NEWS to credit the writer, not just the publication
+  createdBy    String? // admin email/id who entered this (from admin auth)
+
+  // SOCIAL_POST only: the rendered embed markup fetched from X's public
+  // oEmbed endpoint (publish.twitter.com — free, no API credentials/credits
+  // needed) at write time. EventCard.tsx renders this via Twitter's actual
+  // widgets.js for a real avatar/media/"View on X" embed; null falls back to
+  // the plain headline/body card (fetch failed, or sourceUrl isn't a tweet).
+  embedHtml String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -139,6 +319,7 @@ model Event {
   // Brief pages query "events for this team/player, newest first" constantly.
   @@index([teamId, createdAt])
   @@index([playerId, createdAt])
+  @@index([gameId, createdAt])
   @@index([type, createdAt])
   @@map("events")
 }
@@ -203,6 +384,25 @@ model NotificationLog {
 }
 
 // ---------------------------------------------------------------------------
+// Basic usage tracking — lightweight and insert-only, just enough to answer
+// "is anyone actually using this" before inviting a test group. Follow
+// counts and notification opt-ins are already answerable from Follow/
+// Subscriber above (see routes/adminStats.ts); PageView is the one new
+// table, for the one thing not already captured: raw page-load counts. No
+// session/device id — this counts views, not unique visitors, deliberately,
+// to keep this "simple counts" rather than growing into real analytics.
+// ---------------------------------------------------------------------------
+
+model PageView {
+  id        String   @id @default(cuid())
+  page      String // one of a small fixed set of labels — see the PAGES list in routes/pageviews.ts and adminStats.ts
+  createdAt DateTime @default(now())
+
+  @@index([page, createdAt])
+  @@map("page_views")
+}
+
+// ---------------------------------------------------------------------------
 // Admin panel auth (internal use only — a handful of accounts, not fans)
 // ---------------------------------------------------------------------------
 
@@ -245,12 +445,22 @@ model Episode {
   id                String            @id @default(cuid())
   podcastId         String
   podcast           Podcast           @relation(fields: [podcastId], references: [id], onDelete: Cascade)
-  guid              String // unique id from the RSS feed
+  guid              String // unique id from the RSS feed (or a generated one for manually-added episodes)
   title             String
-  audioUrl          String
+  description       String?
+  audioUrl          String // playback URL — an RSS audio enclosure, or a manually pasted YouTube URL (see design notes above)
+  // A directly-downloadable audio file URL (the real RSS enclosure, e.g. an
+  // .mp3) used specifically for transcription — see lib/transcribe.ts.
+  // Distinct from audioUrl because a manually-added episode's audioUrl is
+  // often a YouTube watch page (fine for the browse page's embedded player,
+  // but not a file Whisper can download directly). Null until transcription
+  // has a real source; falls back to audioUrl if that's already a direct
+  // file (true for RSS-sourced episodes, where the two are the same URL).
+  transcriptAudioUrl String?
   publishedAt       DateTime?
   durationSeconds   Int?
   transcriptStatus  TranscriptStatus  @default(PENDING)
+  transcriptError   String? // last error message, when transcriptStatus = FAILED — for admin visibility, not shown to fans
   createdAt         DateTime          @default(now())
 
   segments TranscriptSegment[]
@@ -272,4 +482,68 @@ model TranscriptSegment {
   // not here — see README "Podcast search" section.
   @@index([episodeId])
   @@map("transcript_segments")
+}
+
+// ---------------------------------------------------------------------------
+// Podcast discovery — a second, broader source for "What's Been Said" search,
+// separate from Podcast/Episode/TranscriptSegment above. That system is the
+// curated Podcasts browse page (manually-added episodes, optionally
+// Whisper-transcribed). This system is coverage: shows the admin chooses to
+// track by YouTube channel and/or Spotify show ID, polled periodically (see
+// lib/podcastDiscovery.ts) for new episodes, without ever needing to be
+// manually featured on the Podcasts page. Only title + description text is
+// indexed (both free APIs — YouTube Data API and Spotify's Client
+// Credentials flow — no per-request cost), not real transcripts; Listen
+// Notes or full transcription can layer on top later once usage justifies
+// the cost. YouTube creators commonly list chapter timestamps in the
+// description ("0:00 Intro", "12:34 Some Topic") — ExternalEpisodeChapter
+// parses those out (see parseChapters()) so a search hit can jump straight
+// to the relevant moment instead of just "this episode mentions it".
+// ---------------------------------------------------------------------------
+
+enum ExternalEpisodeSource {
+  YOUTUBE
+  SPOTIFY
+}
+
+model TrackedShow {
+  id               String   @id @default(cuid())
+  name             String
+  youtubeChannelId String?  @unique // e.g. "UCxxxxxxxxxxxxxxxxxxxxxx"
+  spotifyShowId    String?  @unique // the show's Spotify catalog ID
+  createdAt        DateTime @default(now())
+
+  episodes ExternalEpisode[]
+
+  @@map("tracked_shows")
+}
+
+model ExternalEpisode {
+  id            String                @id @default(cuid())
+  trackedShowId String
+  trackedShow   TrackedShow           @relation(fields: [trackedShowId], references: [id], onDelete: Cascade)
+  source        ExternalEpisodeSource
+  externalId    String // YouTube video ID or Spotify episode ID
+  title         String
+  description   String // full text — includes chapter timestamp lines for YouTube
+  url           String // watch/episode permalink
+  publishedAt   DateTime?
+  createdAt     DateTime              @default(now())
+
+  chapters ExternalEpisodeChapter[]
+
+  @@unique([source, externalId])
+  @@index([trackedShowId])
+  @@map("external_episodes")
+}
+
+model ExternalEpisodeChapter {
+  id                String          @id @default(cuid())
+  externalEpisodeId String
+  externalEpisode   ExternalEpisode @relation(fields: [externalEpisodeId], references: [id], onDelete: Cascade)
+  timestampSeconds  Int
+  label             String
+
+  @@index([externalEpisodeId])
+  @@map("external_episode_chapters")
 }

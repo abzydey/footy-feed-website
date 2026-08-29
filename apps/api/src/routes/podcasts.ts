@@ -10,6 +10,18 @@ router.get("/", async (_req, res) => {
   res.json(podcasts);
 });
 
+// GET /api/podcasts/episodes — all episodes across every show, newest first.
+// Powers the Podcasts browse page (a directory of watchable/listenable
+// episodes) — a separate feature from podcast search, which reads
+// TranscriptSegments instead of this.
+router.get("/episodes", async (_req, res) => {
+  const episodes = await prisma.episode.findMany({
+    orderBy: { publishedAt: { sort: "desc", nulls: "last" } },
+    include: { podcast: { select: { name: true, slug: true } } },
+  });
+  res.json(episodes);
+});
+
 // GET /api/podcasts/:slug/episodes — episode list with transcript status,
 // mainly for the admin panel to see what's been transcribed.
 router.get("/:slug/episodes", async (req, res) => {

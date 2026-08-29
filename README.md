@@ -1,22 +1,32 @@
-# Footy Feed — Phase 1
+# Full Set — Phase 1
 
-The data engine + fan brief: team status pages, follow-based push alerts
-(per-team, per-player, and league-wide), and timestamped podcast search. This
-is the lean v1 to put in front of an existing NRL audience and see if people
+The data engine + fan brief: team status pages, a game-by-game fixture view,
+a clean general-news home feed, a separate Social destination for
+tweet-style posts, follow-based push alerts (per-team, per-player, and
+league-wide), timestamped podcast search, and a Podcasts browse page. This is
+the lean v1 to put in front of an existing NRL audience and see if people
 actually use it, before investing in scraping automation or a native app.
 
 ## Phase 1 scope
 
 **In scope:** one brief page per NRL team (injury/availability status per
-player, most recent lineup change, recent news); follow alerts for a team, an
-individual player, or the league-wide "General NRL News" category; a manual
-admin panel that feeds both; timestamped podcast search over 1-2 transcribed
-shows.
+player, most recent lineup change, recent news); a Games directory + a page
+per fixture (team lists, late changes, and news tied to that match, linking
+back to both teams' pages); a home page feed of general NRL news only; a
+separate Social section — a site-wide `/social` page plus a Social section on
+every team and game page — for tweet-style posts scoped to that surface;
+follow alerts for a team, an individual player, or the league-wide "General
+NRL News" category; a manual admin panel that feeds all of the above;
+timestamped podcast search over 1-2 transcribed shows; and a separate
+Podcasts browse page listing episodes with embedded YouTube links.
 
 **Explicitly out of scope for Phase 1:** standalone player brief pages (player
 status/news shows inline on their team's page instead — see below), odds/
-betting data, influencer content, and clip-sourcing. None of this is designed
-against for later — it's just not being built now.
+betting data, influencer content, clip-sourcing, automated fixture
+scraping (games are entered manually via the admin panel, same as
+everything else), and YouTube-API auto-detection for podcast episodes
+(the admin pastes a link + title/description by hand). None of this is
+designed against for later — it's just not being built now.
 
 **A note on player pages:** the original brief included a dedicated page per
 player. That's deferred — team pages are the only browsable page in v1. The
@@ -30,7 +40,7 @@ team-only version proves the concept.
 ## Structure
 
 ```
-footy-feed/
+full-set/
   apps/
     api/    Express + TypeScript + Prisma (Postgres). All reads/writes, admin auth,
             follow fan-out, podcast search.
@@ -49,15 +59,31 @@ Postgres + a long-running Node process), `apps/web` to Vercel (static build).
   `currentStatusNote` / `statusUpdatedAt` are a denormalized cache of "the
   latest injury update for this player," kept in sync by the event-creation
   endpoint so the team page doesn't have to recompute it on every read.
-- **Event** — the single content table behind both the team page and alerts.
-  Every admin panel entry (injury update, lineup change, news blurb, transfer,
-  or general league news) is one row, typed via `EventType`. Team/player
-  events link to a `teamId` and/or `playerId`; a `GENERAL_NEWS` event links to
-  neither — it's league-wide by definition. The team page queries Events
-  directly; new Events are what triggers the alert fan-out. Keeping one
-  content table instead of splitting into separate tables per category (or
-  building a separate system for general news) is what keeps v1 easy to
-  extend.
+- **Game** — an upcoming fixture: two teams, a kickoff time, and a round
+  (free text, e.g. "Round 14" or "Grand Final" — not every round is
+  numbered). Sits alongside Team/Player as its own reference-ish entity, not
+  inside the Event system, and its page is a new, separate browsable surface
+  that links back to team pages rather than replacing them.
+- **Event** — the single content table behind team pages, game pages, the
+  home feed, the Social section, and alerts. Every admin panel entry
+  (injury update, lineup change, news blurb, transfer, general league news,
+  or a tweet-style social post) is one row, typed via `EventType`.
+  Team/player events link to a `teamId` and/or `playerId`; any event can
+  additionally link to a `gameId` to tie it to a specific match (a lineup
+  change, a late change, or match-day news). `GENERAL_NEWS` and
+  `SOCIAL_POST` events can skip all three — they're league-wide/feed-only by
+  definition, though a `SOCIAL_POST` can optionally carry a `teamId`/`gameId`
+  too. The home feed (`GET /api/feed`) queries `GENERAL_NEWS` events only —
+  a clean news feed, not a mixed one. `SOCIAL_POST` events get their own
+  separate Social destination instead: `GET /api/social` for every post
+  app-wide, plus a `socialPosts` array (filtered by `teamId`/`gameId`) on the
+  team and game detail responses for a Social section on each page.
+  Team-specific types are excluded from both the home feed and the Social
+  views — they already have a home on their team/game page's main event
+  list. New Events are what triggers the alert fan-out. Keeping one content
+  table instead of splitting into separate tables per category is what keeps
+  v1 easy to extend — `SOCIAL_POST` is a new `EventType`, not a new table,
+  for the same reason `GENERAL_NEWS` isn't one.
 - **Subscriber**, **Follow** — no fan login in v1. A Subscriber is identified
   by its FCM token (one per browser). Follow is polymorphic
   (`targetType` + `targetId`), with three target types: `TEAM`, `PLAYER`, and
@@ -65,14 +91,21 @@ Postgres + a long-running Node process), `apps/web` to Vercel (static build).
   share one table and one notification fan-out query. `LEAGUE` has no real row
   to point at, so its `targetId` is always the same fixed constant
   (`GENERAL_NEWS_TARGET_ID`, defined in both apps' `lib/constants.ts` — keep
-  those two files in sync if it ever changes).
+  those two files in sync if it ever changes). There's no `GAME` follow
+  target: an event tied to a game notifies that game's two teams' existing
+  followers (falling back to both sides when no specific team/player was
+  picked) rather than introducing a separate "follow this game" subscription.
 - **NotificationLog** — records every push attempt, so a subscriber is never
   double-notified for the same event and the admin panel can show delivery
   counts later.
 - **AdminUser** — a handful of internal accounts for the admin panel, separate
   from the fan-facing Subscriber model.
 - **Podcast**, **Episode**, **TranscriptSegment** — back the podcast search
-  feature.
+  feature. `Episode.audioUrl` also backs the separate Podcasts browse page:
+  it's reused as-is for a manually pasted YouTube URL rather than adding a
+  second URL column, since it's already just "the URL to play this episode
+  from" regardless of whether that's an RSS audio enclosure or a YouTube
+  link.
 
 Full details and the reasoning behind each choice are commented directly in
 the schema file — read that before changing it.
@@ -87,7 +120,10 @@ cp apps/web/.env.example apps/web/.env
 docker compose up -d            # local Postgres on :5432
 
 npm run db:migrate              # creates tables from schema.prisma
-npm run db:seed                 # seeds all 17 NRL teams + a sample admin user
+npm run db:seed                 # seeds all 17 NRL teams, a sample admin user,
+                                 # one real upcoming game + update, sample
+                                 # social posts (untargeted, team-tied, and
+                                 # game-tied), and a sample podcast episode
 
 npm run dev:api                 # http://localhost:4000
 npm run dev:web                 # http://localhost:5173
@@ -98,12 +134,21 @@ The seed script prints a default admin login (`admin@example.com` /
 
 ## What's already wired up vs. stubbed
 
-**Working end-to-end:** team directory → team brief page (roster with
-per-player status, latest lineup change, recent news); admin login +
-"publish an update" form that writes an Event — including the `GENERAL_NEWS`
-category, which skips the team/player selects entirely — and (for injuries)
-updates the player's cached status; a "General NRL News" follow toggle on the
-home page alongside per-team and per-player follows; podcast search API
+**Working end-to-end:** a home page feed (`GET /api/feed`) of `GENERAL_NEWS`
+events only, newest-first; a separate Social section — `/social`
+(`GET /api/social`, every post app-wide) plus a Social block on each team
+page and game page (scoped to that team's/game's own posts) — rendering
+`SOCIAL_POST` events as compact tweet-style cards; a Teams directory → team
+brief page (roster with per-player status, latest lineup change, recent
+news); a Games directory → per-game page (latest team list/late change,
+full match history, links back to both teams); a Podcasts browse page
+listing episodes with embedded YouTube players (`GET /api/podcasts/episodes`),
+separate from podcast search; admin login with three forms — "publish an
+update" (writes an Event, including `GENERAL_NEWS`/`SOCIAL_POST`, which skip
+the team/player selects entirely, and an optional game link; injury events
+also update the player's cached status), "create a game", and "add an
+episode" (paste a YouTube link + title/description); a "General NRL News"
+follow toggle alongside per-team and per-player follows; podcast search API
 (simple `ILIKE` scan — fine for 1-2 podcasts' worth of transcripts).
 
 **Stubbed, ready to wire up next:**
@@ -151,6 +196,12 @@ audience will be on iPhones).
 ## Roadmap after v1 validates
 
 - Standalone player brief pages (their own URL, deep-linkable from socials).
-- Automated scraping/ingestion to replace manual admin entry.
+- Automated fixture scraping/ingestion to populate Games, replacing manual
+  admin entry (Games launched manual-only deliberately, to validate the
+  page/notification flow on a real fixture before automating a full round).
+- Automated scraping/ingestion to replace manual admin entry for news/events.
+- YouTube-API auto-detection for the Podcasts browse page (pull title/
+  thumbnail/description from a pasted link automatically, instead of typing
+  them by hand).
 - Whisper-based transcription pipeline running on a schedule per podcast RSS feed.
 - Native app wrapper, if web push + PWA installability isn't enough on iOS.

@@ -59,13 +59,79 @@ async function main() {
     },
   });
 
-  // A GENERAL_NEWS event demonstrates the league-wide category — no team or
-  // player, fans opt in via the separate "General NRL News" follow.
+  // A GENERAL_NEWS event demonstrates the home feed's headline-aggregator
+  // model — Full Set links out to the original article rather than
+  // hosting it, so this carries a source name + "Read more" URL alongside
+  // the headline/snippet, not just team/player fields left empty.
   await prisma.event.create({
     data: {
       type: "GENERAL_NEWS",
-      headline: "Welcome to Footy Feed",
-      body: "This is a sample league-wide news item, not tied to any single team. Replace or delete it once real breaking news starts coming in.",
+      headline: "NRL confirms 2027 draw released next month",
+      body: "The league says next season's fixture list, including the return of a mid-season international window, will drop in the coming weeks.",
+      sourceName: "Daily Telegraph",
+      sourceUrl: "https://example.com/nrl/2027-draw-release",
+    },
+  });
+
+  // Three SOCIAL_POST samples cover the three Social surfaces: untargeted
+  // (shows on /social only), team-tied (also shows on that team's Social
+  // section), and — once the game exists below — game-tied (also shows on
+  // that game's Social section). Reuses headline as the "handle" and body
+  // as the post text; no team/player/game required.
+  await prisma.event.create({
+    data: {
+      type: "SOCIAL_POST",
+      headline: "@FullSet",
+      body: "Team lists are trickling in ahead of the weekend's action — follow your club for the moment they drop.",
+    },
+  });
+
+  await prisma.event.create({
+    data: {
+      type: "SOCIAL_POST",
+      teamId: broncos.id,
+      headline: "@BroncosInsider",
+      body: "Broncos fans buzzing after today's captain's run — this squad looks ready.",
+    },
+  });
+
+  // One real upcoming game with one real update — seeded deliberately alone
+  // (per the brief: test this before populating a full round). kickoffAt is
+  // computed relative to "now" so it always shows up as upcoming in dev.
+  console.log("Seeding a sample game...");
+  const storm = await prisma.team.findUniqueOrThrow({ where: { slug: "storm" } });
+  const kickoffAt = new Date();
+  kickoffAt.setDate(kickoffAt.getDate() + 5);
+  kickoffAt.setHours(19, 50, 0, 0);
+
+  const game = await prisma.game.create({
+    data: {
+      homeTeamId: broncos.id,
+      awayTeamId: storm.id,
+      round: "Round 24",
+      kickoffAt,
+    },
+  });
+
+  await prisma.event.create({
+    data: {
+      type: "LINEUP_CHANGE",
+      teamId: broncos.id,
+      gameId: game.id,
+      headline: "Broncos team list named",
+      body: "This is a sample team-list update tied to a specific game — replace or delete it once real lineup news starts coming in via the admin panel.",
+    },
+  });
+
+  // The game-tied SOCIAL_POST sample (see comment above) — deliberately has
+  // no teamId, so it shows up only on /social and this game's Social
+  // section, not on either team's.
+  await prisma.event.create({
+    data: {
+      type: "SOCIAL_POST",
+      gameId: game.id,
+      headline: "@NRLMatchCentre",
+      body: "Broncos vs Storm this weekend is shaping up to be a cracker — both sides at full strength.",
     },
   });
 
@@ -85,13 +151,31 @@ async function main() {
   console.log(`Seeded admin user: ${adminEmail} / ${adminPassword} (change this password!)`);
 
   // One sample podcast, ready to plug a real RSS feed URL into.
-  await prisma.podcast.upsert({
+  const podcast = await prisma.podcast.upsert({
     where: { slug: "sample-nrl-podcast" },
     create: {
       name: "Sample NRL Podcast",
       slug: "sample-nrl-podcast",
       rssUrl: "https://example.com/feed.xml",
       description: "Placeholder — replace with a real NRL podcast RSS feed URL.",
+    },
+    update: {},
+  });
+
+  // One manually-added episode with a real YouTube URL in audioUrl, so the
+  // Podcasts browse page has something real to render and test immediately
+  // (see schema.prisma design notes on why audioUrl is reused for this).
+  await prisma.episode.upsert({
+    where: { podcastId_guid: { podcastId: podcast.id, guid: "sample-episode-1" } },
+    create: {
+      podcastId: podcast.id,
+      guid: "sample-episode-1",
+      title: "NRL Preview: Round 24",
+      description: "A sample episode with a real YouTube link — replace or delete it once real episodes start coming in via the admin panel.",
+      // A well-known, always-available public video — just here to prove the
+      // embed renders and plays; swap for a real episode link via the admin panel.
+      audioUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      publishedAt: new Date(),
     },
     update: {},
   });

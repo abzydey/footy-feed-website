@@ -10,3 +10,4 @@ build/
 coverage/
 apps/web/.vite/
 apps/api/prisma/dev.db
+*.tsbuildinfo

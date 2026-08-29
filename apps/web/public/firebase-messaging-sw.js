@@ -12,18 +12,18 @@ importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js
 importScripts("https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "__VITE_FIREBASE_API_KEY__",
-  authDomain: "__VITE_FIREBASE_AUTH_DOMAIN__",
-  projectId: "__VITE_FIREBASE_PROJECT_ID__",
-  messagingSenderId: "__VITE_FIREBASE_MESSAGING_SENDER_ID__",
-  appId: "__VITE_FIREBASE_APP_ID__",
+  apiKey: "AIzaSyCSmlGptlmqZDS8FPlWbC2G5lidiVEidr4",
+  authDomain: "footy-feed-281c9.firebaseapp.com",
+  projectId: "footy-feed-281c9",
+  messagingSenderId: "1091380642325",
+  appId: "1:1091380642325:web:f43b07fcfdbbb57a24441c",
 });
 
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   const { title, body } = payload.notification ?? {};
-  self.registration.showNotification(title ?? "Footy Feed", {
+  self.registration.showNotification(title ?? "Full Set", {
     body: body ?? "",
     icon: "/icon-192.png",
   });

@@ -1,8 +1,8 @@
 {
-  "name": "footy-feed",
+  "name": "full-set",
   "private": true,
   "version": "0.1.0",
-  "description": "Footy Feed: NRL team brief pages, follow alerts, podcast search. Phase 1 (v1) of the NRLCentral data engine.",
+  "description": "Full Set: NRL team brief pages, follow alerts, podcast search. Phase 1 (v1) of the NRLCentral data engine.",
   "workspaces": [
     "apps/*"
   ],
