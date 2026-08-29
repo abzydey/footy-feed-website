@@ -53,6 +53,12 @@ Both apps are npm workspaces under one repo (`npm install` at the root installs
 both). Deploy them separately — `apps/api` to Railway (needs a persistent
 Postgres + a long-running Node process), `apps/web` to Vercel (static build).
 
+Railway's per-service build/start commands reference the npm workspace name
+directly (e.g. `npm run build --workspace=@full-set/api`) — if the workspace
+package name in `apps/api/package.json` / `apps/web/package.json` ever
+changes (e.g. a project rename), update those commands in the Railway
+dashboard too, or the build fails with `No workspaces found`.
+
 ## Data model (`apps/api/prisma/schema.prisma`)
 
 - **Team**, **Player** — reference data. `Player.currentStatus` /
