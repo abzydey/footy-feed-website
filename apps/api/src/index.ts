@@ -57,6 +57,10 @@ app.use("/api/admin/ladder", adminLadderRouter);
 app.use("/api/admin/tracked-shows", adminTrackedShowsRouter);
 app.use("/api/admin/players", adminPlayersRouter);
 
+// Railway sets PORT itself and its edge proxy expects the app bound to all
+// interfaces, which app.listen(port, cb) already does by default (no host
+// arg) — see README "Railway's per-service build/start commands" note for
+// the other half of the Railway setup (the @full-set/api workspace name).
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {
   console.log(`Full Set API listening on http://localhost:${port}`);
