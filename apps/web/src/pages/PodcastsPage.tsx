@@ -73,7 +73,9 @@ function EpisodeCard({ episode }: { episode: Episode }) {
           />
         </div>
         <div className="px-3 py-2.5">
-          <div className="text-[11px] text-slate-500 mb-0.5">{formatDate(episode.publishedAt)}</div>
+          <div className="text-[11px] text-slate-500 mb-0.5">
+            {episode.podcast.name} · {formatDate(episode.publishedAt)}
+          </div>
           <h3 className="font-display font-bold text-sm text-white leading-snug">{episode.title}</h3>
         </div>
       </article>
@@ -93,7 +95,9 @@ function EpisodeCard({ episode }: { episode: Episode }) {
         )}
       </div>
       <div className="min-w-0 flex-1 py-0.5">
-        <div className="text-[10.5px] text-slate-500 mb-1">{formatDate(episode.publishedAt)}</div>
+        <div className="text-[10.5px] text-slate-500 mb-1 truncate">
+          {episode.podcast.name} · {formatDate(episode.publishedAt)}
+        </div>
         <h3 className="font-display font-bold text-[13px] leading-snug text-white [text-wrap:pretty] line-clamp-2">
           {episode.title}
         </h3>
@@ -140,9 +144,6 @@ export default function PodcastsPage() {
     api.listEpisodesBrowse().then(setEpisodes).catch((err) => setError(err.message));
   }, []);
 
-  const showNames = Array.from(new Set(episodes?.map((e) => e.podcast.slug) ?? []));
-  const groupByShow = showNames.length > 1;
-
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       <h1 className="font-display italic font-black text-2xl sm:text-3xl tracking-tight text-white uppercase">Podcasts</h1>
@@ -156,31 +157,13 @@ export default function PodcastsPage() {
       )}
       {episodes && episodes.length === 0 && <p className="text-slate-500 text-sm">No episodes yet.</p>}
 
-      {episodes && !groupByShow && (
+      {episodes && (
         <div className="space-y-2">
           {episodes.map((episode) => (
             <EpisodeCard key={episode.id} episode={episode} />
           ))}
         </div>
       )}
-
-      {episodes &&
-        groupByShow &&
-        showNames.map((slug) => {
-          const showEpisodes = episodes.filter((e) => e.podcast.slug === slug);
-          return (
-            <section key={slug} className="space-y-3">
-              <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider">
-                {showEpisodes[0]?.podcast.name}
-              </h2>
-              <div className="space-y-2">
-                {showEpisodes.map((episode) => (
-                  <EpisodeCard key={episode.id} episode={episode} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
     </div>
   );
 }
