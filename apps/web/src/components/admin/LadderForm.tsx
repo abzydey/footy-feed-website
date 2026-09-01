@@ -180,7 +180,7 @@ export default function LadderForm({ token }: { token: string }) {
         {status === "saving" ? "Saving…" : "Save ladder"}
       </button>
       {status === "saved" && <p className="text-emerald-400 text-sm">Ladder updated.</p>}
-      {status === "error" && <p className="text-red-400 text-sm">{error ?? "Failed to save."}</p>}
+      {status === "error" && <p className="text-brand-siren text-sm">{error ?? "Failed to save."}</p>}
     </div>
   );
 }

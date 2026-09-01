@@ -110,7 +110,7 @@ export default function EpisodeForm({ token }: { token: string }) {
           {status === "saving" ? "Saving…" : "Add episode"}
         </button>
         {status === "saved" && <p className="text-emerald-400 text-sm">Episode added.</p>}
-        {status === "error" && <p className="text-red-400 text-sm">Failed to save.</p>}
+        {status === "error" && <p className="text-brand-siren text-sm">Failed to save.</p>}
       </form>
 
       <section>
@@ -127,7 +127,7 @@ export default function EpisodeForm({ token }: { token: string }) {
               </div>
               <button
                 onClick={() => handleDelete(episode.id)}
-                className="text-xs text-slate-500 hover:text-red-400 transition-colors duration-150 shrink-0"
+                className="text-xs text-slate-500 hover:text-brand-siren transition-colors duration-150 shrink-0"
               >
                 Remove
               </button>

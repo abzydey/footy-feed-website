@@ -19,7 +19,7 @@ export default function StatsView({ token }: { token: string }) {
     api.adminGetStats(token).then(setStats).catch((err) => setError(err.message));
   }, [token]);
 
-  if (error) return <p className="text-red-400 text-sm">{error}</p>;
+  if (error) return <p className="text-brand-siren text-sm">{error}</p>;
   if (!stats) return <p className="text-slate-500 text-sm">Loading…</p>;
 
   const sortedTeams = [...stats.follows.byTeam].sort((a, b) => b.followerCount - a.followerCount);

@@ -45,7 +45,7 @@ function TrySection({
           <button
             type="button"
             onClick={() => removeRow(i)}
-            className="shrink-0 text-slate-500 hover:text-red-400 px-1.5 transition-colors duration-150"
+            className="shrink-0 text-slate-500 hover:text-brand-siren px-1.5 transition-colors duration-150"
             aria-label="Remove try"
           >
             ✕
@@ -129,7 +129,7 @@ function ResultForm({ token, game, onSaved }: { token: string; game: Game; onSav
         {status === "saving" ? "Saving…" : "Save result"}
       </button>
       {status === "saved" && <p className="text-emerald-400 text-sm">Result saved.</p>}
-      {status === "error" && <p className="text-red-400 text-sm">{error ?? "Failed to save."}</p>}
+      {status === "error" && <p className="text-brand-siren text-sm">{error ?? "Failed to save."}</p>}
     </form>
   );
 }
@@ -290,7 +290,7 @@ export default function GameForm({ token }: { token: string }) {
           {status === "saving" ? "Saving…" : "Create game"}
         </button>
         {status === "saved" && <p className="text-emerald-400 text-sm">Game created.</p>}
-        {status === "error" && <p className="text-red-400 text-sm">{error ?? "Failed to save."}</p>}
+        {status === "error" && <p className="text-brand-siren text-sm">{error ?? "Failed to save."}</p>}
       </form>
 
       {(() => {

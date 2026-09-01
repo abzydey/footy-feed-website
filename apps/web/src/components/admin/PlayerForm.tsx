@@ -163,7 +163,7 @@ export default function PlayerForm({ token }: { token: string }) {
           {status === "saving" ? "Adding…" : "Add player"}
         </button>
         {status === "saved" && <p className="text-emerald-400 text-sm">Player added.</p>}
-        {status === "error" && <p className="text-red-400 text-sm">Failed to save.</p>}
+        {status === "error" && <p className="text-brand-siren text-sm">Failed to save.</p>}
       </form>
 
       <div className="space-y-3 rounded-xl bg-surface border border-white/10 shadow-card p-4">
@@ -197,7 +197,7 @@ export default function PlayerForm({ token }: { token: string }) {
           </button>
         </div>
         {bulkStatus === "saved" && <p className="text-emerald-400 text-sm">{bulkMessage}</p>}
-        {bulkStatus === "error" && <p className="text-red-400 text-sm">{bulkMessage}</p>}
+        {bulkStatus === "error" && <p className="text-brand-siren text-sm">{bulkMessage}</p>}
       </div>
 
       {teamSlug && (
@@ -217,7 +217,7 @@ export default function PlayerForm({ token }: { token: string }) {
                 </div>
                 <button
                   onClick={() => handleDelete(player.id)}
-                  className="text-xs text-slate-500 hover:text-red-400 transition-colors duration-150 shrink-0"
+                  className="text-xs text-slate-500 hover:text-brand-siren transition-colors duration-150 shrink-0"
                 >
                   Remove
                 </button>

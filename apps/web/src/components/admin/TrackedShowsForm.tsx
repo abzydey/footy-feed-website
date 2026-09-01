@@ -88,7 +88,7 @@ export default function TrackedShowsForm({ token }: { token: string }) {
             Added — indexed {lastIndexed} episode{lastIndexed === 1 ? "" : "s"} right away.
           </p>
         )}
-        {status === "error" && <p className="text-red-400 text-sm">{error ?? "Failed to save."}</p>}
+        {status === "error" && <p className="text-brand-siren text-sm">{error ?? "Failed to save."}</p>}
       </form>
 
       <section>
@@ -107,7 +107,7 @@ export default function TrackedShowsForm({ token }: { token: string }) {
               </div>
               <button
                 onClick={() => handleDelete(show.id)}
-                className="text-xs text-slate-500 hover:text-red-400 transition-colors duration-150 shrink-0"
+                className="text-xs text-slate-500 hover:text-brand-siren transition-colors duration-150 shrink-0"
               >
                 Remove
               </button>

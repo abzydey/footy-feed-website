@@ -254,7 +254,7 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
           {status === "saving" ? "Saving…" : "Publish update"}
         </button>
         {status === "saved" && <p className="text-emerald-400 text-sm">Published — followers notified.</p>}
-        {status === "error" && <p className="text-red-400 text-sm">Failed to save.</p>}
+        {status === "error" && <p className="text-brand-siren text-sm">Failed to save.</p>}
       </form>
 
       <section>
