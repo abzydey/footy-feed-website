@@ -6,6 +6,29 @@
     <meta name="theme-color" content="#8B4DFF" />
     <meta name="description" content="Your team. The full set. — NRL news, team lists, injuries, and alerts, one page per club." />
     <title>Full Set — NRL News &amp; Alerts</title>
+
+    <!--
+      Static defaults for clients that DON'T execute JavaScript — most
+      social/messaging link-preview bots (Facebook, X/Twitter, Slack,
+      iMessage, WhatsApp, Discord). useDocumentMeta.ts overwrites these
+      per-route for JS-executing clients (Googlebot, the browser tab), but a
+      link to e.g. a Team or Game page shared on social will always show
+      THESE generic tags, not that page's specific title/description, since
+      this is a client-rendered SPA with no server-side rendering. Fixing
+      that fully would need SSR or a bot-specific edge function — out of
+      scope for this pass.
+    -->
+    <meta property="og:site_name" content="Full Set" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fullset.au/" />
+    <meta property="og:title" content="Full Set — NRL News & Alerts" />
+    <meta property="og:description" content="Your team. The full set. — NRL news, team lists, injuries, and alerts, one page per club." />
+    <meta property="og:image" content="https://fullset.au/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Full Set — NRL News & Alerts" />
+    <meta name="twitter:description" content="Your team. The full set. — NRL news, team lists, injuries, and alerts, one page per club." />
+    <meta name="twitter:image" content="https://fullset.au/og-default.png" />
+
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />

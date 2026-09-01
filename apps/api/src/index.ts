@@ -23,6 +23,7 @@ import ladderRouter from "./routes/ladder";
 import adminLadderRouter from "./routes/adminLadder";
 import adminTrackedShowsRouter from "./routes/adminTrackedShows";
 import adminPlayersRouter from "./routes/adminPlayers";
+import sitemapRouter from "./routes/sitemap";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 
@@ -44,6 +45,11 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "full-set-api" });
 });
+
+// Not under /api — Vercel rewrites https://fullset.au/sitemap.xml here
+// directly (see apps/web/vercel.json) so search engines can fetch it from
+// the site's own domain.
+app.use("/sitemap.xml", sitemapRouter);
 
 // Fan-facing read endpoints — team pages only for Phase 1 (no standalone
 // player pages yet; player status/news surfaces inline on the team page).

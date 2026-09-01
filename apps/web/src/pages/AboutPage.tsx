@@ -1,4 +1,13 @@
+import { useDocumentMeta } from "../lib/useDocumentMeta";
+
 export default function AboutPage() {
+  useDocumentMeta({
+    title: "About",
+    description:
+      "Full Set is a fan-focused companion for NRL supporters — team lists, injury updates, news, ladder, and fixtures, entered and reviewed by hand.",
+    path: "/about",
+  });
+
   return (
     <div className="max-w-2xl mx-auto p-4 py-10">
       <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="w-full max-w-sm mb-6" />

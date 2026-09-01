@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { api, Episode } from "../lib/api";
 import { getYouTubeEmbedUrl, getYouTubeVideoId, YOUTUBE_THUMBNAIL_QUALITIES } from "../lib/youtube";
 import { Skeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 function formatDate(iso: string | null) {
   if (!iso) return "";
@@ -139,6 +140,12 @@ function EpisodeCardSkeleton() {
 export default function PodcastsPage() {
   const [episodes, setEpisodes] = useState<Episode[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "NRL Podcasts",
+    description: "The latest NRL podcast episodes — panel shows, interviews, and analysis, all in one place.",
+    path: "/podcasts",
+  });
 
   useEffect(() => {
     api.listEpisodesBrowse().then(setEpisodes).catch((err) => setError(err.message));

@@ -3,10 +3,17 @@ import { useEffect, useState } from "react";
 import { api, EventItem } from "../lib/api";
 import EventCard from "../components/EventCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 export default function SocialPage() {
   const [posts, setPosts] = useState<EventItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "NRL Social",
+    description: "The best NRL reactions and chatter from X, all in one feed.",
+    path: "/social",
+  });
 
   useEffect(() => {
     api.listSocialPosts().then(setPosts).catch((err) => setError(err.message));

@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 
 import { api } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -28,6 +29,12 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Awaited<ReturnType<typeof api.search>> | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useDocumentMeta({
+    title: "Search",
+    description: "Search NRL podcast transcripts, chapters, and episodes on Full Set.",
+    path: "/search",
+  });
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
