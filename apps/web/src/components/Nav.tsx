@@ -7,10 +7,10 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function Nav() {
   return (
-    <header className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-white/10">
+    <header className="sticky top-0 z-10 bg-app/90 backdrop-blur-sm border-b border-white/10">
       <nav className="max-w-5xl mx-auto flex items-center gap-4 px-3 py-3 overflow-x-auto">
         <div className="flex items-center gap-2 shrink-0">
-          <img src="/nav-icon.png" alt="Full Set" className="h-7 w-7 rounded-md" />
+          <img src="/nav-icon.png" alt="Full Set" className="h-7 w-auto" />
           <span className="font-display font-black text-lg tracking-tight text-white">
             NRL
           </span>
@@ -18,6 +18,9 @@ export default function Nav() {
         <div className="h-5 w-px bg-white/10 shrink-0" />
         <NavLink to="/" className={linkClass} end>
           Home
+        </NavLink>
+        <NavLink to="/news" className={linkClass}>
+          News
         </NavLink>
         <NavLink to="/teams" className={linkClass}>
           Teams

@@ -133,6 +133,8 @@ export interface LadderRow {
   competitionPoints: number;
   /** Last-5 results, oldest to newest, one char per game ('W'/'L'/'D'); null until the admin enters it. */
   form: string | null;
+  /** Vs. the rank snapshotted right before the most recent ladder update — null until there's a prior snapshot to compare against. */
+  movement: "up" | "down" | "same" | null;
 }
 
 export interface Ladder {
@@ -180,12 +182,14 @@ export const api = {
       currentGame: Game | null;
       lineupStages: TeamListStages | null;
       lastGame: Game | null;
+      nextFixture: Game | null;
       recentEvents: EventItem[];
       socialPosts: EventItem[];
     }>(`/teams/${slug}`),
   getFeed: () => request<EventItem[]>(`/feed`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
-  listGames: () => request<Game[]>("/games"),
+  listGames: (round?: string) => request<Game[]>(`/games${round ? `?round=${encodeURIComponent(round)}` : ""}`),
+  listRounds: () => request<string[]>("/games/rounds"),
   getGame: (id: string) => request<GameDetail>(`/games/${id}`),
   getCurrentRoundLineups: () => request<RoundLineups>("/games/current-round"),
   listPodcasts: () => request<Podcast[]>("/podcasts"),
@@ -298,7 +302,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
-  trackPageView: (page: "home" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder") =>
+  trackPageView: (page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder") =>
     request(`/pageviews`, { method: "POST", body: JSON.stringify({ page }) }),
   adminGetStats: (token: string) =>
     request<AdminStats>(`/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),

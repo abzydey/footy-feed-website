@@ -73,6 +73,20 @@ router.get("/:slug", async (req, res) => {
     include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },
   });
 
+  // The team's next unplayed fixture (independent of currentGame, which by
+  // definition is a past/finished game whenever this is relevant) — powers
+  // the "stale team list" banner on the frontend: currentGame having a
+  // result AND this existing means the round has moved on but this team's
+  // next INITIAL list hasn't landed yet.
+  const nextFixture = await prisma.game.findFirst({
+    where: {
+      OR: [{ homeTeamId: team.id }, { awayTeamId: team.id }],
+      kickoffAt: { gt: new Date() },
+    },
+    orderBy: { kickoffAt: "asc" },
+    include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },
+  });
+
   // LINEUP_CHANGE events are fully owned by the stage tracker above now, not
   // duplicated in the general news list. Excludes SOCIAL_POST too — those
   // get their own Social section (see socialPosts below).
@@ -94,7 +108,7 @@ router.get("/:slug", async (req, res) => {
     take: 20,
   });
 
-  res.json({ team, players, currentGame, lineupStages, lastGame, recentEvents, socialPosts });
+  res.json({ team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts });
 });
 
 export default router;

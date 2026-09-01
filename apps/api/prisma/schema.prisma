@@ -141,6 +141,13 @@ model LadderEntry {
   // Optional/nullable so it renders as "no form yet" until the admin starts
   // filling it in.
   form              String?
+  // Snapshotted automatically by routes/adminLadder.ts right before each
+  // full-table overwrite (the rank this team held under the *previous*
+  // stats), not admin-entered — movement (see routes/ladder.ts) is then
+  // just previousRank vs. the freshly computed rank. Keeping this derived
+  // rather than a manually-typed up/down flag means it can't drift out of
+  // sync with a round the admin forgot to mark.
+  previousRank      Int?
   updatedAt         DateTime @updatedAt
 
   @@map("ladder_entries")

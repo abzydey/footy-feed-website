@@ -24,7 +24,9 @@ export default function Footer() {
           rel="noreferrer"
           className="flex items-center gap-2.5 text-xs text-slate-400 hover:opacity-80 transition-opacity duration-150"
         >
-          <span>Partner:</span>
+          <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
+            Presented by
+          </span>
           <img src="/partners/house-money-logo.png" alt="House Money" className="h-9 w-auto object-contain" />
           <span className="text-[10px] text-slate-500 leading-tight">
             MFAA-accredited

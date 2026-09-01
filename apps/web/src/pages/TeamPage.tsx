@@ -8,15 +8,59 @@ import FollowButton from "../components/FollowButton";
 import TeamListCard from "../components/TeamListCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 
+// Brand rule: no green/amber/red status colours — Siren (the one warm
+// accent) is reserved for things that matter right now, which "OUT" for an
+// upcoming match genuinely is. A pending "questionable" call isn't, so it
+// stays neutral/typographic like everything else.
 const INJURY_COLOR: Record<string, string> = {
-  QUESTIONABLE: "text-warning",
-  OUT: "text-negative",
-  INJURED: "text-negative",
-  SUSPENDED: "text-negative",
+  QUESTIONABLE: "text-white/50",
+  OUT: "text-brand-siren",
+  INJURED: "text-brand-siren",
+  SUSPENDED: "text-brand-siren",
 };
 
 const TEAM_TABS = ["Overview", "Fixtures", "Stats"] as const;
 type TeamTab = (typeof TEAM_TABS)[number];
+
+function formatKickoff(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** One row of a team's own fixture list — opponent, home/away, date, venue, and the score once finished. */
+function FixtureRow({ team, game }: { team: Team; game: Game }) {
+  const isHome = game.homeTeam.id === team.id;
+  const opponent = isHome ? game.awayTeam : game.homeTeam;
+  const finished = game.homeScore != null && game.awayScore != null;
+  const ownScore = finished ? (isHome ? game.homeScore : game.awayScore) : null;
+  const oppScore = finished ? (isHome ? game.awayScore : game.homeScore) : null;
+
+  return (
+    <Link
+      to={`/games/${game.id}`}
+      className="block border-b border-white/10 hover:bg-white/[0.03] transition-colors duration-150 active:scale-[0.99] py-4"
+    >
+      <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+        <span className="font-bold text-brand-heliotrope uppercase tracking-wider">{game.round}</span>
+        <span>{formatKickoff(game.kickoffAt)}</span>
+      </div>
+      <div className="font-display font-extrabold text-lg text-white tracking-tight">
+        {isHome ? "vs" : "@"} {opponent.shortName}
+        {finished && (
+          <span className="ml-2 text-slate-300 font-semibold text-base">
+            {ownScore}–{oppScore}
+          </span>
+        )}
+      </div>
+      {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
+    </Link>
+  );
+}
 
 export default function TeamPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -27,10 +71,12 @@ export default function TeamPage() {
     currentGame: Game | null;
     lineupStages: TeamListStages | null;
     lastGame: Game | null;
+    nextFixture: Game | null;
     recentEvents: EventItem[];
     socialPosts: EventItem[];
   } | null>(null);
   const [ladderRow, setLadderRow] = useState<LadderRow | null>(null);
+  const [allGames, setAllGames] = useState<Game[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [teamTab, setTeamTab] = useState<TeamTab>("Overview");
 
@@ -39,6 +85,13 @@ export default function TeamPage() {
     setData(null);
     api.getTeamBrief(slug).then(setData).catch((err) => setError(err.message));
   }, [slug]);
+
+  // Whole-season game list for the Fixtures tab — same data source as the
+  // Games page/admin, just filtered client-side to this team rather than a
+  // dedicated per-team endpoint (the full list is already small enough).
+  useEffect(() => {
+    api.listGames().then(setAllGames).catch(() => setAllGames([]));
+  }, []);
 
   useEffect(() => {
     if (!data) return;
@@ -59,7 +112,7 @@ export default function TeamPage() {
     );
   }
 
-  const { team, players, currentGame, lineupStages, lastGame, recentEvents, socialPosts } = data;
+  const { team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts } = data;
 
   // "Brisbane Broncos" -> "Brisbane" / "Broncos" — name always ends with
   // shortName in the seeded data, so this derives the design's two-line
@@ -72,6 +125,21 @@ export default function TeamPage() {
   const form = ladderRow?.form ? ladderRow.form.split("") : [];
   const opponent = currentGame && (currentGame.homeTeam.id === team.id ? currentGame.awayTeam : currentGame.homeTeam);
 
+  // The round has moved on (currentGame — whichever game this team's latest
+  // LINEUP_CHANGE belongs to — is finished) but this team's next INITIAL
+  // list hasn't landed yet, so the card below is showing real but historical
+  // data. Only true once a next fixture actually exists — see routes/teams.ts.
+  const isStaleTeamList = currentGame?.homeScore != null && nextFixture != null;
+  const nextOpponent = nextFixture && (nextFixture.homeTeam.id === team.id ? nextFixture.awayTeam : nextFixture.homeTeam);
+
+  const teamGames = (allGames ?? []).filter((g) => g.homeTeam.id === team.id || g.awayTeam.id === team.id);
+  const upcomingGames = teamGames
+    .filter((g) => g.homeScore == null)
+    .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+  const pastGames = teamGames
+    .filter((g) => g.homeScore != null)
+    .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime());
+
   const lastResult = (() => {
     if (!lastGame || lastGame.homeScore == null || lastGame.awayScore == null) return null;
     const isHome = lastGame.homeTeam.id === team.id;
@@ -81,11 +149,12 @@ export default function TeamPage() {
     const letter = ownScore > oppScore ? "W" : ownScore < oppScore ? "L" : "D";
     return { gameId: lastGame.id, letter, ownScore, oppScore, opponentShortName: lastOpponent.shortName };
   })();
-  const LAST_RESULT_COLOR: Record<string, string> = { W: "text-positive", L: "text-negative", D: "text-white/60" };
+  // Brand rule: wins/losses are typographic, never colour-coded.
+  const LAST_RESULT_COLOR: Record<string, string> = { W: "text-white", L: "text-white/60", D: "text-white/60" };
 
   return (
     <div>
-      <div className="bg-gradient-to-br from-[#1D1740] via-[#141330] to-app px-5 pt-[50px] pb-4">
+      <div className="bg-[linear-gradient(165deg,#241A52_0%,#141B33_45%,#04091B_100%)] px-5 pt-[50px] pb-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between mb-4">
           <button type="button" onClick={() => navigate(-1)} aria-label="Back" className="text-white/70 hover:text-white transition-colors duration-150">
             <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
@@ -103,7 +172,7 @@ export default function TeamPage() {
             <span className="font-mono text-[6px] tracking-[.06em] text-white/40">CREST</span>
           </div>
           <div className="min-w-0">
-            <h1 className="font-display font-bold text-[32px] leading-[.95] tracking-[.01em] text-white uppercase">
+            <h1 className="font-display italic font-black text-[32px] leading-[.95] tracking-[.01em] text-white uppercase">
               {line1 && (
                 <>
                   {line1}
@@ -145,12 +214,15 @@ export default function TeamPage() {
               {form.map((r, i) => (
                 <span
                   key={i}
-                  className={`w-[22px] h-[22px] rounded-md flex items-center justify-center font-display font-bold text-xs text-white border ${
+                  // Brand rule: wins/losses are typographic, never coloured —
+                  // W is the brighter chip, L the dimmer one, distinguished
+                  // by the letter itself.
+                  className={`w-[22px] h-[22px] rounded-md flex items-center justify-center font-display font-bold text-xs border ${
                     r === "W"
-                      ? "bg-positive/25 border-positive/50"
+                      ? "bg-white/10 border-white/[.26] text-white"
                       : r === "L"
-                        ? "bg-negative/25 border-negative/45"
-                        : "bg-white/10 border-white/20"
+                        ? "bg-transparent border-white/[.12] text-white/42"
+                        : "bg-white/10 border-white/20 text-white"
                   }`}
                 >
                   {r}
@@ -181,10 +253,63 @@ export default function TeamPage() {
       </div>
 
       <div className="max-w-3xl mx-auto p-4">
-        {teamTab !== "Overview" ? (
-          <p className="text-[13.5px] font-semibold text-white/50 text-center mt-10">{teamTab} — coming soon.</p>
-        ) : (
+        {teamTab === "Stats" && (
+          <p className="text-[13.5px] font-semibold text-white/50 text-center mt-10">Stats — coming soon.</p>
+        )}
+
+        {teamTab === "Fixtures" && (
           <>
+            {!allGames && <FeedSkeleton count={4} />}
+            {allGames && teamGames.length === 0 && (
+              <p className="text-slate-500 text-sm">No fixtures scheduled yet.</p>
+            )}
+            {upcomingGames.length > 0 && (
+              <>
+                <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mb-2.5">
+                  Upcoming
+                </h2>
+                <div>
+                  {upcomingGames.map((game) => (
+                    <FixtureRow key={game.id} team={team} game={game} />
+                  ))}
+                </div>
+              </>
+            )}
+            {pastGames.length > 0 && (
+              <>
+                <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mt-[26px] mb-2.5">
+                  Past results
+                </h2>
+                <div>
+                  {pastGames.map((game) => (
+                    <FixtureRow key={game.id} team={team} game={game} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {teamTab === "Overview" && (
+          <>
+            {isStaleTeamList && nextFixture && nextOpponent && (
+              <div className="rounded-lg border border-dashed border-white/15 px-3.5 py-3 mb-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Last team list — {nextFixture.round} team list not yet released
+                </p>
+                <Link
+                  to={`/games/${nextFixture.id}`}
+                  className="block text-[12.5px] font-semibold text-white/70 hover:text-white mt-1.5 transition-colors duration-150"
+                >
+                  Next: {team.shortName} vs {nextOpponent.shortName},{" "}
+                  {new Date(nextFixture.kickoffAt).toLocaleDateString(undefined, {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </Link>
+              </div>
+            )}
             <div className="mb-2.5">
               <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase">
                 {currentGame && opponent ? (

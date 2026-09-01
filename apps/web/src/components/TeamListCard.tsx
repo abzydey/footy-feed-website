@@ -60,8 +60,11 @@ function parseOmittedNames(body: string | undefined): string[] {
 // 24hr and Final are the two checkpoints with a real, computable
 // kickoff-relative expectation (~24h and ~1.5h before kickoff respectively —
 // see schema.prisma design notes on TeamListStage). INITIAL ("Tuesday
-// release") doesn't have a simple kickoff-relative timing, so it only shows
-// once actually logged rather than getting a guessed placeholder.
+// release") doesn't have a simple kickoff-relative timing, so its
+// placeholder below skips the "Expected around <time>" line rather than
+// guessing a date — but it still reserves the row (see StageRow) so the
+// card always shows all three checkpoints instead of silently skipping
+// straight to "24hr Update" for a fixture nothing's been logged for yet.
 const PLACEHOLDER_OFFSET_MS: Partial<Record<TeamListStage, number>> = {
   TWENTY_FOUR_HOUR: 24 * 60 * 60 * 1000,
   FINAL: 90 * 60 * 1000,
@@ -80,9 +83,7 @@ function StageRow({
 }) {
   if (!event) {
     const offsetMs = PLACEHOLDER_OFFSET_MS[stage];
-    if (offsetMs === undefined) return null; // INITIAL: nothing to show until it's real
-
-    const expectedAt = new Date(new Date(kickoffAt).getTime() - offsetMs).toISOString();
+    const expectedAt = offsetMs !== undefined ? new Date(new Date(kickoffAt).getTime() - offsetMs).toISOString() : null;
     return (
       <div className="rounded-lg border border-dashed border-white/15 px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
@@ -94,7 +95,9 @@ function StageRow({
             Pending
           </span>
         </div>
-        <p className="text-xs text-slate-500 mt-1">Expected around {formatExpected(expectedAt)}</p>
+        <p className="text-xs text-slate-500 mt-1">
+          {expectedAt ? <>Expected around {formatExpected(expectedAt)}</> : "Not yet released"}
+        </p>
       </div>
     );
   }
@@ -103,7 +106,7 @@ function StageRow({
   return (
     <div
       className={`rounded-lg border px-3 py-2.5 ${
-        isFinal ? "border-amber-500/60 shadow-[0_0_0_1px_rgba(245,158,11,0.3)]" : "border-white/10"
+        isFinal ? "border-2 border-brand-siren/60" : "border-white/10"
       }`}
     >
       <div className="flex items-center justify-between gap-2">

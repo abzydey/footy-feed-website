@@ -6,11 +6,12 @@ export const STAGE_LABEL: Record<TeamListStage, string> = {
   FINAL: "Final Update",
 };
 
-// FINAL gets a distinct, urgent color (amber) — the ~1.5hr-before-kickoff
-// late-change moment fantasy/punting users care about most. INITIAL/24HR
-// use the standard brand accent.
+// FINAL gets Siren — the brand's one warm accent, reserved for "happening
+// right now" moments (late change, imminent kickoff). The ~1.5hr-before-
+// kickoff late-change is exactly that. INITIAL/24HR use the standard brand
+// accent (purple).
 export const STAGE_BADGE_CLASS: Record<TeamListStage, string> = {
   INITIAL: "bg-brand-violet/20 text-brand-heliotrope border-brand-violet/50",
   TWENTY_FOUR_HOUR: "bg-brand-violet/20 text-brand-heliotrope border-brand-violet/50",
-  FINAL: "bg-amber-500/20 text-amber-400 border-amber-500/50",
+  FINAL: "bg-brand-siren/[.14] text-brand-siren border-brand-siren/[.38]",
 };

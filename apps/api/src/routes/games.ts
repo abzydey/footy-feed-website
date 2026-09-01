@@ -7,13 +7,33 @@ const router = Router();
 const teamSelect = { id: true, name: true, shortName: true, slug: true, logoUrl: true, primaryColor: true } as const;
 const STAGES = ["INITIAL", "TWENTY_FOUR_HOUR", "FINAL"] as const;
 
-// GET /api/games — fixture directory, soonest first.
-router.get("/", async (_req, res) => {
+// GET /api/games — fixture directory, soonest first. Optional ?round= filters
+// to just that round (used by the Games page's round navigation — see
+// GET /rounds below for the list of rounds to navigate between).
+router.get("/", async (req, res) => {
+  const round = typeof req.query.round === "string" ? req.query.round : undefined;
   const games = await prisma.game.findMany({
+    where: round ? { round } : undefined,
     orderBy: { kickoffAt: "asc" },
     include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },
   });
   res.json(games);
+});
+
+// GET /api/games/rounds — every round that has at least one fixture,
+// chronologically ordered by that round's earliest kickoff (not sorted as
+// text — "Round 10" would otherwise sort before "Round 9", and this also
+// has to work for non-numbered rounds like "Grand Final"). Powers the
+// Games page's previous/next round navigation.
+router.get("/rounds", async (_req, res) => {
+  const games = await prisma.game.findMany({ select: { round: true, kickoffAt: true } });
+  const earliestByRound = new Map<string, Date>();
+  for (const g of games) {
+    const existing = earliestByRound.get(g.round);
+    if (!existing || g.kickoffAt < existing) earliestByRound.set(g.round, g.kickoffAt);
+  }
+  const rounds = [...earliestByRound.entries()].sort((a, b) => a[1].getTime() - b[1].getTime()).map(([round]) => round);
+  res.json(rounds);
 });
 
 // GET /api/games/current-round — every game in "the current round" (the

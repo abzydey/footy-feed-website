@@ -9,13 +9,12 @@ import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 
-// "Top" and "My Teams" filter real data (all articles / articles mentioning
-// a followed team). "Signing News" is shown per the design handoff, but
-// GENERAL_NEWS events don't carry a content category today (only a
-// headline/body/source) — so it honestly renders the handoff's designed
-// empty state rather than faking a filter with nothing behind it. "Analysis"
-// was dropped per user request. "Ladder" isn't a filter at all — it
-// deep-links to the Ladder page.
+// "Top" shows everything GET /feed returns (GENERAL_NEWS + TRANSFER — see
+// routes/feed.ts). "My Teams" filters that same set to followed clubs.
+// "Signing News" filters to TRANSFER specifically — real content now that
+// signings are part of the feed, not the empty stub this used to be.
+// "Analysis" was dropped per user request. "Ladder" isn't a filter at all —
+// it deep-links to the Ladder page.
 const CHIPS = ["Top", "My Teams", "Signing News"] as const;
 type Chip = (typeof CHIPS)[number];
 
@@ -53,8 +52,8 @@ export default function HomePage() {
         followedTeamNames.some((name) => (a.headline + " " + a.body).toLowerCase().includes(name.toLowerCase()))
       );
     }
-    // Signing News: no category data on GENERAL_NEWS yet — see comment above.
-    return [];
+    // Signing News
+    return feed.filter((a) => a.type === "TRANSFER");
   }, [feed, chip, followedTeamNames]);
 
   return (

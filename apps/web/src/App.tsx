@@ -23,9 +23,10 @@ import AdminPage from "./pages/AdminPage";
 // tracks (see api/src/routes/pageviews.ts) — a team/game detail route counts
 // under its section (e.g. "/teams/broncos" -> "teams"), not as its own
 // label, matching prefixes ordered longest-first isn't needed since "/" is
-// handled separately below. Routes not listed here (news, search, admin)
-// are deliberately not tracked.
-const PAGE_BY_PATH_PREFIX: [prefix: string, page: "teams" | "games" | "team-lists" | "ladder" | "social" | "podcasts"][] = [
+// handled separately below. Routes not listed here (search, admin) are
+// deliberately not tracked.
+const PAGE_BY_PATH_PREFIX: [prefix: string, page: "news" | "teams" | "games" | "team-lists" | "ladder" | "social" | "podcasts"][] = [
+  ["/news", "news"],
   ["/teams", "teams"],
   ["/team-lists", "team-lists"],
   ["/games", "games"],

@@ -5,7 +5,7 @@ import { api, LadderRow } from "../lib/api";
 
 // Must match exactly between the column header and every row — see the
 // design handoff's Ladder section: "# TEAM P W L D F A DIFF PTS".
-const GRID_COLS = "22px 1fr 24px 24px 24px 22px 34px 34px 38px 32px";
+const GRID_COLS = "30px 1fr 24px 24px 24px 22px 34px 34px 38px 32px";
 const FINALS_CUTOFF_RANK = 8;
 
 export default function LadderPage() {
@@ -27,9 +27,9 @@ export default function LadderPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-b from-[#15132A] to-app px-5 pt-4 pb-3.5">
+      <div className="bg-gradient-to-b from-[#141B33] to-app px-5 pt-4 pb-3.5">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <h1 className="font-display font-bold text-[28px] tracking-[.03em] text-white">LADDER</h1>
+          <h1 className="font-display italic font-black text-[28px] tracking-[.01em] text-white uppercase">LADDER</h1>
           <span className="flex items-center gap-1.5 bg-white/[.06] border border-white/[.12] rounded-full px-3 py-1.5 text-[11.5px] font-bold text-white/72">
             {new Date().getFullYear()} NRL Premiership
           </span>
@@ -90,15 +90,20 @@ export default function LadderPage() {
                       className="grid items-center px-4 py-2.5 border-b border-white/5"
                       style={{
                         gridTemplateColumns: GRID_COLS,
-                        background: top8 ? "rgba(124,92,255,.07)" : "transparent",
-                        boxShadow: top8 ? "inset 3px 0 0 #7C5CFF" : "none",
+                        background: top8 ? "rgba(139,77,255,.07)" : "transparent",
+                        boxShadow: top8 ? "inset 3px 0 0 #8B4DFF" : "none",
                       }}
                     >
-                      <span className={`font-display font-bold text-sm ${top8 ? "text-brand-violet" : "text-white/38"}`}>
-                        {row.rank}
+                      <span className="flex items-center gap-[3px]">
+                        <span className={`font-display font-bold text-sm ${top8 ? "text-brand-violet" : "text-white/38"}`}>
+                          {row.rank}
+                        </span>
+                        {/* Typographic, not coloured — same "no status colour" rule as W/L elsewhere. */}
+                        {row.movement === "up" && <span className="text-white/40 text-[9px] leading-none">▲</span>}
+                        {row.movement === "down" && <span className="text-white/40 text-[9px] leading-none">▼</span>}
                       </span>
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="shrink-0 w-[22px] h-[22px] rounded-full bg-[#242440] flex items-center justify-center font-display font-bold text-[9.5px] text-white/70">
+                        <span className="shrink-0 w-[22px] h-[22px] rounded-full bg-[#1C2440] flex items-center justify-center font-display font-bold text-[9.5px] text-white/70">
                           {row.team.shortName.slice(0, 3).toUpperCase()}
                         </span>
                         <span className="text-[13px] font-bold tracking-[-.01em] text-white truncate">

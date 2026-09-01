@@ -10,16 +10,21 @@ import { FeedSkeleton } from "../components/ui/Skeleton";
 /**
  * The dedicated page for the "General NRL News" follow target (LEAGUE) —
  * same pattern as a team or game page: its own header with a Follow button,
- * and its own list of related content. Reuses GET /api/feed since that's
- * already exactly "GENERAL_NEWS events, newest first" — no separate
- * endpoint needed.
+ * and its own list of related content. Reuses GET /api/feed (no separate
+ * endpoint needed) but filters down to GENERAL_NEWS only — that endpoint
+ * also carries TRANSFER events for Home's "Signing News" chip (see
+ * routes/feed.ts), which don't belong on a page explicitly described as
+ * "not tied to one team."
  */
 export default function GeneralNewsPage() {
   const [items, setItems] = useState<EventItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getFeed().then(setItems).catch((err) => setError(err.message));
+    api
+      .getFeed()
+      .then((feed) => setItems(feed.filter((e) => e.type === "GENERAL_NEWS")))
+      .catch((err) => setError(err.message));
   }, []);
 
   return (

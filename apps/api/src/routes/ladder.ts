@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { prisma } from "../lib/prisma";
+import { sortByLadderRank } from "../lib/ladderRank";
 
 const router = Router();
 
@@ -38,21 +39,22 @@ router.get("/", async (_req, res) => {
       pointsDifferential: pointsFor - pointsAgainst,
       competitionPoints,
       form: entry?.form ?? null,
+      previousRank: entry?.previousRank ?? null,
     };
   });
 
-  // Standard NRL ladder ordering: competition points first, then points
-  // differential, then points for, as tiebreakers.
-  rows.sort((a, b) => {
-    if (b.competitionPoints !== a.competitionPoints) return b.competitionPoints - a.competitionPoints;
-    if (b.pointsDifferential !== a.pointsDifferential) return b.pointsDifferential - a.pointsDifferential;
-    return b.pointsFor - a.pointsFor;
-  });
+  const sorted = sortByLadderRank(rows);
 
   res.json({
     asOfRound: meta?.asOfRound ?? null,
     roundInProgress: meta?.roundInProgress ?? false,
-    rows: rows.map((row, i) => ({ rank: i + 1, ...row })),
+    rows: sorted.map((row, i) => {
+      const rank = i + 1;
+      // null when there's no prior snapshot yet (team's first-ever ladder
+      // entry) — the page shows no arrow rather than a misleading "same".
+      const movement = row.previousRank == null ? null : row.previousRank === rank ? "same" : row.previousRank > rank ? "up" : "down";
+      return { rank, movement, ...row };
+    }),
   });
 });
 

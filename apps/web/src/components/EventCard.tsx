@@ -57,7 +57,9 @@ function TweetAvatar({ handle }: { handle: string }) {
     <img
       src={`https://unavatar.io/twitter/${handle}`}
       alt=""
-      className="h-9 w-9 shrink-0 rounded-full object-cover bg-[#232244]"
+      loading="lazy"
+      decoding="async"
+      className="h-9 w-9 shrink-0 rounded-full object-cover bg-[#1C2440]"
       onError={() => setFailed(true)}
     />
   );
@@ -163,7 +165,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
       {gameLink}
       <div className="flex items-center justify-between mt-[13px] pt-3 border-t border-white/[.06]">
         <div className="flex items-center gap-[7px] min-w-0">
-          <span className="shrink-0 w-4 h-4 rounded-[4px] bg-[#2A2A3C] flex items-center justify-center text-[8.5px] font-extrabold text-white/60">
+          <span className="shrink-0 w-4 h-4 rounded-[4px] bg-[#1C2440] flex items-center justify-center text-[8.5px] font-extrabold text-white/60">
             {monogram}
           </span>
           <span className="text-[11.5px] font-semibold text-white/46 truncate">{source}</span>

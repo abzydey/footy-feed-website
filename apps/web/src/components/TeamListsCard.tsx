@@ -31,9 +31,9 @@ export default function TeamListsCard() {
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && navigate("/team-lists")}
-      className="cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-blue to-white/[.06]"
+      className="cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06]"
     >
-      <div className="flex items-center justify-between gap-3 rounded-[16.5px] bg-gradient-to-b from-[#191830] to-[#111119] px-4 py-[18px]">
+      <div className="flex items-center justify-between gap-3 rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 py-[18px]">
         <div className="min-w-0">
           <div className="font-display font-bold text-[12.5px] tracking-[.16em] text-white/50 uppercase mb-1">
             Team lists

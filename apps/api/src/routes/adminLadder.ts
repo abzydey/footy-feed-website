@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middleware/adminAuth";
+import { sortByLadderRank } from "../lib/ladderRank";
 
 const router = Router();
 router.use(requireAdmin);
@@ -42,6 +43,29 @@ router.put("/", async (req, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
+  // Snapshot the rank each team held under the *current* (about-to-be-
+  // overwritten) stats, so the response can show movement without the admin
+  // ever having to type an up/down arrow by hand. All 17 teams get a rank
+  // here (defaulting missing entries to 0s), same as GET /api/ladder, so a
+  // team with no prior entry still gets a real previousRank instead of null.
+  const [teams, existingEntries] = await Promise.all([
+    prisma.team.findMany({ select: { id: true } }),
+    prisma.ladderEntry.findMany(),
+  ]);
+  const existingByTeamId = new Map(existingEntries.map((e) => [e.teamId, e]));
+  const previousRows = teams.map((t) => {
+    const e = existingByTeamId.get(t.id);
+    return {
+      teamId: t.id,
+      competitionPoints: e?.competitionPoints ?? 0,
+      pointsFor: e?.pointsFor ?? 0,
+      pointsAgainst: e?.pointsAgainst ?? 0,
+    };
+  });
+  const previousRankByTeamId = new Map(
+    sortByLadderRank(previousRows).map((row, i) => [row.teamId, i + 1])
+  );
+
   await prisma.$transaction([
     prisma.ladderMeta.upsert({
       where: { id: "singleton" },
@@ -55,13 +79,14 @@ router.put("/", async (req, res) => {
         roundInProgress: parsed.data.roundInProgress ?? false,
       },
     }),
-    ...parsed.data.rows.map((row) =>
-      prisma.ladderEntry.upsert({
+    ...parsed.data.rows.map((row) => {
+      const data = { ...row, previousRank: previousRankByTeamId.get(row.teamId) ?? null };
+      return prisma.ladderEntry.upsert({
         where: { teamId: row.teamId },
-        create: row,
-        update: row,
-      })
-    ),
+        create: data,
+        update: data,
+      });
+    }),
   ]);
 
   res.status(204).end();

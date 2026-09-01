@@ -134,6 +134,49 @@ function ResultForm({ token, game, onSaved }: { token: string; game: Game; onSav
   );
 }
 
+function GameRow({
+  game,
+  token,
+  expanded,
+  onToggle,
+  onSaved,
+}: {
+  game: Game;
+  token: string;
+  expanded: boolean;
+  onToggle: () => void;
+  onSaved: () => void;
+}) {
+  const finished = game.homeScore != null && game.awayScore != null;
+  return (
+    <div className="border-b border-white/10 py-3 text-sm">
+      <div className="flex justify-between text-xs text-slate-500">
+        <span>{game.round}</span>
+        <span>{new Date(game.kickoffAt).toLocaleString()}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-white font-bold">
+          {game.homeTeam.shortName} vs {game.awayTeam.shortName}
+          {finished && (
+            <span className="ml-2 text-slate-300 font-semibold">
+              {game.homeScore}–{game.awayScore}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="shrink-0 text-xs font-bold text-brand-heliotrope hover:underline"
+        >
+          {finished ? "Edit result" : "Log result"}
+        </button>
+      </div>
+      {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
+      {expanded && <ResultForm token={token} game={game} onSaved={onSaved} />}
+    </div>
+  );
+}
+
 export default function GameForm({ token }: { token: string }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [games, setGames] = useState<Game[]>([]);
@@ -250,50 +293,63 @@ export default function GameForm({ token }: { token: string }) {
         {status === "error" && <p className="text-red-400 text-sm">{error ?? "Failed to save."}</p>}
       </form>
 
-      <section>
-        <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-2">Games</h2>
-        <div>
-          {games.map((game) => {
-            const finished = game.homeScore != null && game.awayScore != null;
-            const expanded = resultGameId === game.id;
-            return (
-              <div key={game.id} className="border-b border-white/10 py-3 text-sm">
-                <div className="flex justify-between text-xs text-slate-500">
-                  <span>{game.round}</span>
-                  <span>{new Date(game.kickoffAt).toLocaleString()}</span>
+      {(() => {
+        const upcoming = games.filter((g) => g.homeScore == null);
+        // Most recent first — the opposite of Upcoming's soonest-first order,
+        // since for a finished game the recent ones are what you're most
+        // likely checking on, not the oldest.
+        const finished = games
+          .filter((g) => g.homeScore != null)
+          .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime());
+
+        return (
+          <>
+            <section>
+              <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-2">
+                Upcoming ({upcoming.length})
+              </h2>
+              {upcoming.length === 0 ? (
+                <p className="text-xs text-slate-500">No upcoming fixtures.</p>
+              ) : (
+                <div>
+                  {upcoming.map((game) => (
+                    <GameRow
+                      key={game.id}
+                      game={game}
+                      token={token}
+                      expanded={resultGameId === game.id}
+                      onToggle={() => setResultGameId(resultGameId === game.id ? null : game.id)}
+                      onSaved={refreshGames}
+                    />
+                  ))}
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-white font-bold">
-                    {game.homeTeam.shortName} vs {game.awayTeam.shortName}
-                    {finished && (
-                      <span className="ml-2 text-slate-300 font-semibold">
-                        {game.homeScore}–{game.awayScore}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setResultGameId(expanded ? null : game.id)}
-                    className="shrink-0 text-xs font-bold text-brand-heliotrope hover:underline"
-                  >
-                    {finished ? "Edit result" : "Log result"}
-                  </button>
+              )}
+            </section>
+
+            <section>
+              <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-2">
+                Finished ({finished.length})
+              </h2>
+              {finished.length === 0 ? (
+                <p className="text-xs text-slate-500">No finished games yet.</p>
+              ) : (
+                <div>
+                  {finished.map((game) => (
+                    <GameRow
+                      key={game.id}
+                      game={game}
+                      token={token}
+                      expanded={resultGameId === game.id}
+                      onToggle={() => setResultGameId(resultGameId === game.id ? null : game.id)}
+                      onSaved={refreshGames}
+                    />
+                  ))}
                 </div>
-                {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
-                {expanded && (
-                  <ResultForm
-                    token={token}
-                    game={game}
-                    onSaved={() => {
-                      refreshGames();
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              )}
+            </section>
+          </>
+        );
+      })()}
     </div>
   );
 }

@@ -30,7 +30,7 @@ function formatKickoff(iso: string): string {
 function TeamColumn({ team, record }: { team: Game["homeTeam"]; record: string | null }) {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="w-[46px] h-[46px] rounded-full bg-[#232244] flex items-center justify-center font-display font-bold text-[19px] text-white/78">
+      <div className="w-[46px] h-[46px] rounded-full bg-[#1C2440] flex items-center justify-center font-display font-bold text-[19px] text-white/78">
         {team.shortName.slice(0, 3).toUpperCase()}
       </div>
       <div className="text-[15px] font-extrabold tracking-[-.01em] text-white">{team.shortName}</div>
@@ -57,9 +57,9 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="snap-center shrink-0 w-[85%] sm:w-full cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-blue to-white/[.06]"
+      className="snap-center shrink-0 w-[85%] sm:w-full cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06]"
     >
-      <div className="rounded-[16.5px] bg-gradient-to-b from-[#191830] to-[#111119] px-4 pt-4 pb-[14px]">
+      <div className="rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 pt-4 pb-[14px]">
         <div className="flex items-center justify-between mb-[14px]">
           <span className="font-display font-bold text-[12.5px] tracking-[.16em] text-white/50 uppercase">
             {game.round} · {label}
@@ -88,7 +88,7 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
             className={
               reminderSet
                 ? "shrink-0 flex items-center gap-1.5 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 border border-white/25 text-white transition-all duration-150 active:scale-95"
-                : "shrink-0 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app hover:bg-[#E4E0FF] transition-all duration-150 active:scale-95"
+                : "shrink-0 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app hover:bg-[#DCD2FF] transition-all duration-150 active:scale-95"
             }
           >
             {reminderSet ? "✓ Reminder set" : "Set reminder"}
