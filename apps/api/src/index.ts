@@ -24,6 +24,12 @@ import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 
 const app = express();
 
+// CORS_ORIGIN, like DATABASE_URL, is read at process start (not baked in at
+// build time) — so this only ever reflects whatever is set on the Railway
+// service that's actually running. See README's "duplicate Railway project"
+// note: a stray second project with a service of the same name exists, and
+// is not what fullset.au talks to. Always confirm the project ID before
+// changing this value in the Railway dashboard/CLI.
 const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .split(",")
   .map((o) => o.trim());
