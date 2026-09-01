@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api, Game } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
+import TeamBadge from "../components/TeamBadge";
 
 function formatKickoff(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -102,9 +103,13 @@ export default function GamesPage() {
               <span className="font-bold text-brand-heliotrope uppercase tracking-wider">{game.round}</span>
               <span>{formatKickoff(game.kickoffAt)}</span>
             </div>
-            <div className="font-display font-extrabold text-lg sm:text-xl text-white tracking-tight">
-              {game.homeTeam.shortName} <span className="text-slate-500 font-normal">vs</span>{" "}
-              {game.awayTeam.shortName}
+            <div className="flex items-center gap-2.5">
+              <TeamBadge team={game.homeTeam} size="sm" />
+              <div className="font-display font-extrabold text-lg sm:text-xl text-white tracking-tight">
+                {game.homeTeam.shortName} <span className="text-slate-500 font-normal">vs</span>{" "}
+                {game.awayTeam.shortName}
+              </div>
+              <TeamBadge team={game.awayTeam} size="sm" />
             </div>
             {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
           </Link>

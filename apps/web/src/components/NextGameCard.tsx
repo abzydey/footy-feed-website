@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { api, Game, LadderRow } from "../lib/api";
 import { ordinal } from "../lib/format";
+import TeamBadge from "./TeamBadge";
 
 const REMINDERS_KEY = "footy-feed:reminders";
 
@@ -30,9 +31,7 @@ function formatKickoff(iso: string): string {
 function TeamColumn({ team, record }: { team: Game["homeTeam"]; record: string | null }) {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="w-[46px] h-[46px] rounded-full bg-[#1C2440] flex items-center justify-center font-display font-bold text-[19px] text-white/78">
-        {team.shortName.slice(0, 3).toUpperCase()}
-      </div>
+      <TeamBadge team={team} />
       <div className="text-[15px] font-extrabold tracking-[-.01em] text-white">{team.shortName}</div>
       {record && <div className="text-[11px] font-semibold text-white/42">{record}</div>}
     </div>

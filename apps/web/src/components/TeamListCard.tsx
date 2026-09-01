@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { EventItem, Team, TeamListStages } from "../lib/api";
 import { STAGE_BADGE_CLASS, STAGE_LABEL, TeamListStage } from "../lib/teamListStage";
+import TeamBadge from "./TeamBadge";
 
 function timeAgo(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -195,8 +196,9 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
     <div className="rounded-xl bg-surface border border-white/10 p-4 shadow-card space-y-2.5">
       <Link
         to={`/teams/${team.slug}`}
-        className="font-display font-extrabold text-white hover:text-brand-heliotrope transition-colors duration-150"
+        className="flex items-center gap-2.5 font-display font-extrabold text-white hover:text-brand-heliotrope transition-colors duration-150"
       >
+        <TeamBadge team={team} size="sm" />
         {team.shortName}
       </Link>
       <div className="space-y-2">
