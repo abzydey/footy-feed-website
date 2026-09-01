@@ -6,6 +6,7 @@ import TeamListCard from "../components/TeamListCard";
 import PageHero from "../components/ui/PageHero";
 import SectionLabel from "../components/ui/SectionLabel";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 function formatKickoff(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -26,6 +27,12 @@ function formatKickoff(iso: string) {
 export default function TeamListsPage() {
   const [data, setData] = useState<RoundLineups | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "Team Lists",
+    description: "Official NRL team lists for the current round — Initial, 24hr, and Final, as they're released.",
+    path: "/team-lists",
+  });
 
   useEffect(() => {
     api.getCurrentRoundLineups().then(setData).catch((err) => setError(err.message));

@@ -8,6 +8,7 @@ import GeneralNewsFollow from "../components/GeneralNewsFollow";
 import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // "Top" shows everything GET /feed returns (GENERAL_NEWS + TRANSFER — see
 // routes/feed.ts). "My Teams" filters that same set to followed clubs.
@@ -24,6 +25,13 @@ export default function HomePage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [followedTeamIds, setFollowedTeamIds] = useState<string[]>([]);
   const [chip, setChip] = useState<Chip>("Top");
+
+  useDocumentMeta({
+    title: "NRL News, Team Lists & Ladder",
+    description:
+      "Your team. The full set. Real-time NRL news, official team lists, injury updates, fixtures, and ladder standings — one page per club.",
+    path: "/",
+  });
 
   useEffect(() => {
     api.getFeed().then(setFeed).catch((err) => setError(err.message));

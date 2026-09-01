@@ -7,6 +7,7 @@ import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import TeamListCard from "../components/TeamListCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // Brand rule: no green/amber/red status colours — Siren (the one warm
 // accent) is reserved for things that matter right now, which "OUT" for an
@@ -100,6 +101,14 @@ export default function TeamPage() {
       .then((ladder) => setLadderRow(ladder.rows.find((r) => r.team.id === data.team.id) ?? null))
       .catch(() => setLadderRow(null));
   }, [data]);
+
+  useDocumentMeta({
+    title: data ? data.team.name : "Team",
+    description: data
+      ? `${data.team.name} on Full Set — team lists, injury news, fixtures, and ladder position, updated in real time.`
+      : "Team news, lists, and fixtures on Full Set.",
+    path: slug ? `/teams/${slug}` : undefined,
+  });
 
   if (error) return <p className="p-4 text-red-400 text-sm">{error}</p>;
 

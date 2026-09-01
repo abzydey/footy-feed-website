@@ -6,6 +6,7 @@ import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 /**
  * The dedicated page for the "General NRL News" follow target (LEAGUE) —
@@ -19,6 +20,12 @@ import { FeedSkeleton } from "../components/ui/Skeleton";
 export default function GeneralNewsPage() {
   const [items, setItems] = useState<EventItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "General NRL News",
+    description: "Breaking league-wide NRL stories, not tied to one club.",
+    path: "/news",
+  });
 
   useEffect(() => {
     api

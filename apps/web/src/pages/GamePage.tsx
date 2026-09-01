@@ -7,6 +7,7 @@ import TeamListCard from "../components/TeamListCard";
 import PageHero from "../components/ui/PageHero";
 import SectionLabel from "../components/ui/SectionLabel";
 import { FeedSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
 
 function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
   return (
@@ -92,6 +93,42 @@ export default function GamePage() {
     setData(null);
     api.getGame(id).then(setData).catch((err) => setError(err.message));
   }, [id]);
+
+  const metaGame = data?.game;
+  const metaFinished = metaGame ? metaGame.homeScore != null && metaGame.awayScore != null : false;
+  const matchup = metaGame ? `${metaGame.homeTeam.shortName} vs ${metaGame.awayTeam.shortName}` : "Game";
+
+  useDocumentMeta({
+    title: metaGame ? `${matchup} — ${metaGame.round}` : "Game",
+    description: metaGame
+      ? metaFinished
+        ? `Full time: ${metaGame.homeTeam.shortName} ${metaGame.homeScore}-${metaGame.awayScore} ${metaGame.awayTeam.shortName}. Try scorers, team lists, and match news on Full Set.`
+        : `${matchup} — ${metaGame.round}. Kickoff, venue, team lists, and build-up on Full Set.`
+      : "NRL match details on Full Set.",
+    path: id ? `/games/${id}` : undefined,
+  });
+
+  // SportsEvent structured data for search engines — homeTeam/awayTeam as
+  // SportsTeam, eventStatus reflecting whether the game has been played, and
+  // (when finished) a simple text score in description since schema.org has
+  // no first-class "final score" property for SportsEvent.
+  useJsonLd(
+    metaGame
+      ? {
+          "@context": "https://schema.org",
+          "@type": "SportsEvent",
+          name: matchup,
+          startDate: metaGame.kickoffAt,
+          eventStatus: metaFinished
+            ? "https://schema.org/EventCompleted"
+            : "https://schema.org/EventScheduled",
+          location: metaGame.venue ? { "@type": "Place", name: metaGame.venue } : undefined,
+          homeTeam: { "@type": "SportsTeam", name: metaGame.homeTeam.name },
+          awayTeam: { "@type": "SportsTeam", name: metaGame.awayTeam.name },
+          url: `https://fullset.au/games/${id}`,
+        }
+      : null
+  );
 
   if (error) return <p className="p-4 text-red-400 text-sm">{error}</p>;
 

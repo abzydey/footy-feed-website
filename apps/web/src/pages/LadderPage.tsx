@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, LadderRow } from "../lib/api";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // Must match exactly between the column header and every row — see the
 // design handoff's Ladder section: "# TEAM P W L D F A DIFF PTS".
@@ -13,6 +14,12 @@ export default function LadderPage() {
   const [asOfRound, setAsOfRound] = useState<number | null>(null);
   const [roundInProgress, setRoundInProgress] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "NRL Ladder",
+    description: "Full NRL ladder standings — points, wins, losses, points diff, and finals cutoff, updated every round.",
+    path: "/ladder",
+  });
 
   useEffect(() => {
     api

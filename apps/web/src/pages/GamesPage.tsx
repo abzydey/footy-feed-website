@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api, Game } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
 import TeamBadge from "../components/TeamBadge";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 function formatKickoff(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -38,6 +39,12 @@ export default function GamesPage() {
   const [round, setRound] = useState<string | null>(null);
   const [games, setGames] = useState<Game[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: round ? `${round} Fixtures` : "Fixtures",
+    description: "NRL fixtures and results by round — kickoff times, venues, and full-time scores for every club.",
+    path: "/games",
+  });
 
   // Resolve the initial round once, from the same source as Home/Team Lists.
   useEffect(() => {

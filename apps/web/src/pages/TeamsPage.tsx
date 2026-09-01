@@ -3,10 +3,17 @@ import { Link } from "react-router-dom";
 
 import { api, Team } from "../lib/api";
 import { TileGridSkeleton } from "../components/ui/Skeleton";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useDocumentMeta({
+    title: "All NRL Teams",
+    description: "Every NRL club — team lists, injuries, news, and ladder position, all in one place.",
+    path: "/teams",
+  });
 
   useEffect(() => {
     api.listTeams().then(setTeams).catch((err) => setError(err.message));
