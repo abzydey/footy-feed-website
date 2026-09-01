@@ -2,6 +2,10 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 
+// Deployed in us-east (Railway) alongside Neon's us-east-2 database — moved
+// from eu-west (Amsterdam) to cut the transatlantic round trip on every DB
+// query. See README's Railway deploy notes for the project ID to target.
+
 import adminAuthRouter from "./routes/adminAuth";
 import teamsRouter from "./routes/teams";
 import gamesRouter from "./routes/games";
