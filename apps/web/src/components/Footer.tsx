@@ -6,8 +6,24 @@ import { Link } from "react-router-dom";
 // separated by a hairline rule (--fs-hairline #232B45) rather than House
 // Money appearing alone — a bare partner logo with no Full Set mark reads as
 // House Money's own footer, not a "presented by" credit.
+//
+// "60% of the wordmark height" means 60% of the *visible ink*, not either
+// file's raw dimensions — pixel-scanned both source assets to confirm:
+//  - fullset-wordmark.svg has ~9% built-in vertical padding (visible height
+//    is 91% of its rendered box), so setting both images to the same CSS
+//    height without correcting for that would already be wrong.
+//  - the original house-money-logo.png is a 3-row stacked lockup (roof icon,
+//    then "HOUSE", then "MONEY" on separate lines) — comparing its raw file
+//    height to Full Set's single-line wordmark isn't an apples-to-apples
+//    comparison, since a third of its height is a roof icon glyph that has
+//    no equivalent in the Full Set wordmark at all. Cropped it down to just
+//    the "HOUSE"/"MONEY" text block (house-money-wordmark.png, tightly
+//    bound, ~99.8% visible) so the comparison is wordmark-to-wordmark.
 const FULLSET_WORDMARK_HEIGHT = 15;
-const HOUSE_MONEY_HEIGHT = FULLSET_WORDMARK_HEIGHT * 0.6; // spec: "60% of the Full Set wordmark height"
+const FULLSET_WORDMARK_VISIBLE_RATIO = 0.91;
+const HOUSE_MONEY_VISIBLE_RATIO = 0.998;
+const HOUSE_MONEY_HEIGHT =
+  (FULLSET_WORDMARK_HEIGHT * FULLSET_WORDMARK_VISIBLE_RATIO * 0.6) / HOUSE_MONEY_VISIBLE_RATIO;
 
 export default function Footer() {
   return (
@@ -33,7 +49,7 @@ export default function Footer() {
               Presented by
             </span>
             <img
-              src="/partners/house-money-logo.png"
+              src="/partners/house-money-wordmark.png"
               alt="House Money"
               style={{ height: HOUSE_MONEY_HEIGHT }}
               className="w-auto object-contain"
