@@ -51,7 +51,7 @@ export async function pollTwitterSources(): Promise<void> {
         max_results: 10,
         exclude: ["replies"],
         expansions: ["referenced_tweets.id", "referenced_tweets.id.author_id"],
-        "tweet.fields": ["referenced_tweets"],
+        "tweet.fields": ["referenced_tweets", "created_at"],
       });
 
       for (const tweet of timeline.tweets) {
@@ -63,6 +63,7 @@ export async function pollTwitterSources(): Promise<void> {
         let authorUsername = username;
         let authorName: string | null = null;
         let tweetId = tweet.id;
+        let postedAt = tweet.created_at;
 
         if (retweetRef) {
           const original = timeline.includes.tweets?.find((t) => t.id === retweetRef.id);
@@ -74,12 +75,20 @@ export async function pollTwitterSources(): Promise<void> {
           authorUsername = originalAuthor.username;
           authorName = originalAuthor.name;
           tweetId = original.id;
+          postedAt = original.created_at ?? postedAt;
         }
 
         // Attributed to whoever actually wrote it (not @centralNRL) so a
         // reposted tweet renders exactly like an original post from that
         // account — same headline/name/handle pairing either way.
         const sourceUrl = `https://x.com/${authorUsername}/status/${tweetId}`;
+
+        // Social is meant to feel live, not become a growing archive — skip
+        // anything older than 24h. Matters most the first time a new
+        // account gets added to SOURCE_USERNAMES: that account's first poll
+        // pulls its 10 most recent tweets regardless of age, which for a
+        // quieter account could span days or weeks.
+        if (postedAt && Date.now() - new Date(postedAt).getTime() > 24 * 60 * 60 * 1000) continue;
 
         const existing = await prisma.event.findFirst({ where: { sourceUrl } });
         if (existing) continue;
@@ -98,6 +107,15 @@ export async function pollTwitterSources(): Promise<void> {
             sourceName: `@${authorUsername}`,
             sourceAuthor: authorName ?? undefined,
             createdBy: "twitter-poller",
+            // Defaults to insertion time if omitted — fine when polling
+            // trickles in a couple of new posts at a time, but wrong the
+            // moment a poll backfills several accounts' recent tweets in
+            // one run: every row would get ~the same "now" timestamp, so
+            // the feed's createdAt-desc sort would reflect account-loop
+            // order instead of actual recency. Uses the tweet's own postal
+            // time instead, so cross-account ordering is correct even on a
+            // multi-account bulk pull.
+            createdAt: postedAt ? new Date(postedAt) : undefined,
           },
         });
 
