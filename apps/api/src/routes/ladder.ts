@@ -12,7 +12,14 @@ const router = Router();
 // not stored — see schema.prisma design note on LadderEntry.
 router.get("/", async (_req, res) => {
   const [teams, entries, meta] = await Promise.all([
-    prisma.team.findMany({ select: { id: true, name: true, shortName: true, slug: true } }),
+    // Perth Bears exist as a Team row (for tagging signing news to them
+    // ahead of their 2027 NRL entry) but aren't part of the current
+    // competition — excluded here so they don't show up as an 18th,
+    // all-zeros row.
+    prisma.team.findMany({
+      where: { slug: { not: "perth-bears" } },
+      select: { id: true, name: true, shortName: true, slug: true, primaryColor: true },
+    }),
     prisma.ladderEntry.findMany(),
     prisma.ladderMeta.findUnique({ where: { id: "singleton" } }),
   ]);

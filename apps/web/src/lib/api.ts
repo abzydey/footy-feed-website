@@ -122,7 +122,7 @@ export interface Player {
 
 export interface LadderRow {
   rank: number;
-  team: { id: string; name: string; shortName: string; slug: string };
+  team: { id: string; name: string; shortName: string; slug: string; primaryColor: string | null };
   played: number;
   wins: number;
   losses: number;

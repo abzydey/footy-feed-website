@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, LadderRow } from "../lib/api";
+import TeamBadge from "../components/TeamBadge";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // Must match exactly between the column header and every row — see the
@@ -110,9 +111,7 @@ export default function LadderPage() {
                         {row.movement === "down" && <span className="text-white/40 text-[9px] leading-none">▼</span>}
                       </span>
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="shrink-0 w-[22px] h-[22px] rounded-full bg-[#1C2440] flex items-center justify-center font-display font-bold text-[9.5px] text-white/70">
-                          {row.team.shortName.slice(0, 3).toUpperCase()}
-                        </span>
+                        <TeamBadge team={row.team} size="sm" />
                         <span className="text-[13px] font-bold tracking-[-.01em] text-white truncate">
                           {row.team.shortName}
                         </span>
