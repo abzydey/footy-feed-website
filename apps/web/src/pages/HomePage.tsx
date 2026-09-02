@@ -19,13 +19,16 @@ import { useDocumentMeta } from "../lib/useDocumentMeta";
 const CHIPS = ["Top", "My Teams", "Signing News"] as const;
 type Chip = (typeof CHIPS)[number];
 
-// A story that needs to appear both under its own category (e.g. a
-// TRANSFER) and on the dedicated General NRL News page ends up as two
-// separate Event rows sharing one sourceUrl — each row is exactly right for
-// the *filtered* view it targets (Signing News chip, /news page), but an
-// unfiltered list like "Top"/"My Teams" would show both back to back as an
-// apparent duplicate. Collapses that down to one card per real story,
-// keeping the first (newest, since feed is already sorted) occurrence.
+// A story that needs to appear more than once in Event terms — either
+// because it's tagged to more than one team (e.g. a signing tagged to both
+// the club a player is leaving and the one they're joining) or because it
+// also has a separate GENERAL_NEWS copy for the dedicated News page — ends
+// up as multiple Event rows sharing one headline/sourceUrl. Each row is
+// exactly right for a single team's page, but any list that merges across
+// teams/types (Home's "Top"/"My Teams"/"Signing News") would show the same
+// story back to back as an apparent duplicate. Collapses that down to one
+// card per real story, keeping the first (newest, since feed is already
+// sorted) occurrence.
 function dedupeStories(items: EventItem[]): EventItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
@@ -79,9 +82,10 @@ export default function HomePage() {
         )
       );
     }
-    // Signing News — already narrowed to one type, so a story that also has
-    // a GENERAL_NEWS copy (see dedupeStories below) never appears twice here.
-    return feed.filter((a) => a.type === "TRANSFER");
+    // Signing News — narrowed to TRANSFER, but a signing tagged to two
+    // teams (leaving club + joining club) is still two rows here, so this
+    // needs the same dedupe as "Top"/"My Teams".
+    return dedupeStories(feed.filter((a) => a.type === "TRANSFER"));
   }, [feed, chip, followedTeamNames]);
 
   return (
