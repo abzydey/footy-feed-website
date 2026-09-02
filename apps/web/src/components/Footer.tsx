@@ -30,20 +30,26 @@ const HOUSE_MONEY_HEIGHT =
 // than one presenting partner in a lockup" as a never. Equal-tier with each
 // other (unlike House Money above, neither leads).
 //
-// Both logos are shown on a small white card at their own native colours
-// rather than stripped to transparent PNGs on navy: Dream Drafting Sydney's
-// wordmark is near-black text with no light variant, so it'd be unreadable
-// directly on the dark footer -- a matching white chip for both keeps them
-// legible without recolouring either partner's actual logo.
-//
-// The source files (arcane-accountants-logo.jpg, dream-drafting-sydney-
-// logo.jpg) had very different amounts of built-in padding around their
-// actual marks (Dream's had ~50-58px of margin baked in on every side,
-// Arcane's had almost none) — same lesson as house-money-wordmark.png
-// earlier: pixel-scanned each to its true visible bounding box and cropped
-// to that (+a small uniform margin) as .png, so setting both to the same
-// CSS height now actually renders them at comparable visual weight instead
-// of Dream reading smaller inside its own frame.
+// Both logos sit directly on the dark footer with no background box, same
+// treatment as House Money above. Their source files were flat exports on a
+// white background with no dark-mode variant, so getting there took real
+// per-logo work rather than a generic "strip to transparent":
+//  - Arcane Accountants' palette (blue/grey text, a light-outlined icon) was
+//    already legible on navy once the white background was chroma-keyed
+//    out -- no recolouring needed.
+//  - Dream Drafting Sydney's wordmark and tagline are near-black, which
+//    would just disappear once composited on navy. Recoloured every
+//    low-saturation dark pixel (the text) to white while leaving the
+//    saturated red icon untouched -- classified by chroma/lightness in
+//    HSL terms, not a flat "black to white" swap, so the red brand mark
+//    survives intact.
+//  - Both source files also had very different amounts of built-in padding
+//    around their actual marks (Dream's had ~50-58px of margin baked in on
+//    every side, Arcane's had almost none) — same lesson as
+//    house-money-wordmark.png earlier: pixel-scanned each to its true
+//    visible bounding box and cropped to that (+a small uniform margin), so
+//    setting both to the same CSS height renders them at comparable visual
+//    weight instead of Dream reading smaller inside its own frame.
 const SUPPORTING_PARTNER_HEIGHT = 20;
 const SUPPORTING_PARTNERS = [
   { name: "Arcane Accountants", href: "https://arcaneaccountants.com", logo: "/partners/arcane-accountants-logo.png" },
@@ -96,14 +102,14 @@ export default function Footer() {
         <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
           Supporting partners
         </span>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           {SUPPORTING_PARTNERS.map((p) => (
             <a
               key={p.name}
               href={p.href}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center bg-white rounded-md px-2.5 py-1.5 hover:opacity-80 transition-opacity duration-150"
+              className="flex items-center hover:opacity-80 transition-opacity duration-150"
             >
               <img
                 src={p.logo}
