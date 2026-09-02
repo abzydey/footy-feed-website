@@ -19,6 +19,23 @@ import { useDocumentMeta } from "../lib/useDocumentMeta";
 const CHIPS = ["Top", "My Teams", "Signing News"] as const;
 type Chip = (typeof CHIPS)[number];
 
+// A story that needs to appear both under its own category (e.g. a
+// TRANSFER) and on the dedicated General NRL News page ends up as two
+// separate Event rows sharing one sourceUrl — each row is exactly right for
+// the *filtered* view it targets (Signing News chip, /news page), but an
+// unfiltered list like "Top"/"My Teams" would show both back to back as an
+// apparent duplicate. Collapses that down to one card per real story,
+// keeping the first (newest, since feed is already sorted) occurrence.
+function dedupeStories(items: EventItem[]): EventItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.sourceUrl ?? item.headline;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default function HomePage() {
   const [feed, setFeed] = useState<EventItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +70,17 @@ export default function HomePage() {
 
   const articles = useMemo(() => {
     if (!feed) return null;
-    if (chip === "Top") return feed;
+    if (chip === "Top") return dedupeStories(feed);
     if (chip === "My Teams") {
       if (followedTeamNames.length === 0) return [];
-      return feed.filter((a) =>
-        followedTeamNames.some((name) => (a.headline + " " + a.body).toLowerCase().includes(name.toLowerCase()))
+      return dedupeStories(
+        feed.filter((a) =>
+          followedTeamNames.some((name) => (a.headline + " " + a.body).toLowerCase().includes(name.toLowerCase()))
+        )
       );
     }
-    // Signing News
+    // Signing News — already narrowed to one type, so a story that also has
+    // a GENERAL_NEWS copy (see dedupeStories below) never appears twice here.
     return feed.filter((a) => a.type === "TRANSFER");
   }, [feed, chip, followedTeamNames]);
 
