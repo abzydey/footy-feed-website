@@ -25,6 +25,23 @@ const HOUSE_MONEY_VISIBLE_RATIO = 0.998;
 const HOUSE_MONEY_HEIGHT =
   (FULLSET_WORDMARK_HEIGHT * FULLSET_WORDMARK_VISIBLE_RATIO * 0.6) / HOUSE_MONEY_VISIBLE_RATIO;
 
+// Secondary sponsors, kept in their own row below the "Presented by" lockup
+// rather than folded into it — the brand handoff explicitly lists "more
+// than one presenting partner in a lockup" as a never. Both logos are
+// shown on a small white card at their own native colours rather than
+// stripped to transparent PNGs on navy: Dream Drafting Sydney's wordmark is
+// near-black text with no light variant, so it'd be unreadable directly on
+// the dark footer -- putting both on a matching white chip keeps them
+// legible without recolouring either partner's actual logo.
+const SUPPORTING_PARTNERS = [
+  { name: "Arcane Accountants", href: "https://arcaneaccountants.com", logo: "/partners/arcane-accountants-logo.jpg" },
+  {
+    name: "Dream Drafting Sydney",
+    href: "https://dreamdraftingsydney.com.au",
+    logo: "/partners/dream-drafting-sydney-logo.jpg",
+  },
+];
+
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 mt-10">
@@ -60,6 +77,25 @@ export default function Footer() {
               mortgage broking
             </span>
           </a>
+        </div>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 pb-6 flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-3 border-t border-white/[.06] pt-4">
+        <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
+          Supporting partners
+        </span>
+        <div className="flex items-center gap-3">
+          {SUPPORTING_PARTNERS.map((p) => (
+            <a
+              key={p.name}
+              href={p.href}
+              target="_blank"
+              rel="noreferrer"
+              className="bg-white rounded-md px-2.5 py-1.5 hover:opacity-80 transition-opacity duration-150"
+            >
+              <img src={p.logo} alt={p.name} className="h-4 w-auto object-contain" />
+            </a>
+          ))}
         </div>
       </div>
     </footer>
