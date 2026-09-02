@@ -14,6 +14,18 @@ const SOURCE_USERNAMES = (process.env.TWITTER_SOURCE_USERNAMES ?? "centralNRL")
   .filter(Boolean);
 
 const POLL_INTERVAL_MS = 20 * 60 * 1000;
+const RETENTION_MS = 24 * 60 * 60 * 1000;
+
+// Deletes auto-polled posts once they age past RETENTION_MS. Scoped to
+// createdBy: "twitter-poller" only — an admin can still paste a tweet URL
+// into the admin panel as a manually-curated SOCIAL_POST that's meant to
+// stick around, and this must never sweep those up alongside the firehose.
+async function pruneOldSocialPosts(): Promise<void> {
+  const { count } = await prisma.event.deleteMany({
+    where: { type: "SOCIAL_POST", createdBy: "twitter-poller", createdAt: { lt: new Date(Date.now() - RETENTION_MS) } },
+  });
+  if (count > 0) console.log(`[socialPoller] pruned ${count} post(s) older than 24h`);
+}
 
 // Username -> user id, resolved once per process rather than on every poll.
 const userIdCache = new Map<string, string>();
@@ -88,7 +100,7 @@ export async function pollTwitterSources(): Promise<void> {
         // account gets added to SOURCE_USERNAMES: that account's first poll
         // pulls its 10 most recent tweets regardless of age, which for a
         // quieter account could span days or weeks.
-        if (postedAt && Date.now() - new Date(postedAt).getTime() > 24 * 60 * 60 * 1000) continue;
+        if (postedAt && Date.now() - new Date(postedAt).getTime() > RETENTION_MS) continue;
 
         const existing = await prisma.event.findFirst({ where: { sourceUrl } });
         if (existing) continue;
@@ -130,6 +142,8 @@ export async function pollTwitterSources(): Promise<void> {
       console.error(`[socialPoller] failed to poll @${username}:`, err);
     }
   }
+
+  await pruneOldSocialPosts().catch((err) => console.error("[socialPoller] prune failed:", err));
 }
 
 export function startTwitterPoller(): void {
