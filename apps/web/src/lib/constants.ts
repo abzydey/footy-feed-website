@@ -1,5 +1,5 @@
 /**
- * Must exactly match apps/api/src/lib/constants.ts. "General NRL News" is a
+ * Must exactly match apps/api/src/lib/constants.ts. "NRL News" is a
  * Follow target (targetType LEAGUE) with no real row behind it, so both
  * sides just agree on this one fixed string instead of a database id.
  */

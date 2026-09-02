@@ -24,7 +24,7 @@
 //   two nullable FK columns, so "follow a team" and "follow a player" share
 //   one table and one fan-out query. Referential integrity for targetId is
 //   enforced in the API layer, not the DB — see apps/api/src/routes/follows.ts.
-// - "General NRL News" (league-wide breaking news, not tied to one team) is
+// - "NRL News" (league-wide breaking news, not tied to one team) is
 //   just another Event type (GENERAL_NEWS) and another Follow target type
 //   (LEAGUE) — not a separate system. A GENERAL_NEWS event has teamId and
 //   playerId both null. A LEAGUE follow has no real row to point at, so
@@ -353,7 +353,7 @@ model Subscriber {
 enum FollowTargetType {
   TEAM
   PLAYER
-  LEAGUE // "General NRL News" — a category, not a specific row (see constants.ts)
+  LEAGUE // "NRL News" — a category, not a specific row (see constants.ts)
 }
 
 model Follow {

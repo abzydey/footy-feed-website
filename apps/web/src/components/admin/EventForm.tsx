@@ -124,7 +124,7 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
           <p className="text-xs text-slate-500">
             {isSocialPost
               ? "League-wide or social post — no team or player needed."
-              : "League-wide — no team or player needed. This goes out to fans following \"General NRL News\"."}
+              : "League-wide — no team or player needed. This goes out to fans following \"NRL News\"."}
           </p>
         ) : (
           <select

@@ -18,7 +18,7 @@ export default function GeneralNewsFollow() {
       className="rounded-xl bg-surface border border-white/10 shadow-card hover:border-white/20 hover:bg-surface-hover transition-all duration-150 active:scale-[0.98] p-4 flex items-center justify-between gap-3"
     >
       <div>
-        <div className="text-white font-display font-extrabold tracking-tight text-base">General NRL News</div>
+        <div className="text-white font-display font-extrabold tracking-tight text-base">NRL News</div>
         <p className="text-xs text-slate-400 mt-0.5">Breaking league-wide stories, not tied to one team.</p>
       </div>
       <div onClick={(e) => e.stopPropagation()}>

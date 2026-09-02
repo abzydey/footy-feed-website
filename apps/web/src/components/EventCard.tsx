@@ -9,7 +9,7 @@ const TYPE_LABEL: Record<string, string> = {
   LINEUP_CHANGE: "Lineup change",
   NEWS: "News",
   TRANSFER: "Transfer",
-  GENERAL_NEWS: "General NRL news",
+  GENERAL_NEWS: "NRL news",
   SOCIAL_POST: "Social post",
 };
 

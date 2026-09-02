@@ -40,7 +40,7 @@ export default function StatsView({ token }: { token: string }) {
       <section className="rounded-xl bg-surface border border-white/10 shadow-card p-4">
         <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-3">Follows</h2>
         <div className="flex justify-between items-center py-2 border-b border-white/10">
-          <span className="text-sm text-slate-300">General NRL News</span>
+          <span className="text-sm text-slate-300">NRL News</span>
           <span className="font-bold text-white">{stats.follows.generalNewsFollowerCount}</span>
         </div>
         {sortedTeams.map((t) => (
