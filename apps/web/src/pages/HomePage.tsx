@@ -108,11 +108,23 @@ export default function HomePage() {
       {articles && articles.length === 0 && (
         <p className="text-[13.5px] font-semibold text-white/50 text-center mt-6">No stories in {chip} yet.</p>
       )}
-      <div>
-        {articles?.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
+      {/* Horizontally-scrolling carousel rather than stacked cards — the
+          full News page (GeneralNewsPage.tsx) keeps the vertical stack,
+          this is Home-only so the news section doesn't push everything else
+          below the fold. Same scroll-snap technique as NextGameCard's
+          fixture carousel. Each card is wrapped rather than restyled so
+          EventCard itself (shared with News/TeamPage) stays untouched — the
+          wrapper just overrides the card's own mb-3 (meant for vertical
+          stacking) since spacing here comes from the flex gap instead. */}
+      {articles && articles.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+          {articles.map((event) => (
+            <div key={event.id} className="snap-start shrink-0 w-[85%] sm:w-[380px] [&>article]:mb-0">
+              <EventCard event={event} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
