@@ -142,6 +142,7 @@ function ResultForm({ token, game, onSaved }: { token: string; game: Game; onSav
 function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; onSaved: () => void }) {
   const [homeScore, setHomeScore] = useState(game.homeScore != null ? String(game.homeScore) : "");
   const [awayScore, setAwayScore] = useState(game.awayScore != null ? String(game.awayScore) : "");
+  const [liveClock, setLiveClock] = useState(game.liveClock ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -150,7 +151,11 @@ function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; on
     setError(null);
     setStatus("saving");
     try {
-      await api.adminSetLiveScore(token, game.id, { homeScore: Number(homeScore), awayScore: Number(awayScore) });
+      await api.adminSetLiveScore(token, game.id, {
+        homeScore: Number(homeScore),
+        awayScore: Number(awayScore),
+        liveClock: liveClock.trim() || undefined,
+      });
       setStatus("saved");
       onSaved();
     } catch (err) {
@@ -160,7 +165,7 @@ function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; on
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-1.5 mt-2">
+    <form onSubmit={handleSubmit} className="flex items-center gap-1.5 mt-2 flex-wrap">
       <input
         value={homeScore}
         onChange={(e) => setHomeScore(e.target.value)}
@@ -177,6 +182,12 @@ function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; on
         inputMode="numeric"
         placeholder={game.awayTeam.shortName}
         className="w-16 bg-black border border-white/20 px-2 py-1 text-sm text-white focus:outline-none focus:border-brand-siren focus:ring-1 focus:ring-brand-siren/50 transition-colors duration-150"
+      />
+      <input
+        value={liveClock}
+        onChange={(e) => setLiveClock(e.target.value)}
+        placeholder={`Clock, e.g. "43'"`}
+        className="w-28 bg-black border border-white/20 px-2 py-1 text-sm text-white focus:outline-none focus:border-brand-siren focus:ring-1 focus:ring-brand-siren/50 transition-colors duration-150"
       />
       <button
         disabled={status === "saving"}
@@ -219,7 +230,7 @@ function GameRow({
           )}
           {game.status === "LIVE" && (
             <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse align-middle">
-              ● Live
+              ● Live{game.liveClock ? ` ${game.liveClock}` : ""}
             </span>
           )}
         </div>

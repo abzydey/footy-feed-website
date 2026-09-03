@@ -59,7 +59,7 @@ function FixtureRow({ team, game }: { team: Team; game: Game }) {
         )}
         {game.status === "LIVE" && (
           <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse align-middle">
-            ● Live
+            ● Live{game.liveClock ? ` ${game.liveClock}` : ""}
           </span>
         )}
       </div>

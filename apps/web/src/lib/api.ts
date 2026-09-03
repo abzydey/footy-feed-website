@@ -54,6 +54,7 @@ export interface Game {
   status: "SCHEDULED" | "LIVE" | "FULL_TIME";
   homeScore: number | null;
   awayScore: number | null;
+  liveClock: string | null;
 }
 
 export interface TryScorer {
@@ -249,7 +250,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
-  adminSetLiveScore: (token: string, gameId: string, data: { homeScore: number; awayScore: number }) =>
+  adminSetLiveScore: (token: string, gameId: string, data: { homeScore: number; awayScore: number; liveClock?: string }) =>
     request<Game>(`/admin/games/${gameId}/live-score`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },

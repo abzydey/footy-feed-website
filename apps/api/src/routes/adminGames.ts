@@ -70,7 +70,7 @@ router.post("/:id/result", async (req, res) => {
 
   await prisma.$transaction([
     prisma.try.deleteMany({ where: { gameId: game.id } }),
-    prisma.game.update({ where: { id: game.id }, data: { homeScore, awayScore, status: "FULL_TIME" } }),
+    prisma.game.update({ where: { id: game.id }, data: { homeScore, awayScore, status: "FULL_TIME", liveClock: null } }),
     prisma.try.createMany({
       data: [
         ...homeTries.map((t) => ({ ...t, gameId: game.id, teamId: game.homeTeamId })),
@@ -94,6 +94,7 @@ router.post("/:id/result", async (req, res) => {
 const setLiveScoreSchema = z.object({
   homeScore: z.coerce.number().int().min(0),
   awayScore: z.coerce.number().int().min(0),
+  liveClock: z.string().max(30).optional(),
 });
 
 // POST /api/admin/games/:id/live-score — quick in-play score update, for an
@@ -108,7 +109,7 @@ router.post("/:id/live-score", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
-  const { homeScore, awayScore } = parsed.data;
+  const { homeScore, awayScore, liveClock } = parsed.data;
 
   const game = await prisma.game.findUnique({ where: { id: req.params.id } });
   if (!game) return res.status(404).json({ error: "Game not found" });
@@ -118,7 +119,7 @@ router.post("/:id/live-score", async (req, res) => {
 
   const updated = await prisma.game.update({
     where: { id: game.id },
-    data: { homeScore, awayScore, status: "LIVE" },
+    data: { homeScore, awayScore, liveClock: liveClock ?? null, status: "LIVE" },
     include: {
       homeTeam: { select: { id: true, name: true, shortName: true, slug: true } },
       awayTeam: { select: { id: true, name: true, shortName: true, slug: true } },

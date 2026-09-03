@@ -69,7 +69,7 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
               live ? "text-brand-siren bg-brand-siren/[.14] animate-pulse" : "text-brand-violet bg-brand-violet/[.14]"
             }`}
           >
-            {live ? "● Live" : countdown === "live" ? "Live" : `In ${countdown}`}
+            {live ? `● Live${game.liveClock ? ` · ${game.liveClock}` : ""}` : countdown === "live" ? "Live" : `In ${countdown}`}
           </span>
         </div>
 

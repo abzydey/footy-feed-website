@@ -86,10 +86,11 @@ function FinalScoreHero({ data }: { data: GameDetail }) {
 // captured at full-time. Siren red/pulsing dot to read as "happening now",
 // same visual language as the FINAL-stage team-list badge.
 function LiveScoreHero({ data }: { data: GameDetail }) {
+  const { liveClock } = data.game;
   return (
     <ScoreHero
       game={data.game}
-      eyebrow="● Live"
+      eyebrow={liveClock ? `● Live · ${liveClock}` : "● Live"}
       eyebrowClass="text-brand-siren animate-pulse"
     />
   );

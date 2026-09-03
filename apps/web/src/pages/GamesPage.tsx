@@ -126,7 +126,7 @@ export default function GamesPage() {
               <TeamBadge team={game.awayTeam} size="sm" />
               {game.status === "LIVE" && (
                 <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse">
-                  ● Live
+                  ● Live{game.liveClock ? ` ${game.liveClock}` : ""}
                 </span>
               )}
             </div>

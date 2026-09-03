@@ -211,6 +211,12 @@ model Game {
   homeScore Int?
   awayScore Int?
 
+  // Free text, not a structured minute/half — e.g. "43'" or "2nd half
+  // 70:24", however the admin reads it off the broadcast. Only ever set
+  // alongside a LIVE score update; cleared once FULL_TIME (the final score
+  // doesn't need a clock reading).
+  liveClock String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
