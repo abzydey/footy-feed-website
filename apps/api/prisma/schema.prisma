@@ -217,6 +217,14 @@ model Game {
   // doesn't need a clock reading).
   liveClock String?
 
+  // Set every time a LIVE score is written, by either source (admin's
+  // quick-update form or liveScorePoller.ts) — distinct from updatedAt,
+  // which changes on any field edit at all. This is what lets the admin
+  // panel show "last updated Xm ago" and flag a game whose auto-updates
+  // have gone quiet (source account missed it, stopped tweeting, etc.)
+  // rather than the score just looking current when it's actually stale.
+  liveScoreUpdatedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

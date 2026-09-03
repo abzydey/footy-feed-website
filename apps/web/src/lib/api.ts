@@ -55,6 +55,7 @@ export interface Game {
   homeScore: number | null;
   awayScore: number | null;
   liveClock: string | null;
+  liveScoreUpdatedAt: string | null;
 }
 
 export interface TryScorer {

@@ -9,6 +9,16 @@ interface TryRow {
 
 const emptyTryRow: TryRow = { scorer: "", minute: "" };
 
+// liveScoreUpdatedAt only moves when the score/clock genuinely changes (see
+// liveScorePoller.ts / adminGames.ts POST .../live-score) — not just
+// whenever the poller happens to run — so "no update in a while" reliably
+// means the source has gone quiet, not that the poller is idling normally.
+const STALE_AFTER_MIN = 12;
+
+function minutesSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+}
+
 function TrySection({
   label,
   rows,
@@ -243,6 +253,22 @@ function GameRow({
         </button>
       </div>
       {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
+      {game.status === "LIVE" &&
+        (game.liveScoreUpdatedAt ? (
+          (() => {
+            const mins = minutesSince(game.liveScoreUpdatedAt);
+            const stale = mins >= STALE_AFTER_MIN;
+            return (
+              <div className={`text-xs mt-0.5 ${stale ? "text-brand-siren font-bold" : "text-slate-500"}`}>
+                {stale ? "⚠ " : ""}
+                Last update {mins <= 0 ? "just now" : `${mins}m ago`}
+                {stale ? " — source may have gone quiet, check manually" : ""}
+              </div>
+            );
+          })()
+        ) : (
+          <div className="text-xs text-slate-500 mt-0.5">No auto-update yet — set manually below</div>
+        ))}
       {!finished && <LiveScoreForm token={token} game={game} onSaved={onSaved} />}
       {expanded && <ResultForm token={token} game={game} onSaved={onSaved} />}
     </div>

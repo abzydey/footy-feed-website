@@ -70,7 +70,10 @@ router.post("/:id/result", async (req, res) => {
 
   await prisma.$transaction([
     prisma.try.deleteMany({ where: { gameId: game.id } }),
-    prisma.game.update({ where: { id: game.id }, data: { homeScore, awayScore, status: "FULL_TIME", liveClock: null } }),
+    prisma.game.update({
+      where: { id: game.id },
+      data: { homeScore, awayScore, status: "FULL_TIME", liveClock: null, liveScoreUpdatedAt: null },
+    }),
     prisma.try.createMany({
       data: [
         ...homeTries.map((t) => ({ ...t, gameId: game.id, teamId: game.homeTeamId })),
@@ -119,7 +122,7 @@ router.post("/:id/live-score", async (req, res) => {
 
   const updated = await prisma.game.update({
     where: { id: game.id },
-    data: { homeScore, awayScore, liveClock: liveClock ?? null, status: "LIVE" },
+    data: { homeScore, awayScore, liveClock: liveClock ?? null, status: "LIVE", liveScoreUpdatedAt: new Date() },
     include: {
       homeTeam: { select: { id: true, name: true, shortName: true, slug: true } },
       awayTeam: { select: { id: true, name: true, shortName: true, slug: true } },

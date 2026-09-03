@@ -113,27 +113,57 @@ export async function pollLiveScores(): Promise<void> {
         const homeSlug = game.homeTeam.slug;
         const awaySlug = game.awayTeam.slug;
 
-        // Tweets come back newest-first — the first one that mentions both
-        // of this game's teams with a valid score pair is the latest known
-        // state, so later (older) tweets for the same game are ignored.
-        const latest = timeline.tweets
+        // Picking the tweet with the HIGHEST combined score, not just the
+        // most recently posted one — real data from tonight's match showed
+        // the live-blogger doesn't always tweet in strict order (a "69'
+        // conversion" landed a tweet before its own "68' try"), and a fetch
+        // window/pagination gap could just as easily mean the true latest
+        // tweet isn't even in this batch. A rugby league score only ever
+        // goes up during play, so the highest total seen among candidates
+        // is the most trustworthy read regardless of posting order.
+        const candidatesForGame = timeline.tweets
           .map((t) => parseScoreTweet(t.text))
-          .find((parsed) => parsed && parsed.scoreBySlug.has(homeSlug) && parsed.scoreBySlug.has(awaySlug));
-        if (!latest) continue;
+          .filter(
+            (parsed): parsed is ParsedScoreTweet =>
+              parsed !== null && parsed.scoreBySlug.has(homeSlug) && parsed.scoreBySlug.has(awaySlug)
+          );
+        if (candidatesForGame.length === 0) continue;
 
-        const homeScore = latest.scoreBySlug.get(homeSlug)!;
-        const awayScore = latest.scoreBySlug.get(awaySlug)!;
-        if (game.homeScore === homeScore && game.awayScore === awayScore && game.liveClock === latest.minute) {
+        const best = candidatesForGame.reduce((a, b) => {
+          const totalA = a.scoreBySlug.get(homeSlug)! + a.scoreBySlug.get(awaySlug)!;
+          const totalB = b.scoreBySlug.get(homeSlug)! + b.scoreBySlug.get(awaySlug)!;
+          return totalB > totalA ? b : a;
+        });
+
+        const homeScore = best.scoreBySlug.get(homeSlug)!;
+        const awayScore = best.scoreBySlug.get(awaySlug)!;
+
+        if (game.homeScore === homeScore && game.awayScore === awayScore && game.liveClock === best.minute) {
           continue; // already reflects this state — no-op update avoided
+        }
+
+        // Never let an automated update move the score backward — a
+        // legitimate try-overturned correction is rare but real in rugby
+        // league, and this poll's batch could always be missing the tweet
+        // that actually explains a genuine drop. Safer to leave a
+        // possibly-stale-but-correct score up and let a human apply a real
+        // correction via the manual live-score form than to silently
+        // regress the public-facing score automatically.
+        if ((game.homeScore ?? 0) > homeScore || (game.awayScore ?? 0) > awayScore) {
+          console.warn(
+            `[liveScorePoller] refusing to regress ${game.homeTeam.shortName} vs ${game.awayTeam.shortName}: ` +
+              `stored ${game.homeScore}-${game.awayScore}, parsed ${homeScore}-${awayScore} — leaving as-is, check manually if this is a real correction`
+          );
+          continue;
         }
 
         await prisma.game.update({
           where: { id: game.id },
-          data: { homeScore, awayScore, liveClock: latest.minute, status: "LIVE" },
+          data: { homeScore, awayScore, liveClock: best.minute, status: "LIVE", liveScoreUpdatedAt: new Date() },
         });
         console.log(
           `[liveScorePoller] ${game.homeTeam.shortName} ${homeScore}-${awayScore} ${game.awayTeam.shortName}${
-            latest.minute ? ` (${latest.minute})` : ""
+            best.minute ? ` (${best.minute})` : ""
           } — from @${username}`
         );
       }
