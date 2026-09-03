@@ -26,6 +26,12 @@ interface NumberedPlayer {
   name: string;
 }
 
+interface ParsedTeamList {
+  starters: NumberedPlayer[];
+  bench: NumberedPlayer[];
+  reserves: NumberedPlayer[];
+}
+
 // Matches "14. Blake Mozer" style tokens wherever they appear in a team-list
 // body — including right after a "Bench:"/"Reserves:" label, since those are
 // followed by the same "N. Name" pattern. Requires the digits to be
@@ -35,10 +41,40 @@ interface NumberedPlayer {
 // naturally parses to zero entries rather than a broken partial table.
 const NUMBERED_PLAYER = /(\d{1,2})\.\s*([^,.]+?)(?=,|\.|$)/g;
 
-function parseTeamList(body: string): NumberedPlayer[] | null {
-  const matches = [...body.matchAll(NUMBERED_PLAYER)];
-  if (matches.length < 10) return null; // doesn't look like a full team sheet — render as plain text instead
-  return matches.map((m) => ({ number: Number(m[1]), name: m[2].trim() }));
+function extractPlayers(segment: string): NumberedPlayer[] {
+  return [...segment.matchAll(NUMBERED_PLAYER)].map((m) => ({ number: Number(m[1]), name: m[2].trim() }));
+}
+
+// Splits into starters/bench/reserves by the "Bench:"/"Reserves:" section
+// labels admin entries always use, rather than by jersey number range — a
+// number alone doesn't reliably say which tier a player's actually in (a
+// starter dropping back to interchange keeps their real number rather than
+// being renumbered into the 14-19 range, and a special tribute jersey like
+// a one-off No.23 for a milestone game shouldn't get shuffled into
+// "Reserves" just because 23 is a high number).
+function parseTeamList(body: string): ParsedTeamList | null {
+  const totalMatches = [...body.matchAll(NUMBERED_PLAYER)];
+  if (totalMatches.length < 10) return null; // doesn't look like a full team sheet — render as plain text instead
+
+  const benchIdx = body.indexOf("Bench:");
+  const reservesIdx = body.indexOf("Reserves:");
+
+  if (benchIdx === -1) {
+    // No section labels present — fall back to the old number-range
+    // bucketing so a body without them still renders sensibly.
+    const players = totalMatches.map((m) => ({ number: Number(m[1]), name: m[2].trim() }));
+    return {
+      starters: players.filter((p) => p.number <= 13),
+      bench: players.filter((p) => p.number >= 14 && p.number <= 19),
+      reserves: players.filter((p) => p.number >= 20),
+    };
+  }
+
+  return {
+    starters: extractPlayers(body.slice(0, benchIdx)),
+    bench: extractPlayers(reservesIdx === -1 ? body.slice(benchIdx) : body.slice(benchIdx, reservesIdx)),
+    reserves: reservesIdx === -1 ? [] : extractPlayers(body.slice(reservesIdx)),
+  };
 }
 
 // Pulls the comma-separated names out of a 24hr/Final update's "Omitted
@@ -158,21 +194,17 @@ function PlayerColumn({
 // change blurb ("Jed Reardon replaces Jack Underhill on the bench") doesn't
 // parse into numbered entries (see parseTeamList) and just renders as-is.
 function TeamListBody({ body, omittedNames }: { body: string; omittedNames: Set<string> }) {
-  const players = parseTeamList(body);
-  if (!players) {
+  const parsed = parseTeamList(body);
+  if (!parsed) {
     return <p className="text-slate-300 text-sm leading-relaxed mt-1.5">{body}</p>;
   }
 
-  const starters = players.filter((p) => p.number <= 13);
-  const bench = players.filter((p) => p.number >= 14 && p.number <= 19);
-  const reserves = players.filter((p) => p.number >= 20);
-
   return (
     <div className="grid grid-cols-2 gap-x-3 mt-1.5">
-      <PlayerColumn label="Starters" players={starters} omittedNames={omittedNames} />
+      <PlayerColumn label="Starters" players={parsed.starters} omittedNames={omittedNames} />
       <div className="space-y-2">
-        <PlayerColumn label="Bench" players={bench} omittedNames={omittedNames} />
-        <PlayerColumn label="Reserves" players={reserves} omittedNames={omittedNames} />
+        <PlayerColumn label="Bench" players={parsed.bench} omittedNames={omittedNames} />
+        <PlayerColumn label="Reserves" players={parsed.reserves} omittedNames={omittedNames} />
       </div>
     </div>
   );
