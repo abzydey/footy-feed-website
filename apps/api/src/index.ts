@@ -26,6 +26,7 @@ import adminPlayersRouter from "./routes/adminPlayers";
 import sitemapRouter from "./routes/sitemap";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
+import { startLiveScorePolling } from "./lib/liveScorePoller";
 
 const app = express();
 
@@ -82,4 +83,5 @@ app.listen(port, () => {
   console.log(`Full Set API listening on http://localhost:${port}`);
   startTwitterPoller();
   startPodcastDiscoveryPoller();
+  startLiveScorePolling();
 });
