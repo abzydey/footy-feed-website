@@ -27,6 +27,7 @@ import sitemapRouter from "./routes/sitemap";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
+import { startEpisodeAutoPolling } from "./lib/episodeAutoPoller";
 
 const app = express();
 
@@ -84,4 +85,5 @@ app.listen(port, () => {
   startTwitterPoller();
   startPodcastDiscoveryPoller();
   startLiveScorePolling();
+  startEpisodeAutoPolling();
 });

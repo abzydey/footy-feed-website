@@ -311,7 +311,7 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
-  trackPageView: (page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder") =>
+  trackPageView: (page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder" | "highlights") =>
     request(`/pageviews`, { method: "POST", body: JSON.stringify({ page }) }),
   adminGetStats: (token: string) =>
     request<AdminStats>(`/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),

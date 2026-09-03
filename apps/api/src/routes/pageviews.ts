@@ -11,7 +11,7 @@ const router = Router();
 // the site as the user thinks of it, not a literal URL (e.g. a team detail
 // page counts under "teams"). See web/src/App.tsx for where each route maps
 // to one of these labels.
-export const PAGES = ["home", "news", "teams", "games", "team-lists", "ladder", "social", "podcasts"] as const;
+export const PAGES = ["home", "news", "teams", "games", "team-lists", "ladder", "social", "podcasts", "highlights"] as const;
 
 const pageViewSchema = z.object({
   page: z.enum(PAGES),

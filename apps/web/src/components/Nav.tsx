@@ -40,6 +40,9 @@ export default function Nav() {
         <NavLink to="/podcasts" className={linkClass}>
           Podcasts
         </NavLink>
+        <NavLink to="/highlights" className={linkClass}>
+          Highlights
+        </NavLink>
         <NavLink to="/search" className={linkClass}>
           What's Been Said
         </NavLink>
