@@ -50,7 +50,18 @@ const HANDLE_TO_TEAM_SLUG: Record<string, string> = {
 interface ParsedScoreTweet {
   minute: string | null;
   scoreBySlug: Map<string, number>;
+  isReversal: boolean;
 }
+
+// Confirmed against real NRL tweets (not guessed) — "try disallowed",
+// "overturned", and "no try" all appear verbatim in genuine live-commentary
+// posts about a bunker/video-referee decision. Deliberately narrow: this
+// only ever grants an EXCEPTION to the never-decrease guard below, so a
+// false negative (missing a real reversal) just falls back to the safe
+// default of holding the higher score — a false positive would let a
+// score regress on a tweet that wasn't really a correction, which is the
+// actual failure mode worth avoiding.
+const REVERSAL_LANGUAGE = /\b(overturned|disallowed|no try|bunker overturns)\b/i;
 
 // Matches lines like "@NRL_Bulldogs 20" — every scoring-event tweet from
 // the tracked live-blog account carries exactly two of these (one per
@@ -81,7 +92,27 @@ export function parseScoreTweet(text: string): ParsedScoreTweet | null {
   if (scoreBySlug.size !== 2) return null; // same team mentioned twice, or some other malformed case
 
   const minuteMatch = text.match(/^(\d{1,3}')/);
-  return { minute: minuteMatch ? minuteMatch[1] : null, scoreBySlug };
+  return { minute: minuteMatch ? minuteMatch[1] : null, scoreBySlug, isReversal: REVERSAL_LANGUAGE.test(text) };
+}
+
+// Decides which of a game's candidate tweets (newest-first order) to trust
+// as the current score. Default: highest combined score wins, regardless
+// of posting order (see design note in pollLiveScores below on why —
+// real tweets showed posting order can't be trusted). Exception: if the
+// single most recently posted candidate uses explicit reversal language,
+// it's trusted directly even if its score is lower — only the newest
+// candidate gets this power, so a reversal followed by a later ordinary
+// try still resolves via the normal highest-score rule, same as real play
+// resuming after a call is confirmed.
+export function chooseTweet(candidates: ParsedScoreTweet[], homeSlug: string, awaySlug: string): ParsedScoreTweet {
+  const mostRecent = candidates[0];
+  if (mostRecent.isReversal) return mostRecent;
+
+  return candidates.reduce((a, b) => {
+    const totalA = a.scoreBySlug.get(homeSlug)! + a.scoreBySlug.get(awaySlug)!;
+    const totalB = b.scoreBySlug.get(homeSlug)! + b.scoreBySlug.get(awaySlug)!;
+    return totalB > totalA ? b : a;
+  });
 }
 
 export async function pollLiveScores(): Promise<void> {
@@ -113,14 +144,9 @@ export async function pollLiveScores(): Promise<void> {
         const homeSlug = game.homeTeam.slug;
         const awaySlug = game.awayTeam.slug;
 
-        // Picking the tweet with the HIGHEST combined score, not just the
-        // most recently posted one — real data from tonight's match showed
-        // the live-blogger doesn't always tweet in strict order (a "69'
-        // conversion" landed a tweet before its own "68' try"), and a fetch
-        // window/pagination gap could just as easily mean the true latest
-        // tweet isn't even in this batch. A rugby league score only ever
-        // goes up during play, so the highest total seen among candidates
-        // is the most trustworthy read regardless of posting order.
+        // Newest-first, same order the timeline came back in — preserved
+        // through the filter, so candidatesForGame[0] is the most recently
+        // POSTED tweet about this game (not necessarily the highest score).
         const candidatesForGame = timeline.tweets
           .map((t) => parseScoreTweet(t.text))
           .filter(
@@ -129,41 +155,42 @@ export async function pollLiveScores(): Promise<void> {
           );
         if (candidatesForGame.length === 0) continue;
 
-        const best = candidatesForGame.reduce((a, b) => {
-          const totalA = a.scoreBySlug.get(homeSlug)! + a.scoreBySlug.get(awaySlug)!;
-          const totalB = b.scoreBySlug.get(homeSlug)! + b.scoreBySlug.get(awaySlug)!;
-          return totalB > totalA ? b : a;
-        });
+        const chosen = chooseTweet(candidatesForGame, homeSlug, awaySlug);
+        const homeScore = chosen.scoreBySlug.get(homeSlug)!;
+        const awayScore = chosen.scoreBySlug.get(awaySlug)!;
 
-        const homeScore = best.scoreBySlug.get(homeSlug)!;
-        const awayScore = best.scoreBySlug.get(awaySlug)!;
-
-        if (game.homeScore === homeScore && game.awayScore === awayScore && game.liveClock === best.minute) {
+        if (game.homeScore === homeScore && game.awayScore === awayScore && game.liveClock === chosen.minute) {
           continue; // already reflects this state — no-op update avoided
         }
 
-        // Never let an automated update move the score backward — a
-        // legitimate try-overturned correction is rare but real in rugby
-        // league, and this poll's batch could always be missing the tweet
-        // that actually explains a genuine drop. Safer to leave a
-        // possibly-stale-but-correct score up and let a human apply a real
-        // correction via the manual live-score form than to silently
-        // regress the public-facing score automatically.
-        if ((game.homeScore ?? 0) > homeScore || (game.awayScore ?? 0) > awayScore) {
+        // Never let an automated update move the score backward UNLESS the
+        // chosen tweet is the explicit reversal exception above — this poll
+        // batch could always be missing the tweet that actually explains a
+        // genuine drop, so an unexplained decrease is safer left for a
+        // human to apply via the manual live-score form than regressed
+        // automatically.
+        const isRegression = (game.homeScore ?? 0) > homeScore || (game.awayScore ?? 0) > awayScore;
+        if (isRegression && !chosen.isReversal) {
           console.warn(
             `[liveScorePoller] refusing to regress ${game.homeTeam.shortName} vs ${game.awayTeam.shortName}: ` +
               `stored ${game.homeScore}-${game.awayScore}, parsed ${homeScore}-${awayScore} — leaving as-is, check manually if this is a real correction`
           );
           continue;
         }
+        if (isRegression && chosen.isReversal) {
+          console.log(
+            `[liveScorePoller] applying score DECREASE for ${game.homeTeam.shortName} vs ${game.awayTeam.shortName} ` +
+              `(${game.homeScore}-${game.awayScore} -> ${homeScore}-${awayScore}) — reversal language matched in the tweet`
+          );
+        }
 
         await prisma.game.update({
           where: { id: game.id },
-          data: { homeScore, awayScore, liveClock: best.minute, status: "LIVE", liveScoreUpdatedAt: new Date() },
+          data: { homeScore, awayScore, liveClock: chosen.minute, status: "LIVE", liveScoreUpdatedAt: new Date() },
         });
         console.log(
           `[liveScorePoller] ${game.homeTeam.shortName} ${homeScore}-${awayScore} ${game.awayTeam.shortName}${
-            best.minute ? ` (${best.minute})` : ""
+            chosen.minute ? ` (${chosen.minute})` : ""
           } — from @${username}`
         );
       }
