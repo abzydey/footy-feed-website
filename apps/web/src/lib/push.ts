@@ -26,20 +26,40 @@ export async function enablePushNotifications(): Promise<string | null> {
   }
   if (!("Notification" in window)) return null;
 
-  const permission = await Notification.requestPermission();
+  // Only prompt when permission genuinely hasn't been decided yet.
+  // Notification.requestPermission() technically re-resolves with the
+  // current value either way, but reading Notification.permission directly
+  // first means a permission already granted via the browser's own site
+  // settings (bypassing our button entirely) is picked up immediately,
+  // without depending on requestPermission()'s behavior in that case.
+  let permission = Notification.permission;
+  if (permission === "default") {
+    permission = await Notification.requestPermission();
+  }
   if (permission !== "granted") return null;
 
   const messaging = getFirebaseMessaging();
   if (!messaging) return null;
 
-  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-  const token = await getToken(messaging, {
-    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-    serviceWorkerRegistration: registration,
-  });
-
-  if (token) localStorage.setItem(FCM_TOKEN_KEY, token);
-  return token ?? null;
+  // getToken() can throw (blocked push service, stale service worker
+  // registration, VAPID key mismatch, etc.) — previously uncaught here,
+  // which for most failures would surface as the Firebase SDK's own error
+  // message. But a browser that silently fails registration (some Android
+  // Chrome + push-service edge cases) can leave this rejecting with a
+  // generic/unhelpful error too, so log the real cause either way instead
+  // of only ever showing the caller's own generic fallback message.
+  try {
+    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const token = await getToken(messaging, {
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+    if (token) localStorage.setItem(FCM_TOKEN_KEY, token);
+    return token ?? null;
+  } catch (err) {
+    console.error("[push] enablePushNotifications failed after permission was granted:", err);
+    return null;
+  }
 }
 
 /** Follow a team, player, or the general NRL news category — requesting push permission first if needed. */
@@ -49,7 +69,18 @@ export async function followTarget(targetType: "TEAM" | "PLAYER" | "LEAGUE", tar
     token = await enablePushNotifications();
   }
   if (!token) {
-    throw new Error("Enable notifications in your browser to follow this.");
+    // Notification.permission is checked directly here (not just whether we
+    // have a cached token) so the message reflects reality: if permission is
+    // already granted, the real failure is upstream (Firebase/service worker
+    // — now logged to the console by enablePushNotifications) and telling
+    // someone to "enable notifications" when they already have is actively
+    // wrong, not just unhelpful.
+    const permission = "Notification" in window ? Notification.permission : "denied";
+    throw new Error(
+      permission === "granted"
+        ? "Notifications are enabled, but something went wrong setting them up. Please try again."
+        : "Enable notifications in your browser to follow this."
+    );
   }
   return api.follow(token, targetType, targetId);
 }
