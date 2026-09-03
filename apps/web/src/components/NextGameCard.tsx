@@ -49,6 +49,7 @@ interface FixtureCardProps {
 
 function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, onOpen }: FixtureCardProps) {
   const countdown = formatCountdown(game.kickoffAt);
+  const live = game.status === "LIVE";
 
   return (
     <div
@@ -63,14 +64,24 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
           <span className="font-display font-bold text-[12.5px] tracking-[.16em] text-white/50 uppercase">
             {game.round} · {label}
           </span>
-          <span className="flex items-center gap-[5px] text-[11px] font-bold tracking-[.06em] text-brand-violet bg-brand-violet/[.14] px-2 py-1 rounded-full uppercase">
-            {countdown === "live" ? "Live" : `In ${countdown}`}
+          <span
+            className={`flex items-center gap-[5px] text-[11px] font-bold tracking-[.06em] px-2 py-1 rounded-full uppercase ${
+              live ? "text-brand-siren bg-brand-siren/[.14] animate-pulse" : "text-brand-violet bg-brand-violet/[.14]"
+            }`}
+          >
+            {live ? "● Live" : countdown === "live" ? "Live" : `In ${countdown}`}
           </span>
         </div>
 
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[10px]">
           <TeamColumn team={game.homeTeam} record={recordFor(game.homeTeam.id)} />
-          <span className="font-display font-bold text-[15px] tracking-[.1em] text-white/34">VS</span>
+          {live ? (
+            <span className="font-display font-extrabold text-xl tabular-nums text-white whitespace-nowrap">
+              {game.homeScore}&ndash;{game.awayScore}
+            </span>
+          ) : (
+            <span className="font-display font-bold text-[15px] tracking-[.1em] text-white/34">VS</span>
+          )}
           <TeamColumn team={game.awayTeam} record={recordFor(game.awayTeam.id)} />
         </div>
 
@@ -129,14 +140,24 @@ export default function NextGameCard() {
     return () => clearInterval(id);
   }, []);
 
+  // A LIVE game keeps a past kickoffAt (see schema.prisma GameStatus design
+  // note), so filtering by "kickoffAt > now" alone silently drops it off
+  // this carousel the moment kickoff passes — fixed by keeping any LIVE
+  // game regardless of its kickoff time, sorted ahead of merely-upcoming
+  // ones so it's the first thing shown.
+  function byLiveThenSoonest(a: Game, b: Game) {
+    if ((a.status === "LIVE") !== (b.status === "LIVE")) return a.status === "LIVE" ? -1 : 1;
+    return new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime();
+  }
+
   const fixtures = useMemo(() => {
     if (!allGames) return null;
     const now = Date.now();
-    const next = allGames.find((g) => new Date(g.kickoffAt).getTime() > now);
-    if (!next) return [];
-    return allGames
-      .filter((g) => g.round === next.round && new Date(g.kickoffAt).getTime() > now)
-      .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+    const isRelevant = (g: Game) => g.status === "LIVE" || new Date(g.kickoffAt).getTime() > now;
+    const relevant = allGames.filter(isRelevant).sort(byLiveThenSoonest);
+    if (relevant.length === 0) return [];
+    const anchorRound = relevant[0].round;
+    return allGames.filter((g) => g.round === anchorRound && isRelevant(g)).sort(byLiveThenSoonest);
   }, [allGames]);
 
   function handleScroll() {
@@ -174,7 +195,7 @@ export default function NextGameCard() {
           <FixtureCard
             key={game.id}
             game={game}
-            label={i === 0 ? "Next up" : `Up next +${i}`}
+            label={game.status === "LIVE" ? "Live now" : i === 0 ? "Next up" : `Up next +${i}`}
             recordFor={recordFor}
             reminderSet={!!reminders[game.id]}
             onToggleReminder={(e) => toggleReminder(e, game.id)}
