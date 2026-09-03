@@ -92,17 +92,19 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
             <div className="text-[13.5px] font-bold text-white">{formatKickoff(game.kickoffAt)}</div>
             {game.venue && <div className="text-[11.5px] font-medium text-white/45 mt-0.5">{game.venue}</div>}
           </div>
-          <button
-            type="button"
-            onClick={onToggleReminder}
-            className={
-              reminderSet
-                ? "shrink-0 flex items-center gap-1.5 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 border border-white/25 text-white transition-all duration-150 active:scale-95"
-                : "shrink-0 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app hover:bg-[#DCD2FF] transition-all duration-150 active:scale-95"
-            }
-          >
-            {reminderSet ? "✓ Reminder set" : "Set reminder"}
-          </button>
+          {!live && (
+            <button
+              type="button"
+              onClick={onToggleReminder}
+              className={
+                reminderSet
+                  ? "shrink-0 flex items-center gap-1.5 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 border border-white/25 text-white transition-all duration-150 active:scale-95"
+                  : "shrink-0 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app hover:bg-[#DCD2FF] transition-all duration-150 active:scale-95"
+              }
+            >
+              {reminderSet ? "✓ Reminder set" : "Set reminder"}
+            </button>
+          )}
         </div>
       </div>
     </div>
