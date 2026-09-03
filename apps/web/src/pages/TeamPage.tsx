@@ -33,13 +33,13 @@ function formatKickoff(iso: string) {
   });
 }
 
-/** One row of a team's own fixture list — opponent, home/away, date, venue, and the score once finished. */
+/** One row of a team's own fixture list — opponent, home/away, date, venue, and the score once available. */
 function FixtureRow({ team, game }: { team: Team; game: Game }) {
   const isHome = game.homeTeam.id === team.id;
   const opponent = isHome ? game.awayTeam : game.homeTeam;
-  const finished = game.homeScore != null && game.awayScore != null;
-  const ownScore = finished ? (isHome ? game.homeScore : game.awayScore) : null;
-  const oppScore = finished ? (isHome ? game.awayScore : game.homeScore) : null;
+  const hasScore = game.status !== "SCHEDULED";
+  const ownScore = hasScore ? (isHome ? game.homeScore : game.awayScore) : null;
+  const oppScore = hasScore ? (isHome ? game.awayScore : game.homeScore) : null;
 
   return (
     <Link
@@ -52,9 +52,14 @@ function FixtureRow({ team, game }: { team: Team; game: Game }) {
       </div>
       <div className="font-display font-extrabold text-lg text-white tracking-tight">
         {isHome ? "vs" : "@"} {opponent.shortName}
-        {finished && (
+        {hasScore && (
           <span className="ml-2 text-slate-300 font-semibold text-base">
             {ownScore}–{oppScore}
+          </span>
+        )}
+        {game.status === "LIVE" && (
+          <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse align-middle">
+            ● Live
           </span>
         )}
       </div>
@@ -138,15 +143,15 @@ export default function TeamPage() {
   // LINEUP_CHANGE belongs to — is finished) but this team's next INITIAL
   // list hasn't landed yet, so the card below is showing real but historical
   // data. Only true once a next fixture actually exists — see routes/teams.ts.
-  const isStaleTeamList = currentGame?.homeScore != null && nextFixture != null;
+  const isStaleTeamList = currentGame?.status === "FULL_TIME" && nextFixture != null;
   const nextOpponent = nextFixture && (nextFixture.homeTeam.id === team.id ? nextFixture.awayTeam : nextFixture.homeTeam);
 
   const teamGames = (allGames ?? []).filter((g) => g.homeTeam.id === team.id || g.awayTeam.id === team.id);
   const upcomingGames = teamGames
-    .filter((g) => g.homeScore == null)
+    .filter((g) => g.status === "SCHEDULED")
     .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
   const pastGames = teamGames
-    .filter((g) => g.homeScore != null)
+    .filter((g) => g.status !== "SCHEDULED")
     .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime());
 
   const lastResult = (() => {

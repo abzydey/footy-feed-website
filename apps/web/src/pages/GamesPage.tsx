@@ -113,10 +113,22 @@ export default function GamesPage() {
             <div className="flex items-center gap-2.5">
               <TeamBadge team={game.homeTeam} size="sm" />
               <div className="font-display font-extrabold text-lg sm:text-xl text-white tracking-tight">
-                {game.homeTeam.shortName} <span className="text-slate-500 font-normal">vs</span>{" "}
+                {game.homeTeam.shortName}{" "}
+                {game.status === "SCHEDULED" ? (
+                  <span className="text-slate-500 font-normal">vs</span>
+                ) : (
+                  <span className="tabular-nums">
+                    {game.homeScore}&ndash;{game.awayScore}
+                  </span>
+                )}{" "}
                 {game.awayTeam.shortName}
               </div>
               <TeamBadge team={game.awayTeam} size="sm" />
+              {game.status === "LIVE" && (
+                <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse">
+                  ● Live
+                </span>
+              )}
             </div>
             {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
           </Link>

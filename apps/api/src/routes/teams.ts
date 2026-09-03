@@ -66,8 +66,7 @@ router.get("/:slug", async (req, res) => {
   const lastGame = await prisma.game.findFirst({
     where: {
       OR: [{ homeTeamId: team.id }, { awayTeamId: team.id }],
-      homeScore: { not: null },
-      awayScore: { not: null },
+      status: "FULL_TIME",
     },
     orderBy: { kickoffAt: "desc" },
     include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },

@@ -178,21 +178,36 @@ model LadderMeta {
 // entity Events optionally link to, not a replacement for team pages.
 // ---------------------------------------------------------------------------
 
+// SCHEDULED -> LIVE -> FULL_TIME. LIVE was added after discovering the
+// original null/non-null-score design (see homeScore/awayScore below)
+// couldn't distinguish "final result logged" from "current in-play score
+// being tracked" — both left scores non-null, so setting a live score would
+// have silently flipped a game to "finished" on the game page. A LIVE score
+// is set via POST /:id/live-score (admin quickly updates it during the
+// match from live coverage elsewhere — see CONTRIBUTING-news.md-adjacent
+// admin workflow, not an automated feed); the true final result still goes
+// through POST /:id/result, which is what actually sets FULL_TIME.
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  FULL_TIME
+}
+
 model Game {
-  id         String   @id @default(cuid())
+  id         String     @id @default(cuid())
   homeTeamId String
-  homeTeam   Team     @relation("HomeGames", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  homeTeam   Team       @relation("HomeGames", fields: [homeTeamId], references: [id], onDelete: Cascade)
   awayTeamId String
-  awayTeam   Team     @relation("AwayGames", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  awayTeam   Team       @relation("AwayGames", fields: [awayTeamId], references: [id], onDelete: Cascade)
   round      String // free text — "Round 14", "Grand Final" — not every round is numbered
   kickoffAt  DateTime
   venue      String? // e.g. "Suncorp Stadium" — optional, admin-entered
 
-  // A game is "finished" once both scores are set (see routes/adminGames.ts
-  // POST /:id/result) — the game page switches from the upcoming-fixture
-  // view to a final scoreline + try list. Null/null, not a separate status
-  // enum, since "has a result" already fully captures the state and avoids
-  // it drifting out of sync with the scores themselves.
+  status GameStatus @default(SCHEDULED)
+
+  // Meaningful once status is LIVE or FULL_TIME — null while SCHEDULED.
+  // status is the source of truth for "is this finished", not these being
+  // non-null (a LIVE game has non-null scores too, mid-match).
   homeScore Int?
   awayScore Int?
 

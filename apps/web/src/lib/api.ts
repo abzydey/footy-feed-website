@@ -51,6 +51,7 @@ export interface Game {
   venue: string | null;
   homeTeam: Team;
   awayTeam: Team;
+  status: "SCHEDULED" | "LIVE" | "FULL_TIME";
   homeScore: number | null;
   awayScore: number | null;
 }
@@ -244,6 +245,12 @@ export const api = {
     }
   ) =>
     request<Game>(`/admin/games/${gameId}/result`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+  adminSetLiveScore: (token: string, gameId: string, data: { homeScore: number; awayScore: number }) =>
+    request<Game>(`/admin/games/${gameId}/live-score`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),

@@ -134,6 +134,61 @@ function ResultForm({ token, game, onSaved }: { token: string; game: Game; onSav
   );
 }
 
+// Quick in-play score update — deliberately just two number fields and a
+// button, no tries, so it's fast to punch in every so often during a match
+// from live coverage elsewhere. Hits POST .../live-score (sets status LIVE,
+// never FULL_TIME — only ResultForm below can finish a game), separate from
+// ResultForm's full result-with-tries flow for the true final score.
+function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; onSaved: () => void }) {
+  const [homeScore, setHomeScore] = useState(game.homeScore != null ? String(game.homeScore) : "");
+  const [awayScore, setAwayScore] = useState(game.awayScore != null ? String(game.awayScore) : "");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setStatus("saving");
+    try {
+      await api.adminSetLiveScore(token, game.id, { homeScore: Number(homeScore), awayScore: Number(awayScore) });
+      setStatus("saved");
+      onSaved();
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Failed to save.");
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-1.5 mt-2">
+      <input
+        value={homeScore}
+        onChange={(e) => setHomeScore(e.target.value)}
+        required
+        inputMode="numeric"
+        placeholder={game.homeTeam.shortName}
+        className="w-16 bg-black border border-white/20 px-2 py-1 text-sm text-white focus:outline-none focus:border-brand-siren focus:ring-1 focus:ring-brand-siren/50 transition-colors duration-150"
+      />
+      <span className="text-slate-500">–</span>
+      <input
+        value={awayScore}
+        onChange={(e) => setAwayScore(e.target.value)}
+        required
+        inputMode="numeric"
+        placeholder={game.awayTeam.shortName}
+        className="w-16 bg-black border border-white/20 px-2 py-1 text-sm text-white focus:outline-none focus:border-brand-siren focus:ring-1 focus:ring-brand-siren/50 transition-colors duration-150"
+      />
+      <button
+        disabled={status === "saving"}
+        className="bg-brand-siren hover:bg-brand-siren/90 disabled:opacity-60 text-white font-bold px-3 py-1 text-xs transition-all duration-150 active:scale-[0.98]"
+      >
+        {status === "saving" ? "Updating…" : "● Update live"}
+      </button>
+      {status === "error" && <span className="text-brand-siren text-xs">{error ?? "Failed to save."}</span>}
+    </form>
+  );
+}
+
 function GameRow({
   game,
   token,
@@ -147,7 +202,7 @@ function GameRow({
   onToggle: () => void;
   onSaved: () => void;
 }) {
-  const finished = game.homeScore != null && game.awayScore != null;
+  const finished = game.status === "FULL_TIME";
   return (
     <div className="border-b border-white/10 py-3 text-sm">
       <div className="flex justify-between text-xs text-slate-500">
@@ -157,9 +212,14 @@ function GameRow({
       <div className="flex items-center justify-between gap-2">
         <div className="text-white font-bold">
           {game.homeTeam.shortName} vs {game.awayTeam.shortName}
-          {finished && (
+          {game.status !== "SCHEDULED" && (
             <span className="ml-2 text-slate-300 font-semibold">
               {game.homeScore}–{game.awayScore}
+            </span>
+          )}
+          {game.status === "LIVE" && (
+            <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-brand-siren animate-pulse align-middle">
+              ● Live
             </span>
           )}
         </div>
@@ -172,6 +232,7 @@ function GameRow({
         </button>
       </div>
       {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
+      {!finished && <LiveScoreForm token={token} game={game} onSaved={onSaved} />}
       {expanded && <ResultForm token={token} game={game} onSaved={onSaved} />}
     </div>
   );
@@ -294,16 +355,37 @@ export default function GameForm({ token }: { token: string }) {
       </form>
 
       {(() => {
-        const upcoming = games.filter((g) => g.homeScore == null);
+        const upcoming = games.filter((g) => g.status === "SCHEDULED");
+        const live = games.filter((g) => g.status === "LIVE");
         // Most recent first — the opposite of Upcoming's soonest-first order,
         // since for a finished game the recent ones are what you're most
         // likely checking on, not the oldest.
         const finished = games
-          .filter((g) => g.homeScore != null)
+          .filter((g) => g.status === "FULL_TIME")
           .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime());
 
         return (
           <>
+            {live.length > 0 && (
+              <section>
+                <h2 className="text-xs font-bold text-brand-siren uppercase tracking-wider mb-2">
+                  ● Live ({live.length})
+                </h2>
+                <div>
+                  {live.map((game) => (
+                    <GameRow
+                      key={game.id}
+                      game={game}
+                      token={token}
+                      expanded={resultGameId === game.id}
+                      onToggle={() => setResultGameId(resultGameId === game.id ? null : game.id)}
+                      onSaved={refreshGames}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section>
               <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-2">
                 Upcoming ({upcoming.length})

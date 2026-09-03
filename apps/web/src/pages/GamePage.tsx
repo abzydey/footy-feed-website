@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api, GameDetail, Team, TryScorer } from "../lib/api";
@@ -29,20 +29,15 @@ function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
   );
 }
 
-// Final scoreline + try list — shown once the admin has logged a result (see
-// components/admin/GameForm.tsx ResultForm), replacing the upcoming-fixture
-// hero. homeScore/awayScore both non-null is the only signal for "finished"
-// (see routes/adminGames.ts POST /:id/result design note); team lists stay
-// visible below either way, since they're historically accurate either way
-// and were explicitly kept in scope. Highlight clips/player/team stats are
-// deliberately out of scope for this pass.
-function FinalScoreHero({ data }: { data: GameDetail }) {
-  const { game, homeTries, awayTries } = data;
+// Shared by both the FULL_TIME and LIVE heroes — same layout, just the
+// eyebrow label/color and (FULL_TIME only) the try list beneath differ. See
+// schema.prisma design note on GameStatus for why "finished" can no longer
+// be inferred from the scores being non-null (a LIVE score is non-null
+// too) — status is the source of truth now.
+function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail["game"]; eyebrow: string; eyebrowClass: string; children?: ReactNode }) {
   return (
     <div className="rounded-2xl bg-surface border border-white/10 shadow-card p-5">
-      <div className="text-center text-[11px] font-bold uppercase tracking-wider text-brand-heliotrope mb-3">
-        Full time
-      </div>
+      <div className={`text-center text-[11px] font-bold uppercase tracking-wider mb-3 ${eyebrowClass}`}>{eyebrow}</div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="text-center min-w-0">
           <Link
@@ -64,12 +59,39 @@ function FinalScoreHero({ data }: { data: GameDetail }) {
           </Link>
         </div>
       </div>
+      {children}
+    </div>
+  );
+}
 
+// Final scoreline + try list — shown once the admin has logged the real
+// result (see components/admin/GameForm.tsx ResultForm), replacing the
+// upcoming-fixture hero. Team lists stay visible below either way, since
+// they're historically accurate either way and were explicitly kept in
+// scope. Highlight clips/player/team stats are deliberately out of scope.
+function FinalScoreHero({ data }: { data: GameDetail }) {
+  const { game, homeTries, awayTries } = data;
+  return (
+    <ScoreHero game={game} eyebrow="Full time" eyebrowClass="text-brand-heliotrope">
       <div className="flex gap-4 mt-5 pt-4 border-t border-white/10">
         <TryList team={game.homeTeam} tries={homeTries} />
         <TryList team={game.awayTeam} tries={awayTries} />
       </div>
-    </div>
+    </ScoreHero>
+  );
+}
+
+// Live in-play score — an admin's quick score update (POST
+// .../live-score), not a full result: no try list yet, since that's only
+// captured at full-time. Siren red/pulsing dot to read as "happening now",
+// same visual language as the FINAL-stage team-list badge.
+function LiveScoreHero({ data }: { data: GameDetail }) {
+  return (
+    <ScoreHero
+      game={data.game}
+      eyebrow="● Live"
+      eyebrowClass="text-brand-siren animate-pulse"
+    />
   );
 }
 
@@ -95,7 +117,7 @@ export default function GamePage() {
   }, [id]);
 
   const metaGame = data?.game;
-  const metaFinished = metaGame ? metaGame.homeScore != null && metaGame.awayScore != null : false;
+  const metaFinished = metaGame?.status === "FULL_TIME";
   const matchup = metaGame ? `${metaGame.homeTeam.shortName} vs ${metaGame.awayTeam.shortName}` : "Game";
 
   useDocumentMeta({
@@ -146,12 +168,15 @@ export default function GamePage() {
   }
 
   const { game, homeTeamLineup, awayTeamLineup, recentEvents, socialPosts } = data;
-  const finished = game.homeScore != null && game.awayScore != null;
+  const finished = game.status === "FULL_TIME";
+  const live = game.status === "LIVE";
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       {finished ? (
         <FinalScoreHero data={data} />
+      ) : live ? (
+        <LiveScoreHero data={data} />
       ) : (
         <PageHero
           eyebrow={game.round}
