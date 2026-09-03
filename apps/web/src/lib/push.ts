@@ -9,6 +9,23 @@ export function getStoredFcmToken(): string | null {
   return localStorage.getItem(FCM_TOKEN_KEY);
 }
 
+// iOS Safari (and every other iOS browser, since they're all WebKit under
+// the hood) only exposes the Push API to a site running as an installed
+// Home Screen web app — calling Notification.requestPermission() from a
+// regular tab just silently fails or no-ops, with no prompt and no error.
+// Detecting this upfront means we can tell someone what to actually do
+// instead of letting them hit that dead end and go hunting through Safari
+// settings themselves. No feature-detection API exists for "is this iOS
+// Safari" — user-agent sniffing is the standard, if inelegant, approach
+// every push-notification vendor uses for this exact check.
+export function needsIosHomeScreenInstall(): boolean {
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+  if (!isIos) return false;
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+  return !isStandalone;
+}
+
 /**
  * Asks the browser for notification permission and registers this
  * device/browser with Firebase Cloud Messaging. Works on desktop Chrome/
@@ -64,6 +81,10 @@ export async function enablePushNotifications(): Promise<string | null> {
 
 /** Follow a team, player, or the general NRL news category — requesting push permission first if needed. */
 export async function followTarget(targetType: "TEAM" | "PLAYER" | "LEAGUE", targetId: string) {
+  if (needsIosHomeScreenInstall()) {
+    throw new Error('Add Full Set to your Home Screen first — tap Share, then "Add to Home Screen" — then come back here to enable notifications.');
+  }
+
   let token = getStoredFcmToken();
   if (!token) {
     token = await enablePushNotifications();
