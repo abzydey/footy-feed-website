@@ -91,13 +91,19 @@ export default function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
-      <div className="pt-2 sm:pt-3 space-y-0.5">
-        <p className="font-display font-bold text-[15px] sm:text-base text-white leading-snug [text-wrap:pretty]">
+      {/* Hero tagline, not a page title — deliberately reuses two existing
+          tokens from elsewhere rather than one-off sizes: the bold lead is
+          GeneralNewsFollow's "NRL News" treatment (font-display extrabold
+          tracking-tight text-base), the supporting line is the same
+          text-slate-400 text-sm used under SearchPage's/AboutPage's own
+          headlines. Extra top padding (beyond the container's own p-4,
+          which every other page's H1 sits directly under) gives it room
+          to read as its own hero moment rather than crowding the nav. */}
+      <div className="pt-3 sm:pt-4 space-y-0.5">
+        <p className="font-display font-extrabold tracking-tight text-base text-white leading-snug [text-wrap:pretty]">
           Every team update. Every podcast mention.
         </p>
-        <p className="text-[13.5px] sm:text-sm text-white/50 leading-snug [text-wrap:pretty]">
-          Tracked automatically — before you've even opened the group chat.
-        </p>
+        <p className="text-slate-400 text-sm leading-snug [text-wrap:pretty]">Tracked automatically.</p>
       </div>
 
       <WhatsBeenSaidTeaser />
