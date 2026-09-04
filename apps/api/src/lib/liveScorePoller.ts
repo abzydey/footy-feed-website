@@ -142,6 +142,32 @@ async function tryMatchCentre(game: Candidate): Promise<boolean> {
 
   if (mc.matchMode === "Pre") return true; // genuinely hasn't kicked off yet — resolved, nothing to update, no need to also check tweets
 
+  // matchMode "Post" is NRL.com's own authoritative "this game is over"
+  // signal — trusted directly to flip status to FULL_TIME, same as the
+  // score itself. Previously this poller deliberately left FULL_TIME as a
+  // human decision (via the admin result form, which also records try
+  // scorers), reasoning that only a person watching the broadcast could
+  // really know a match had ended — but with match-centre now the primary
+  // source, that reasoning no longer held: a finished game just sat
+  // showing "LIVE" indefinitely once its score/clock stopped changing,
+  // which is exactly the real complaint that prompted this change ("Dolphins
+  // titans game has been finished for a while but still shows live").
+  // Try scorers still aren't touched here — the result form remains the
+  // way to add those, and re-running it after this auto-finalizes a game
+  // works exactly as before (it just re-applies score/status and adds the
+  // tries in one go).
+  if (mc.matchMode === "Post") {
+    if (game.status === "FULL_TIME" && game.homeScore === mc.homeScore && game.awayScore === mc.awayScore) {
+      return true; // already fully reflects this — shouldn't normally be reached, since a FULL_TIME game drops out of the poll query entirely, but harmless if it ever is
+    }
+    await prisma.game.update({
+      where: { id: game.id },
+      data: { homeScore: mc.homeScore, awayScore: mc.awayScore, status: "FULL_TIME", liveClock: null, liveScoreUpdatedAt: new Date() },
+    });
+    console.log(`[matchCentre] FULL TIME: ${game.homeTeam.shortName} ${mc.homeScore}-${mc.awayScore} ${game.awayTeam.shortName}`);
+    return true;
+  }
+
   const liveClock = `${Math.floor(mc.gameSeconds / 60)}'`;
   if (game.homeScore === mc.homeScore && game.awayScore === mc.awayScore && game.liveClock === liveClock) {
     return true; // already reflects this state
