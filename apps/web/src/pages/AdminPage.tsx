@@ -6,11 +6,12 @@ import GameForm from "../components/admin/GameForm";
 import EpisodeForm from "../components/admin/EpisodeForm";
 import StatsView from "../components/admin/StatsView";
 import LadderForm from "../components/admin/LadderForm";
+import JudiciaryForm from "../components/admin/JudiciaryForm";
 import TrackedShowsForm from "../components/admin/TrackedShowsForm";
 import PlayerForm from "../components/admin/PlayerForm";
 
 const TOKEN_KEY = "footy-feed:adminToken";
-const TABS = ["Update", "Game", "Ladder", "Player", "Episode", "Shows", "Stats"] as const;
+const TABS = ["Update", "Game", "Ladder", "Judiciary", "Player", "Episode", "Shows", "Stats"] as const;
 
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -91,6 +92,7 @@ function AdminTabs({ token, onLogout }: { token: string; onLogout: () => void })
       {tab === "Update" && <EventForm token={token} onLogout={onLogout} />}
       {tab === "Game" && <GameForm token={token} />}
       {tab === "Ladder" && <LadderForm token={token} />}
+      {tab === "Judiciary" && <JudiciaryForm token={token} />}
       {tab === "Player" && <PlayerForm token={token} />}
       {tab === "Episode" && <EpisodeForm token={token} />}
       {tab === "Shows" && <TrackedShowsForm token={token} />}

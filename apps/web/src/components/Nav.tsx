@@ -34,6 +34,9 @@ export default function Nav() {
         <NavLink to="/ladder" className={linkClass}>
           Ladder
         </NavLink>
+        <NavLink to="/judiciary" className={linkClass}>
+          Judiciary
+        </NavLink>
         <NavLink to="/social" className={linkClass}>
           Social
         </NavLink>

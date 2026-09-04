@@ -102,12 +102,13 @@ model Team {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  players     Player[]
-  events      Event[]
-  homeGames   Game[]       @relation("HomeGames")
-  awayGames   Game[]       @relation("AwayGames")
-  ladderEntry LadderEntry?
-  tries       Try[]
+  players         Player[]
+  events          Event[]
+  homeGames       Game[]           @relation("HomeGames")
+  awayGames       Game[]           @relation("AwayGames")
+  ladderEntry     LadderEntry?
+  tries           Try[]
+  judiciaryCharges JudiciaryCharge[]
 
   @@map("teams")
 }
@@ -582,4 +583,34 @@ model ExternalEpisodeChapter {
 
   @@index([externalEpisodeId])
   @@map("external_episode_chapters")
+}
+
+// ---------------------------------------------------------------------------
+// Judiciary — the weekly NRL Match Review Committee report (charges, grades,
+// outcomes, suspensions/fines). Admin-entered from the official report, same
+// "manual, no scraping" pattern as Game/Ladder. Unlike LadderEntry (one
+// current row per team, overwritten each round) this is historical: every
+// round's charges are kept, not replaced, so admin/routes/adminJudiciary.ts
+// only ever replaces the rows for the one round being (re-)entered.
+// player is a free-text name rather than a Player FK, same reasoning as
+// Try.scorer — not every charged player (especially an opposition fringe
+// player) necessarily has a Player row, and this is just recording a name
+// tied to a round, not building a relation to query from the player side.
+// ---------------------------------------------------------------------------
+
+model JudiciaryCharge {
+  id               String   @id @default(cuid())
+  round            String // matches Game.round, e.g. "Round 27"
+  player           String
+  teamId           String
+  team             Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  charge           String // the charge/incident description
+  grade            String // e.g. "Grade 1" — kept as text, not numeric: grading isn't consistent across charge types
+  result           String // e.g. "Guilty - Early Guilty Plea", "Not Guilty"
+  matchesToServe   Int? // null when the outcome is a fine only, not a suspension
+  financialPenalty Int? // dollar amount; null when the outcome is a suspension only, not a fine
+  createdAt        DateTime @default(now())
+
+  @@index([round])
+  @@map("judiciary_charges")
 }

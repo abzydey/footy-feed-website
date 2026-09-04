@@ -148,6 +148,19 @@ export interface Ladder {
   rows: LadderRow[];
 }
 
+export interface JudiciaryCharge {
+  id: string;
+  round: string;
+  player: string;
+  team: Team;
+  charge: string;
+  grade: string;
+  result: string;
+  matchesToServe: number | null;
+  financialPenalty: number | null;
+  createdAt: string;
+}
+
 export interface SearchResult {
   kind: "transcript" | "chapter" | "episode";
   podcast: string;
@@ -311,11 +324,36 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
-  trackPageView: (page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder" | "highlights") =>
+  trackPageView: (
+    page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder" | "highlights" | "judiciary"
+  ) =>
     request(`/pageviews`, { method: "POST", body: JSON.stringify({ page }) }),
   adminGetStats: (token: string) =>
     request<AdminStats>(`/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
   getLadder: () => request<Ladder>(`/ladder`),
+  listJudiciary: (round?: string) =>
+    request<JudiciaryCharge[]>(`/judiciary${round ? `?round=${encodeURIComponent(round)}` : ""}`),
+  listJudiciaryRounds: () => request<string[]>("/judiciary/rounds"),
+  adminSetJudiciary: (
+    token: string,
+    data: {
+      round: string;
+      charges: {
+        player: string;
+        teamId: string;
+        charge: string;
+        grade: string;
+        result: string;
+        matchesToServe?: number;
+        financialPenalty?: number;
+      }[];
+    }
+  ) =>
+    request<JudiciaryCharge[]>(`/admin/judiciary`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
   adminUpdateLadder: (
     token: string,
     data: {

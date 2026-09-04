@@ -13,6 +13,7 @@ import GamesPage from "./pages/GamesPage";
 import GamePage from "./pages/GamePage";
 import TeamListsPage from "./pages/TeamListsPage";
 import LadderPage from "./pages/LadderPage";
+import JudiciaryPage from "./pages/JudiciaryPage";
 import SocialPage from "./pages/SocialPage";
 import PodcastsPage from "./pages/PodcastsPage";
 import HighlightsPage from "./pages/HighlightsPage";
@@ -26,7 +27,7 @@ import AdminPage from "./pages/AdminPage";
 // label, matching prefixes ordered longest-first isn't needed since "/" is
 // handled separately below. Routes not listed here (search, admin) are
 // deliberately not tracked.
-const PAGE_BY_PATH_PREFIX: [prefix: string, page: "news" | "teams" | "games" | "team-lists" | "ladder" | "social" | "podcasts" | "highlights"][] = [
+const PAGE_BY_PATH_PREFIX: [prefix: string, page: "news" | "teams" | "games" | "team-lists" | "ladder" | "social" | "podcasts" | "highlights" | "judiciary"][] = [
   ["/news", "news"],
   ["/teams", "teams"],
   ["/team-lists", "team-lists"],
@@ -35,6 +36,7 @@ const PAGE_BY_PATH_PREFIX: [prefix: string, page: "news" | "teams" | "games" | "
   ["/social", "social"],
   ["/podcasts", "podcasts"],
   ["/highlights", "highlights"],
+  ["/judiciary", "judiciary"],
 ];
 
 function usePageViewTracking() {
@@ -86,6 +88,7 @@ export default function App() {
           <Route path="/social" element={<SocialPage />} />
           <Route path="/podcasts" element={<PodcastsPage />} />
           <Route path="/highlights" element={<HighlightsPage />} />
+          <Route path="/judiciary" element={<JudiciaryPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminPage />} />

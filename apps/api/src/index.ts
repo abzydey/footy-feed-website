@@ -21,6 +21,8 @@ import pageviewsRouter from "./routes/pageviews";
 import adminStatsRouter from "./routes/adminStats";
 import ladderRouter from "./routes/ladder";
 import adminLadderRouter from "./routes/adminLadder";
+import judiciaryRouter from "./routes/judiciary";
+import adminJudiciaryRouter from "./routes/adminJudiciary";
 import adminTrackedShowsRouter from "./routes/adminTrackedShows";
 import adminPlayersRouter from "./routes/adminPlayers";
 import sitemapRouter from "./routes/sitemap";
@@ -64,6 +66,7 @@ app.use("/api/feed", feedRouter);
 app.use("/api/social", socialRouter);
 app.use("/api/pageviews", pageviewsRouter);
 app.use("/api/ladder", ladderRouter);
+app.use("/api/judiciary", judiciaryRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)
 app.use("/api/admin/auth", adminAuthRouter);
@@ -72,6 +75,7 @@ app.use("/api/admin/games", adminGamesRouter);
 app.use("/api/admin/episodes", adminEpisodesRouter);
 app.use("/api/admin/stats", adminStatsRouter);
 app.use("/api/admin/ladder", adminLadderRouter);
+app.use("/api/admin/judiciary", adminJudiciaryRouter);
 app.use("/api/admin/tracked-shows", adminTrackedShowsRouter);
 app.use("/api/admin/players", adminPlayersRouter);
 
