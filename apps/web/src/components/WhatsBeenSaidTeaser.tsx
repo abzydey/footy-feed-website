@@ -10,6 +10,17 @@ import { api, SearchResult } from "../lib/api";
 // returns a qualifying result.
 const FALLBACK_TOPICS = ["NRL Finals", "State of Origin", "Grand Final", "Judiciary"];
 
+// Temporary pin, set 2026-09-04: "Keep on Jai Arrow search for at least 24
+// hours" — his 100th-game milestone is the story tonight, and the normal
+// self-updating trending-topic logic (still runs underneath, see
+// resolveQueryAndResult below) could otherwise hand the teaser to whatever
+// else picks up podcast mentions before this story's had its full run.
+// Once PIN_UNTIL passes, this block is simply skipped and resolution falls
+// straight back through to normal trending/fallback behavior — nothing
+// else needs to be reverted by hand.
+const PINNED_TOPIC = "Jai Arrow";
+const PIN_UNTIL = new Date("2026-09-05T09:00:00Z").getTime();
+
 const ChevronRight = () => (
   <svg width="11" height="9" viewBox="0 0 11 9" fill="none" className="shrink-0">
     <path d="M1 4.5h8M6 1.5l3 3-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -48,6 +59,15 @@ function formatWhen(iso: string | null): string {
 // show before committing to it, so the card can't end up searching for
 // something that turns up empty.
 async function resolveQueryAndResult(): Promise<{ query: string; result: SearchResult } | null> {
+  if (Date.now() < PIN_UNTIL) {
+    try {
+      const best = pickBestResult(await api.search(PINNED_TOPIC));
+      if (best) return { query: PINNED_TOPIC, result: best };
+    } catch {
+      // fall through to normal resolution below
+    }
+  }
+
   try {
     const { topic } = await api.getTrendingTopic();
     if (topic) {
