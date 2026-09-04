@@ -118,6 +118,19 @@ export function chooseTweet(candidates: ParsedScoreTweet[], homeSlug: string, aw
 
 type Candidate = Awaited<ReturnType<typeof prisma.game.findMany<{ include: { homeTeam: true; awayTeam: true } }>>>[number];
 
+// A plain "NN'" clock looks identical whether play is genuinely still
+// ticking or the game is paused for the break — which is exactly what
+// prompted this: "Its half time of the roosters game and i cant see it".
+// NRL.com's own matchState distinguishes the two (confirmed live:
+// "HalfTime" reported with gameSeconds frozen at exactly 2400 = 40:00, real
+// score intact), so a genuine mid-half freeze (source gone quiet — see the
+// earlier Titans-Dolphins incident) still reads as a plain clock, while an
+// actual break gets its own unambiguous label.
+function formatLiveClock(mc: MatchCentreData): string {
+  if (mc.matchState === "HalfTime") return "HT";
+  return `${Math.floor(mc.gameSeconds / 60)}'`;
+}
+
 // Inserts any try match-centre reports that isn't already recorded — never
 // deletes or edits an existing row, so this is safe to run every time the
 // score changes without disturbing anything a human already entered by
@@ -194,7 +207,7 @@ async function tryMatchCentre(game: Candidate): Promise<boolean> {
     return true;
   }
 
-  const liveClock = `${Math.floor(mc.gameSeconds / 60)}'`;
+  const liveClock = formatLiveClock(mc);
   if (game.homeScore === mc.homeScore && game.awayScore === mc.awayScore && game.liveClock === liveClock) {
     return true; // already reflects this state
   }
