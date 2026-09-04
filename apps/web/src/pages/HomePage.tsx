@@ -101,9 +101,11 @@ export default function HomePage() {
           to read as its own hero moment rather than crowding the nav. */}
       <div className="pt-3 sm:pt-4 space-y-0.5">
         <p className="font-display font-extrabold tracking-tight text-base text-white leading-snug [text-wrap:pretty]">
-          Every team update. Every podcast mention.
+          Your team. The full set.
         </p>
-        <p className="text-slate-400 text-sm leading-snug [text-wrap:pretty]">Tracked automatically.</p>
+        <p className="text-slate-400 text-sm leading-snug [text-wrap:pretty]">
+          News, team lists, podcasts, and more — tracked automatically, all in one place.
+        </p>
       </div>
 
       <WhatsBeenSaidTeaser />
