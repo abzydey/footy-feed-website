@@ -211,6 +211,7 @@ export const api = {
   listPodcasts: () => request<Podcast[]>("/podcasts"),
   listEpisodesBrowse: () => request<Episode[]>("/podcasts/episodes"),
   search: (q: string) => request<SearchResult[]>(`/search?q=${encodeURIComponent(q)}`),
+  getTrendingTopic: () => request<{ topic: string | null }>(`/search/trending`),
   follow: (fcmToken: string, targetType: "TEAM" | "PLAYER" | "LEAGUE", targetId: string) =>
     request(`/follows`, { method: "POST", body: JSON.stringify({ fcmToken, targetType, targetId }) }),
   unfollow: (id: string) => request(`/follows/${id}`, { method: "DELETE" }),

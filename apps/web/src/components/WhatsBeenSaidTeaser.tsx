@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 
 import { api, SearchResult } from "../lib/api";
 
-// A real, currently-topical query — not necessarily every result it turns
-// up is great, so pickBestResult below still has to choose carefully, but
-// this keeps the odds high of landing on something genuinely worth showing.
-// Swap this out as whatever's dominating the news cycle changes.
-const TEASER_QUERY = "Jai Arrow";
+// Tried in order when GET /api/search/trending has no clear signal (fewer
+// than 2 podcast mentions of any one player in the last 7 days) — each is
+// evergreen enough to almost always return something. Not itself meant to
+// rotate; resolveQuery below just walks it until one search actually
+// returns a qualifying result.
+const FALLBACK_TOPICS = ["NRL Finals", "State of Origin", "Grand Final", "Judiciary"];
 
 const ChevronRight = () => (
   <svg width="11" height="9" viewBox="0 0 11 9" fill="none" className="shrink-0">
@@ -38,40 +39,72 @@ function formatWhen(iso: string | null): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+// Picks what to search for: the player most mentioned across recent
+// podcast content (GET /api/search/trending — cross-references real Player
+// names against Episode/ExternalEpisode titles+descriptions server-side,
+// see routes/search.ts) when there's a clear signal, otherwise walks
+// FALLBACK_TOPICS until one actually returns a qualifying result. Never
+// just returns a topic blind — always confirms it has a real result to
+// show before committing to it, so the card can't end up searching for
+// something that turns up empty.
+async function resolveQueryAndResult(): Promise<{ query: string; result: SearchResult } | null> {
+  try {
+    const { topic } = await api.getTrendingTopic();
+    if (topic) {
+      const best = pickBestResult(await api.search(topic));
+      if (best) return { query: topic, result: best };
+    }
+  } catch {
+    // fall through to the fallback list below
+  }
+
+  for (const topic of FALLBACK_TOPICS) {
+    try {
+      const best = pickBestResult(await api.search(topic));
+      if (best) return { query: topic, result: best };
+    } catch {
+      // try the next fallback
+    }
+  }
+  return null;
+}
+
 // A live example of "What's Been Said" right on Home, rather than just
 // describing the feature — a first-time visitor sees a real result within
-// a few seconds instead of reading marketing copy about it. Deliberately
-// built to the same card shape as EventCard (kicker row, headline, body,
-// divider + CTA footer) rather than a one-off widget, so it reads as
-// another card in the feed, not a bolted-on component. undefined = still
-// loading, null = nothing worth showing (fails quiet), a SearchResult =
-// found something real.
+// a few seconds instead of reading marketing copy about it. Self-updating:
+// the topic searched isn't hardcoded, it's resolved fresh on every load
+// (see resolveQueryAndResult above), so this never goes stale on its own.
+// Deliberately built to the same card shape as EventCard (kicker row,
+// headline, body, divider + CTA footer) rather than a one-off widget, so
+// it reads as another card in the feed, not a bolted-on component.
+// undefined = still loading, null = nothing worth showing (fails quiet).
 export default function WhatsBeenSaidTeaser() {
-  const [result, setResult] = useState<SearchResult | null | undefined>(undefined);
+  const [state, setState] = useState<{ query: string; result: SearchResult } | null | undefined>(undefined);
 
   useEffect(() => {
-    api
-      .search(TEASER_QUERY)
-      .then((results) => setResult(pickBestResult(results)))
-      .catch(() => setResult(null));
+    resolveQueryAndResult().then(setState);
   }, []);
 
-  if (result === null) return null;
+  if (state === null) return null;
 
   return (
     <Link
-      to={`/search?q=${encodeURIComponent(TEASER_QUERY)}`}
+      to={`/search?q=${encodeURIComponent(state?.query ?? "")}`}
       className="block bg-surface border border-white/[.07] rounded-[14px] px-[15px] pt-[15px] pb-[13px] hover:border-brand-violet/45 transition-colors duration-150"
     >
       <div className="flex items-center gap-2 mb-[9px]">
         <span className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase">
           What's Been Said
         </span>
-        <span className="w-[3px] h-[3px] rounded-full bg-white/25 shrink-0" />
-        <span className="text-[11px] font-semibold text-white/38 truncate">searched &ldquo;{TEASER_QUERY}&rdquo;</span>
+        {state && (
+          <>
+            <span className="w-[3px] h-[3px] rounded-full bg-white/25 shrink-0" />
+            <span className="text-[11px] font-semibold text-white/38 truncate">searched &ldquo;{state.query}&rdquo;</span>
+          </>
+        )}
       </div>
 
-      {result === undefined ? (
+      {state === undefined ? (
         <div className="space-y-1.5 animate-pulse py-0.5">
           <div className="h-2.5 w-24 bg-white/10 rounded" />
           <div className="h-3.5 w-full bg-white/10 rounded" />
@@ -80,14 +113,14 @@ export default function WhatsBeenSaidTeaser() {
       ) : (
         <>
           <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-white/46 mb-1">
-            <span className="text-brand-heliotrope font-bold">{result.podcast}</span>
-            <span>· {formatWhen(result.publishedAt)}</span>
+            <span className="text-brand-heliotrope font-bold">{state.result.podcast}</span>
+            <span>· {formatWhen(state.result.publishedAt)}</span>
           </div>
           <h3 className="font-extrabold text-white tracking-[-.018em] text-[17px] leading-[1.2] [text-wrap:pretty] line-clamp-2">
-            {result.episodeTitle}
+            {state.result.episodeTitle}
           </h3>
           <p className="text-white/56 leading-[1.48] text-[13px] mt-[7px] [text-wrap:pretty] line-clamp-2">
-            &ldquo;{result.snippet}&rdquo;
+            &ldquo;{state.result.snippet}&rdquo;
           </p>
         </>
       )}

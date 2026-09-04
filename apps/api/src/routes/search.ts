@@ -128,4 +128,43 @@ router.get("/", async (req, res) => {
   res.json(results);
 });
 
+// GET /api/search/trending — the player most mentioned across recent
+// podcast content, for Home's "What's Been Said" teaser to search for
+// automatically instead of a hardcoded topic. Cross-references real Player
+// names (not free-text keyword extraction, which would need its own
+// stopword/NLP handling) against Episode + ExternalEpisode titles/
+// descriptions from the last 7 days — the same two sources GET / above
+// already knows how to query. A full "Firstname Lastname" substring match
+// is specific enough to not need a minimum name length the way a bare
+// surname would. Requires at least 2 mentions before calling it a trend;
+// returns { topic: null } rather than a weak/misleading single mention,
+// so the frontend can fall back to its own curated topic list.
+router.get("/trending", async (_req, res) => {
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [players, episodes, externalEpisodes] = await Promise.all([
+    prisma.player.findMany({ select: { name: true } }),
+    prisma.episode.findMany({ where: { publishedAt: { gte: since } }, select: { title: true, description: true } }),
+    prisma.externalEpisode.findMany({
+      where: { publishedAt: { gte: since } },
+      select: { title: true, description: true },
+    }),
+  ]);
+
+  const corpus = [...episodes, ...externalEpisodes].map((e) => `${e.title} ${e.description ?? ""}`.toLowerCase());
+
+  let topName: string | null = null;
+  let topMentions = 0;
+  for (const { name } of players) {
+    const needle = name.toLowerCase();
+    const mentions = corpus.reduce((n, text) => n + (text.includes(needle) ? 1 : 0), 0);
+    if (mentions > topMentions) {
+      topMentions = mentions;
+      topName = name;
+    }
+  }
+
+  res.json({ topic: topMentions >= 2 ? topName : null });
+});
+
 export default router;
