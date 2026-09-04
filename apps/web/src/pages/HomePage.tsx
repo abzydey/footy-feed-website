@@ -7,6 +7,7 @@ import EventCard from "../components/EventCard";
 import GeneralNewsFollow from "../components/GeneralNewsFollow";
 import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
+import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
@@ -90,6 +91,12 @@ export default function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <p className="font-display font-bold text-lg sm:text-xl text-white leading-snug [text-wrap:pretty]">
+        Every team update, every podcast mention — tracked automatically, before you've even opened the group chat.
+      </p>
+
+      <WhatsBeenSaidTeaser />
+
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {CHIPS.map((c) => {
           const active = chip === c;

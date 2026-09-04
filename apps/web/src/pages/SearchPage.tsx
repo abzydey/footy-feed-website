@@ -1,4 +1,5 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
@@ -26,29 +27,44 @@ function linkLabel(url: string): string {
 }
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [results, setResults] = useState<Awaited<ReturnType<typeof api.search>> | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useDocumentMeta({
     title: "Search",
     description: "Search NRL podcast transcripts, chapters, and episodes on Full Set.",
     path: "/search",
   });
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
+  async function runSearch(q: string) {
+    if (!q.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      setResults(await api.search(query));
+      setResults(await api.search(q));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
     } finally {
       setLoading(false);
     }
+  }
+
+  // Arriving with ?q= (e.g. the Home page's "What's Been Said" teaser) runs
+  // the search immediately, rather than landing on an empty box the query
+  // was only ever pre-filled into. Intentionally only on first mount, not
+  // whenever searchParams changes — a normal in-page search via the form
+  // below shouldn't re-trigger this.
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) runSearch(q);
+  }, []);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    await runSearch(query);
   }
 
   return (
