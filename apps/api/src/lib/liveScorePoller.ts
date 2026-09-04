@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { isTwitterConfigured, getTwitterClient } from "./twitter";
-import { buildMatchCentreUrl, fetchMatchCentre } from "./matchCentreParser";
+import { buildMatchCentreUrl, fetchMatchCentre, parseTrySummaries, MatchCentreData } from "./matchCentreParser";
 
 // The live-blog account(s) to read scores from — distinct from
 // SOURCE_USERNAMES in socialPoller.ts, which feeds the app's own Social
@@ -118,6 +118,31 @@ export function chooseTweet(candidates: ParsedScoreTweet[], homeSlug: string, aw
 
 type Candidate = Awaited<ReturnType<typeof prisma.game.findMany<{ include: { homeTeam: true; awayTeam: true } }>>>[number];
 
+// Inserts any try match-centre reports that isn't already recorded — never
+// deletes or edits an existing row, so this is safe to run every time the
+// score changes without disturbing anything a human already entered by
+// hand. Deduped by (team, scorer, minute) rather than just relying on
+// match-centre's own list never repeating, since this runs on a live poll
+// cycle and the same summaries array gets re-sent on every tick until the
+// next try actually happens.
+async function syncTries(game: Candidate, mc: MatchCentreData): Promise<void> {
+  const homeTries = parseTrySummaries(mc.homeTries).map((t) => ({ ...t, teamId: game.homeTeamId }));
+  const awayTries = parseTrySummaries(mc.awayTries).map((t) => ({ ...t, teamId: game.awayTeamId }));
+
+  const existing = await prisma.try.findMany({ where: { gameId: game.id } });
+  const existingKey = (teamId: string, scorer: string, minute: number) => `${teamId}|${scorer.toLowerCase()}|${minute}`;
+  const existingKeys = new Set(existing.map((t) => existingKey(t.teamId, t.scorer, t.minute)));
+
+  const newTries = [...homeTries, ...awayTries].filter((t) => !existingKeys.has(existingKey(t.teamId, t.scorer, t.minute)));
+  if (newTries.length === 0) return;
+
+  await prisma.try.createMany({ data: newTries.map((t) => ({ gameId: game.id, teamId: t.teamId, scorer: t.scorer, minute: t.minute })) });
+  for (const t of newTries) {
+    const teamName = t.teamId === game.homeTeamId ? game.homeTeam.shortName : game.awayTeam.shortName;
+    console.log(`[matchCentre] TRY: ${t.scorer} (${teamName}, ${t.minute}')`);
+  }
+}
+
 // Tries NRL.com's official match-centre page first (see
 // lib/matchCentreParser.ts) — proven directly against a real live game to
 // be ahead of what the tweet source had, and structurally simpler to trust
@@ -152,11 +177,12 @@ async function tryMatchCentre(game: Candidate): Promise<boolean> {
   // showing "LIVE" indefinitely once its score/clock stopped changing,
   // which is exactly the real complaint that prompted this change ("Dolphins
   // titans game has been finished for a while but still shows live").
-  // Try scorers still aren't touched here — the result form remains the
-  // way to add those, and re-running it after this auto-finalizes a game
-  // works exactly as before (it just re-applies score/status and adds the
-  // tries in one go).
+  // Try scorers are synced live too (see syncTries above) — not just at
+  // full time. It's purely additive (never deletes/edits), so re-running
+  // the admin result form afterwards still works exactly as before: that
+  // form replaces the whole try list with whatever's typed into it.
   if (mc.matchMode === "Post") {
+    await syncTries(game, mc);
     if (game.status === "FULL_TIME" && game.homeScore === mc.homeScore && game.awayScore === mc.awayScore) {
       return true; // already fully reflects this — shouldn't normally be reached, since a FULL_TIME game drops out of the poll query entirely, but harmless if it ever is
     }
@@ -172,6 +198,12 @@ async function tryMatchCentre(game: Candidate): Promise<boolean> {
   if (game.homeScore === mc.homeScore && game.awayScore === mc.awayScore && game.liveClock === liveClock) {
     return true; // already reflects this state
   }
+
+  // A score change is exactly when a new try could exist (they're what
+  // drives the score), so this only runs on genuine change ticks rather
+  // than every single poll — cheap, but no need to pay it 40+ times over
+  // a match when nothing new has happened.
+  await syncTries(game, mc);
 
   await prisma.game.update({
     where: { id: game.id },

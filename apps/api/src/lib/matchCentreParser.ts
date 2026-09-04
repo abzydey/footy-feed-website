@@ -21,6 +21,28 @@ export interface MatchCentreData {
   homeScore: number;
   awayScore: number;
   updated: string;
+  // Raw "Name NN'" strings from each team's own scoring.tries.summaries —
+  // exact scorer + minute for every try, available live as they happen,
+  // not just once the match is over. See parseTrySummaries below.
+  homeTries: string[];
+  awayTries: string[];
+}
+
+export interface ParsedTry {
+  scorer: string;
+  minute: number;
+}
+
+// "Jayden Campbell 6'" -> { scorer: "Jayden Campbell", minute: 6 }. Skips
+// (rather than throws on) a summary that doesn't match this shape — better
+// to miss one try than crash the whole poll cycle over an unexpected format.
+export function parseTrySummaries(summaries: string[]): ParsedTry[] {
+  const tries: ParsedTry[] = [];
+  for (const summary of summaries) {
+    const match = summary.match(/^(.+) (\d+)'$/);
+    if (match) tries.push({ scorer: match[1].trim(), minute: Number(match[2]) });
+  }
+  return tries;
 }
 
 // /draw/nrl-premiership/{year}/round-{n}/{home-slug}-v-{away-slug}/ —
@@ -70,5 +92,7 @@ export async function fetchMatchCentre(url: string): Promise<MatchCentreData> {
     homeScore: data.match.homeTeam.score,
     awayScore: data.match.awayTeam.score,
     updated: data.match.updated,
+    homeTries: data.match.homeTeam.scoring?.tries?.summaries ?? [],
+    awayTries: data.match.awayTeam.scoring?.tries?.summaries ?? [],
   };
 }
