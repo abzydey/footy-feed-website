@@ -9,14 +9,11 @@ import { api, SearchResult } from "../lib/api";
 // Swap this out as whatever's dominating the news cycle changes.
 const TEASER_QUERY = "Jai Arrow";
 
-function SearchIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
-      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M9.5 9.5L13 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
+const ChevronRight = () => (
+  <svg width="11" height="9" viewBox="0 0 11 9" fill="none" className="shrink-0">
+    <path d="M1 4.5h8M6 1.5l3 3-3 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 // Prefers a rich episode-description match (a real sentence, not a terse
 // chapter-marker label) and the most recently published one, so the card
@@ -43,9 +40,12 @@ function formatWhen(iso: string | null): string {
 
 // A live example of "What's Been Said" right on Home, rather than just
 // describing the feature — a first-time visitor sees a real result within
-// a few seconds instead of reading marketing copy about it. undefined =
-// still loading, null = nothing worth showing (fails quiet — no broken/
-// empty card), a SearchResult = found something real to show.
+// a few seconds instead of reading marketing copy about it. Deliberately
+// built to the same card shape as EventCard (kicker row, headline, body,
+// divider + CTA footer) rather than a one-off widget, so it reads as
+// another card in the feed, not a bolted-on component. undefined = still
+// loading, null = nothing worth showing (fails quiet), a SearchResult =
+// found something real.
 export default function WhatsBeenSaidTeaser() {
   const [result, setResult] = useState<SearchResult | null | undefined>(undefined);
 
@@ -61,32 +61,43 @@ export default function WhatsBeenSaidTeaser() {
   return (
     <Link
       to={`/search?q=${encodeURIComponent(TEASER_QUERY)}`}
-      className="block rounded-xl bg-surface border border-white/10 shadow-card p-3.5 hover:border-white/20 transition-colors duration-150 active:scale-[0.99]"
+      className="block bg-surface border border-white/[.07] rounded-[14px] px-[15px] pt-[15px] pb-[13px] hover:border-brand-violet/45 transition-colors duration-150"
     >
-      <div className="text-[11px] font-bold text-brand-heliotrope uppercase tracking-wider mb-2">What's Been Said</div>
-      <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2 mb-3 text-slate-400">
-        <SearchIcon />
-        <span className="text-sm text-white/70">{TEASER_QUERY}</span>
+      <div className="flex items-center gap-2 mb-[9px]">
+        <span className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase">
+          What's Been Said
+        </span>
+        <span className="w-[3px] h-[3px] rounded-full bg-white/25 shrink-0" />
+        <span className="text-[11px] font-semibold text-white/38 truncate">searched &ldquo;{TEASER_QUERY}&rdquo;</span>
       </div>
 
       {result === undefined ? (
-        <div className="space-y-1.5 animate-pulse">
+        <div className="space-y-1.5 animate-pulse py-0.5">
           <div className="h-2.5 w-24 bg-white/10 rounded" />
           <div className="h-3.5 w-full bg-white/10 rounded" />
           <div className="h-3.5 w-2/3 bg-white/10 rounded" />
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
-            <span className="font-bold text-white/70">{result.podcast}</span>
-            <span>{formatWhen(result.publishedAt)}</span>
+          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-white/46 mb-1">
+            <span className="text-brand-heliotrope font-bold">{result.podcast}</span>
+            <span>· {formatWhen(result.publishedAt)}</span>
           </div>
-          <p className="text-white text-sm font-semibold leading-snug mb-1 line-clamp-1">{result.episodeTitle}</p>
-          <p className="text-slate-400 text-[13px] leading-relaxed line-clamp-2">&ldquo;{result.snippet}&rdquo;</p>
+          <h3 className="font-extrabold text-white tracking-[-.018em] text-[17px] leading-[1.2] [text-wrap:pretty] line-clamp-2">
+            {result.episodeTitle}
+          </h3>
+          <p className="text-white/56 leading-[1.48] text-[13px] mt-[7px] [text-wrap:pretty] line-clamp-2">
+            &ldquo;{result.snippet}&rdquo;
+          </p>
         </>
       )}
 
-      <div className="text-xs font-bold text-brand-heliotrope mt-2.5">See what else they're saying →</div>
+      <div className="flex items-center justify-between mt-[13px] pt-3 border-t border-white/[.06]">
+        <span className="text-[11.5px] font-semibold text-white/46">Search what else they're saying</span>
+        <span className="shrink-0 flex items-center gap-[5px] text-xs font-extrabold tracking-[.02em] text-brand-violet">
+          <ChevronRight />
+        </span>
+      </div>
     </Link>
   );
 }

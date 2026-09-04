@@ -91,9 +91,14 @@ export default function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
-      <p className="font-display font-bold text-lg sm:text-xl text-white leading-snug [text-wrap:pretty]">
-        Every team update, every podcast mention — tracked automatically, before you've even opened the group chat.
-      </p>
+      <div className="pt-2 sm:pt-3 space-y-0.5">
+        <p className="font-display font-bold text-[15px] sm:text-base text-white leading-snug [text-wrap:pretty]">
+          Every team update. Every podcast mention.
+        </p>
+        <p className="text-[13.5px] sm:text-sm text-white/50 leading-snug [text-wrap:pretty]">
+          Tracked automatically — before you've even opened the group chat.
+        </p>
+      </div>
 
       <WhatsBeenSaidTeaser />
 
