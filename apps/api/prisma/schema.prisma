@@ -614,3 +614,19 @@ model JudiciaryCharge {
   @@index([round])
   @@map("judiciary_charges")
 }
+
+// A round only has JudiciaryCharge rows if the Match Review Committee laid
+// at least one charge — a clean round (very possible, e.g. after a low-
+// incident match) legitimately has zero. Without this table there'd be no
+// way to tell "Round 27 was reported clear" from "Round 27's report hasn't
+// been entered yet" — both look like zero rows. adminJudiciary.ts upserts
+// one of these alongside every charge save, even when charges is []. The
+// Judiciary page and GET /api/judiciary/rounds read from this table, not
+// from distinct rounds in JudiciaryCharge, so a clear round still appears
+// and shows "no charges" instead of silently vanishing.
+model JudiciaryReport {
+  round     String   @id
+  createdAt DateTime @default(now())
+
+  @@map("judiciary_reports")
+}

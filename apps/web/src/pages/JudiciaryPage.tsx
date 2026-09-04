@@ -88,7 +88,11 @@ export default function JudiciaryPage() {
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {!charges && !error && <RowListSkeleton count={5} />}
-      {charges && charges.length === 0 && <p className="text-slate-500 text-sm">No judiciary charges yet.</p>}
+      {charges && charges.length === 0 && (
+        <p className="text-slate-500 text-sm">
+          {round ? `No charges laid for ${round}.` : "No judiciary reports yet."}
+        </p>
+      )}
 
       {charges && charges.length > 0 && (
         <div className="space-y-2">

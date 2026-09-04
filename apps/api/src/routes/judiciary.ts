@@ -9,11 +9,12 @@ const teamSelect = { id: true, name: true, shortName: true, slug: true, logoUrl:
 // GET /api/judiciary — charges for one round, oldest game-day first isn't
 // meaningful here (no kickoff time on a charge) so newest-entered first.
 // Optional ?round= filters to just that round, same convention as GET
-// /api/games — omit it and the most recent round with any charges is used,
-// so the Judiciary page has something to show without a round picked yet.
+// /api/games — omit it and the most recently *reported* round is used (see
+// JudiciaryReport design note), not the most recent round with a charge —
+// a clean round still needs to be the one shown, not skipped over.
 router.get("/", async (req, res) => {
   const requestedRound = typeof req.query.round === "string" ? req.query.round : undefined;
-  const round = requestedRound ?? (await prisma.judiciaryCharge.findFirst({ orderBy: { createdAt: "desc" } }))?.round;
+  const round = requestedRound ?? (await prisma.judiciaryReport.findFirst({ orderBy: { createdAt: "desc" } }))?.round;
   if (!round) return res.json([]);
 
   const charges = await prisma.judiciaryCharge.findMany({
@@ -24,24 +25,16 @@ router.get("/", async (req, res) => {
   res.json(charges);
 });
 
-// GET /api/judiciary/rounds — every round that has at least one charge,
-// most recent first (charges only exist for rounds already played, so
-// chronological-by-insertion is fine — no kickoff time to sort by here,
-// unlike GET /api/games/rounds).
+// GET /api/judiciary/rounds — every round a report has been entered for
+// (JudiciaryReport, not distinct rounds in JudiciaryCharge — see
+// schema.prisma design note), oldest first so the Judiciary page's
+// previous/next navigation steps through them in the order they happened.
 router.get("/rounds", async (_req, res) => {
-  const charges = await prisma.judiciaryCharge.findMany({
-    select: { round: true, createdAt: true },
+  const reports = await prisma.judiciaryReport.findMany({
+    select: { round: true },
     orderBy: { createdAt: "asc" },
   });
-  const seen = new Set<string>();
-  const rounds: string[] = [];
-  for (const c of charges) {
-    if (!seen.has(c.round)) {
-      seen.add(c.round);
-      rounds.push(c.round);
-    }
-  }
-  res.json(rounds);
+  res.json(reports.map((r) => r.round));
 });
 
 export default router;

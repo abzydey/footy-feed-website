@@ -35,7 +35,11 @@ router.post("/", async (req, res) => {
   }
   const { round, charges } = parsed.data;
 
+  // Upserting JudiciaryReport marks the round as "reported" even when
+  // charges is empty — otherwise a clean round would be indistinguishable
+  // from one nobody has entered yet (see schema.prisma design note).
   await prisma.$transaction([
+    prisma.judiciaryReport.upsert({ where: { round }, create: { round }, update: {} }),
     prisma.judiciaryCharge.deleteMany({ where: { round } }),
     prisma.judiciaryCharge.createMany({ data: charges.map((c) => ({ ...c, round })) }),
   ]);
