@@ -29,11 +29,11 @@ function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
   );
 }
 
-// Shared by both the FULL_TIME and LIVE heroes — same layout, just the
-// eyebrow label/color and (FULL_TIME only) the try list beneath differ. See
-// schema.prisma design note on GameStatus for why "finished" can no longer
-// be inferred from the scores being non-null (a LIVE score is non-null
-// too) — status is the source of truth now.
+// Shared by both the FULL_TIME and LIVE heroes — same layout, both now show
+// a try list (see LiveScoreHero below), just the eyebrow label/color
+// differs. See schema.prisma design note on GameStatus for why "finished"
+// can no longer be inferred from the scores being non-null (a LIVE score
+// is non-null too) — status is the source of truth now.
 function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail["game"]; eyebrow: string; eyebrowClass: string; children?: ReactNode }) {
   return (
     <div className="rounded-2xl bg-surface border border-white/10 shadow-card p-5">
@@ -81,10 +81,12 @@ function FinalScoreHero({ data }: { data: GameDetail }) {
   );
 }
 
-// Live in-play score — an admin's quick score update (POST
-// .../live-score), not a full result: no try list yet, since that's only
-// captured at full-time. Siren red/pulsing dot to read as "happening now",
-// same visual language as the FINAL-stage team-list badge.
+// Live in-play score. Try list included here too — the live-score poller
+// (lib/liveScorePoller.ts on the API side) now syncs scorer + minute from
+// NRL.com's match-centre as tries actually happen, not just once a human
+// logs the final result, so there's real data to show well before full
+// time. Siren red/pulsing dot to read as "happening now", same visual
+// language as the FINAL-stage team-list badge.
 function LiveScoreHero({ data }: { data: GameDetail }) {
   const { liveClock } = data.game;
   return (
@@ -92,7 +94,12 @@ function LiveScoreHero({ data }: { data: GameDetail }) {
       game={data.game}
       eyebrow={liveClock ? `● Live · ${liveClock}` : "● Live"}
       eyebrowClass="text-brand-siren animate-pulse"
-    />
+    >
+      <div className="flex gap-4 mt-5 pt-4 border-t border-white/10">
+        <TryList team={data.game.homeTeam} tries={data.homeTries} />
+        <TryList team={data.game.awayTeam} tries={data.awayTries} />
+      </div>
+    </ScoreHero>
   );
 }
 
