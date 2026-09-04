@@ -5,6 +5,20 @@ import { getFirebaseMessaging, isFirebaseConfigured } from "./firebase";
 
 const FCM_TOKEN_KEY = "footy-feed:fcmToken";
 
+// Registers the service worker on every page load, not just when someone
+// opts into push — Chrome's automatic install prompt (the beforeinstallprompt
+// banner, as opposed to the manual "Install app" menu item) still requires a
+// registered service worker with a real fetch handler, so gating
+// registration behind the notification flow meant almost nobody ever saw
+// that banner. navigator.serviceWorker.register() is idempotent for the
+// same script URL — calling it again later from enablePushNotifications()
+// just resolves the existing registration, it doesn't re-register or
+// conflict.
+export function registerServiceWorker(): Promise<ServiceWorkerRegistration> | undefined {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return undefined;
+  return navigator.serviceWorker.register("/firebase-messaging-sw.js");
+}
+
 export function getStoredFcmToken(): string | null {
   return localStorage.getItem(FCM_TOKEN_KEY);
 }
@@ -66,7 +80,8 @@ export async function enablePushNotifications(): Promise<string | null> {
   // generic/unhelpful error too, so log the real cause either way instead
   // of only ever showing the caller's own generic fallback message.
   try {
-    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const registration = await registerServiceWorker();
+    if (!registration) return null;
     const token = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration,

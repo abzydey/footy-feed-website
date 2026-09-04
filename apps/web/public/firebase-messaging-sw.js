@@ -19,6 +19,16 @@ firebase.initializeApp({
   appId: "1:1091380642325:web:f43b07fcfdbbb57a24441c",
 });
 
+// A real (if minimal) fetch handler — required for Chrome's automatic PWA
+// install prompt, which specifically ignores a service worker with no
+// fetch listener, or one that never calls respondWith(). This just passes
+// every request straight to the network (no caching/offline behavior), so
+// it changes nothing about how the app actually loads — it exists purely
+// to satisfy that installability check.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
+});
+
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
