@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { isTwitterConfigured, getTwitterClient } from "./twitter";
+import { buildMatchCentreUrl, fetchMatchCentre } from "./matchCentreParser";
 
 // The live-blog account(s) to read scores from — distinct from
 // SOURCE_USERNAMES in socialPoller.ts, which feeds the app's own Social
@@ -115,6 +116,45 @@ export function chooseTweet(candidates: ParsedScoreTweet[], homeSlug: string, aw
   });
 }
 
+type Candidate = Awaited<ReturnType<typeof prisma.game.findMany<{ include: { homeTeam: true; awayTeam: true } }>>>[number];
+
+// Tries NRL.com's official match-centre page first (see
+// lib/matchCentreParser.ts) — proven directly against a real live game to
+// be ahead of what the tweet source had, and structurally simpler to trust
+// since it's the official record, not a third party's manual typing.
+// Returns true when this game is "resolved" for this poll cycle (updated,
+// confirmed unchanged, or confirmed genuinely not started yet) — the
+// caller then skips the tweet-based fallback for it entirely. Returns
+// false only when match-centre itself couldn't be read (network error, no
+// numeric round to build a URL from, page structure changed), which is
+// the one case worth falling back to tweets for.
+async function tryMatchCentre(game: Candidate): Promise<boolean> {
+  const url = buildMatchCentreUrl(game);
+  if (!url) return false;
+
+  let mc;
+  try {
+    mc = await fetchMatchCentre(url);
+  } catch (err) {
+    console.warn(`[liveScorePoller] match-centre fetch failed for ${game.homeTeam.shortName} vs ${game.awayTeam.shortName}, falling back to tweets:`, err);
+    return false;
+  }
+
+  if (mc.matchMode === "Pre") return true; // genuinely hasn't kicked off yet — resolved, nothing to update, no need to also check tweets
+
+  const liveClock = `${Math.floor(mc.gameSeconds / 60)}'`;
+  if (game.homeScore === mc.homeScore && game.awayScore === mc.awayScore && game.liveClock === liveClock) {
+    return true; // already reflects this state
+  }
+
+  await prisma.game.update({
+    where: { id: game.id },
+    data: { homeScore: mc.homeScore, awayScore: mc.awayScore, liveClock, status: "LIVE", liveScoreUpdatedAt: new Date() },
+  });
+  console.log(`[matchCentre] ${game.homeTeam.shortName} ${mc.homeScore}-${mc.awayScore} ${game.awayTeam.shortName} (${liveClock})`);
+  return true;
+}
+
 export async function pollLiveScores(): Promise<void> {
   const now = new Date();
   const candidates = await prisma.game.findMany({
@@ -127,7 +167,22 @@ export async function pollLiveScores(): Promise<void> {
     },
     include: { homeTeam: true, awayTeam: true },
   });
-  if (candidates.length === 0) return; // nothing in-window — skip the API call entirely
+  if (candidates.length === 0) return; // nothing in-window — skip the API calls entirely
+
+  // Match-centre first, for every candidate — only a game it couldn't
+  // resolve (fetch failure, non-numeric round) falls through to the tweet
+  // parser below. When match-centre handles everything, the tweet API call
+  // is skipped entirely for this poll cycle — a real quota saving on top
+  // of being the better source.
+  const unresolvedGames: Candidate[] = [];
+  for (const game of candidates) {
+    const resolved = await tryMatchCentre(game).catch((err) => {
+      console.error(`[liveScorePoller] unexpected error trying match-centre for ${game.homeTeam.shortName} vs ${game.awayTeam.shortName}:`, err);
+      return false;
+    });
+    if (!resolved) unresolvedGames.push(game);
+  }
+  if (unresolvedGames.length === 0) return;
 
   const client = getTwitterClient();
   if (!client) return;
@@ -140,7 +195,7 @@ export async function pollLiveScores(): Promise<void> {
         exclude: ["replies"],
       });
 
-      for (const game of candidates) {
+      for (const game of unresolvedGames) {
         const homeSlug = game.homeTeam.slug;
         const awaySlug = game.awayTeam.slug;
 
@@ -200,16 +255,20 @@ export async function pollLiveScores(): Promise<void> {
   }
 }
 
+// Match-centre scraping needs no configuration and works standalone, so
+// this now always starts — unlike before, when the whole poller was gated
+// behind TWITTER_BEARER_TOKEN. Missing Twitter config just means the
+// tweet-based fallback silently does nothing (getTwitterClient() returns
+// null, pollLiveScores returns early after match-centre resolves what it
+// can) rather than disabling live-score polling entirely.
 export function startLiveScorePolling(): void {
-  if (!isTwitterConfigured) {
-    console.log("[liveScorePoller] TWITTER_BEARER_TOKEN not set — live-score polling disabled");
-    return;
-  }
-
   pollLiveScores().catch((err) => console.error("[liveScorePoller] initial poll failed:", err));
   setInterval(() => {
     pollLiveScores().catch((err) => console.error("[liveScorePoller] poll failed:", err));
   }, POLL_INTERVAL_MS);
 
-  console.log(`[liveScorePoller] watching ${LIVE_SCORE_USERNAMES.map((u) => `@${u}`).join(", ")} for live scores, checking every ${POLL_INTERVAL_MS / 60000}min when a game is in-window`);
+  const fallback = isTwitterConfigured
+    ? `@${LIVE_SCORE_USERNAMES.join(", @")} tweets as fallback`
+    : "no tweet fallback — TWITTER_BEARER_TOKEN not set";
+  console.log(`[liveScorePoller] NRL.com match-centre is the primary live-score source, ${fallback}, checking every ${POLL_INTERVAL_MS / 60000}min when a game is in-window`);
 }
