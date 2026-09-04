@@ -23,6 +23,7 @@ import ladderRouter from "./routes/ladder";
 import adminLadderRouter from "./routes/adminLadder";
 import judiciaryRouter from "./routes/judiciary";
 import adminJudiciaryRouter from "./routes/adminJudiciary";
+import adminLateMailRouter from "./routes/adminLateMail";
 import adminTrackedShowsRouter from "./routes/adminTrackedShows";
 import adminPlayersRouter from "./routes/adminPlayers";
 import sitemapRouter from "./routes/sitemap";
@@ -76,6 +77,7 @@ app.use("/api/admin/episodes", adminEpisodesRouter);
 app.use("/api/admin/stats", adminStatsRouter);
 app.use("/api/admin/ladder", adminLadderRouter);
 app.use("/api/admin/judiciary", adminJudiciaryRouter);
+app.use("/api/admin/late-mail", adminLateMailRouter);
 app.use("/api/admin/tracked-shows", adminTrackedShowsRouter);
 app.use("/api/admin/players", adminPlayersRouter);
 

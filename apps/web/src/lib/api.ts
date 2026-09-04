@@ -161,6 +161,38 @@ export interface JudiciaryCharge {
   createdAt: string;
 }
 
+export interface LateMailPlayer {
+  number: number;
+  name: string;
+  position: string;
+}
+
+export interface LateMailTeamSheet {
+  rawTeamName: string;
+  matchedTeamId: string | null;
+  matchedTeamName: string | null;
+  matchedGameId: string | null;
+  starters: LateMailPlayer[];
+  interchange: LateMailPlayer[];
+  reserves: LateMailPlayer[];
+  reserveWarning: boolean;
+  suggestedStage: "INITIAL" | "TWENTY_FOUR_HOUR" | "FINAL";
+  generatedBody: string;
+}
+
+export interface LateMailMatch {
+  matchLabel: string;
+  home: LateMailTeamSheet;
+  away: LateMailTeamSheet;
+}
+
+export interface LateMailResult {
+  round: string | null;
+  sourceUrl: string;
+  narrative: string;
+  matches: LateMailMatch[];
+}
+
 export interface SearchResult {
   kind: "transcript" | "chapter" | "episode";
   podcast: string;
@@ -238,6 +270,18 @@ export const api = {
   ) =>
     request(`/admin/events`, {
       method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+  adminParseLateMail: (token: string, url?: string) =>
+    request<LateMailResult>(`/admin/late-mail/parse`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ url }),
+    }),
+  adminUpdateEvent: (token: string, id: string, data: { headline?: string; body?: string; teamId?: string }) =>
+    request<EventItem>(`/admin/events/${id}`, {
+      method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
