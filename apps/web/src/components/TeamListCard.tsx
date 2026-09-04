@@ -94,6 +94,34 @@ function parseOmittedNames(body: string | undefined): string[] {
     .filter(Boolean);
 }
 
+// Names on the Final grid that occupy a different slot than they (or
+// whoever was there before) did on the Initial grid — a position swap, or
+// a bench/reserve player promoted into the run-on side. Starters are
+// compared slot-by-slot (jersey number tracks the player, not the
+// position, per NRL convention and this app's own data — see
+// nrl_jersey_number_positions memory — so list order, not number, is what
+// actually encodes "which position" for 1-13). Bench is compared as a set,
+// not by slot order: bench interchange order carries no positional
+// meaning the way starters 1-13 do, and comparing by order would falsely
+// flag every player listed after whoever actually moved, just because
+// removing one name shifts everyone else's index.
+function computeChangedNames(initialBody: string | undefined, finalBody: string | undefined): Set<string> {
+  if (!initialBody || !finalBody) return new Set();
+  const initial = parseTeamList(initialBody);
+  const final = parseTeamList(finalBody);
+  if (!initial || !final) return new Set();
+
+  const changed = new Set<string>();
+  final.starters.forEach((p, i) => {
+    if (initial.starters[i]?.name.toLowerCase() !== p.name.toLowerCase()) changed.add(p.name.toLowerCase());
+  });
+  const initialBenchNames = new Set(initial.bench.map((p) => p.name.toLowerCase()));
+  for (const p of final.bench) {
+    if (!initialBenchNames.has(p.name.toLowerCase())) changed.add(p.name.toLowerCase());
+  }
+  return changed;
+}
+
 // 24hr and Final are the two checkpoints with a real, computable
 // kickoff-relative expectation (~24h and ~1.5h before kickoff respectively —
 // see schema.prisma design notes on TeamListStage). INITIAL ("Tuesday
@@ -112,11 +140,13 @@ function StageRow({
   event,
   kickoffAt,
   omittedNames,
+  changedNames,
 }: {
   stage: TeamListStage;
   event: EventItem | null;
   kickoffAt: string;
   omittedNames: Set<string>;
+  changedNames: Set<string>;
 }) {
   if (!event) {
     const offsetMs = PLACEHOLDER_OFFSET_MS[stage];
@@ -153,7 +183,7 @@ function StageRow({
         </span>
         <span className="text-[10px] text-slate-500">{timeAgo(event.createdAt)}</span>
       </div>
-      <TeamListBody body={event.body} omittedNames={omittedNames} />
+      <TeamListBody body={event.body} omittedNames={omittedNames} changedNames={changedNames} />
     </div>
   );
 }
@@ -162,10 +192,12 @@ function PlayerColumn({
   label,
   players,
   omittedNames,
+  changedNames,
 }: {
   label: string;
   players: NumberedPlayer[];
   omittedNames: Set<string>;
+  changedNames: Set<string>;
 }) {
   if (players.length === 0) return null;
   return (
@@ -173,10 +205,19 @@ function PlayerColumn({
       <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">{label}</div>
       {players.map((p) => {
         const omitted = omittedNames.has(p.name.toLowerCase());
+        const changed = changedNames.has(p.name.toLowerCase());
         return (
           <div key={p.number} className="flex gap-1.5 text-[12.5px] leading-tight">
             <span className="shrink-0 w-4 text-slate-500 tabular-nums">{p.number}</span>
-            <span className={omitted ? "text-slate-500 line-through truncate" : "text-slate-200 truncate"}>
+            <span
+              className={
+                omitted
+                  ? "text-slate-500 line-through truncate"
+                  : changed
+                    ? "text-brand-heliotrope font-bold truncate"
+                    : "text-slate-200 truncate"
+              }
+            >
               {p.name}
             </span>
           </div>
@@ -193,7 +234,15 @@ function PlayerColumn({
 // scans like a real team sheet instead of one dense paragraph. A short
 // change blurb ("Jed Reardon replaces Jack Underhill on the bench") doesn't
 // parse into numbered entries (see parseTeamList) and just renders as-is.
-function TeamListBody({ body, omittedNames }: { body: string; omittedNames: Set<string> }) {
+function TeamListBody({
+  body,
+  omittedNames,
+  changedNames,
+}: {
+  body: string;
+  omittedNames: Set<string>;
+  changedNames: Set<string>;
+}) {
   const parsed = parseTeamList(body);
   if (!parsed) {
     return <p className="text-slate-300 text-sm leading-relaxed mt-1.5">{body}</p>;
@@ -201,10 +250,10 @@ function TeamListBody({ body, omittedNames }: { body: string; omittedNames: Set<
 
   return (
     <div className="grid grid-cols-2 gap-x-3 mt-1.5">
-      <PlayerColumn label="Starters" players={parsed.starters} omittedNames={omittedNames} />
+      <PlayerColumn label="Starters" players={parsed.starters} omittedNames={omittedNames} changedNames={changedNames} />
       <div className="space-y-2">
-        <PlayerColumn label="Bench" players={parsed.bench} omittedNames={omittedNames} />
-        <PlayerColumn label="Reserves" players={parsed.reserves} omittedNames={omittedNames} />
+        <PlayerColumn label="Bench" players={parsed.bench} omittedNames={omittedNames} changedNames={changedNames} />
+        <PlayerColumn label="Reserves" players={parsed.reserves} omittedNames={omittedNames} changedNames={changedNames} />
       </div>
     </div>
   );
@@ -223,6 +272,12 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
       n.toLowerCase()
     )
   );
+  // Each stage's highlights are computed independently against INITIAL, not
+  // chained stage-to-stage — so if FINAL reverts a 24hr-stage change back to
+  // the original name, that player correctly stops being flagged, rather
+  // than staying highlighted just because 24hr once differed.
+  const changedAt24hr = computeChangedNames(stages.INITIAL?.body, stages.TWENTY_FOUR_HOUR?.body);
+  const changedAtFinal = computeChangedNames(stages.INITIAL?.body, stages.FINAL?.body);
 
   return (
     <div className="rounded-xl bg-surface border border-white/10 p-4 shadow-card space-y-2.5">
@@ -234,9 +289,15 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
         {team.shortName}
       </Link>
       <div className="space-y-2">
-        <StageRow stage="INITIAL" event={stages.INITIAL} kickoffAt={kickoffAt} omittedNames={omittedNames} />
-        <StageRow stage="TWENTY_FOUR_HOUR" event={stages.TWENTY_FOUR_HOUR} kickoffAt={kickoffAt} omittedNames={omittedNames} />
-        <StageRow stage="FINAL" event={stages.FINAL} kickoffAt={kickoffAt} omittedNames={omittedNames} />
+        <StageRow stage="INITIAL" event={stages.INITIAL} kickoffAt={kickoffAt} omittedNames={omittedNames} changedNames={new Set()} />
+        <StageRow
+          stage="TWENTY_FOUR_HOUR"
+          event={stages.TWENTY_FOUR_HOUR}
+          kickoffAt={kickoffAt}
+          omittedNames={omittedNames}
+          changedNames={changedAt24hr}
+        />
+        <StageRow stage="FINAL" event={stages.FINAL} kickoffAt={kickoffAt} omittedNames={omittedNames} changedNames={changedAtFinal} />
       </div>
     </div>
   );
