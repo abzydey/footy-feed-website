@@ -59,6 +59,48 @@ function suggestStage(kickoffAt: Date): "INITIAL" | "TWENTY_FOUR_HOUR" | "FINAL"
   return "TWENTY_FOUR_HOUR";
 }
 
+type Stage = "INITIAL" | "TWENTY_FOUR_HOUR" | "FINAL";
+
+// Each stage has a genuinely different expected shape, not just "reserves
+// count varies" — starters/interchange are fixed at 13/6 throughout, and
+// the reserve count itself steps down through the week as NRL.com trims
+// the extended squad toward the real matchday 19:
+//   Initial (Tuesday):        22 = 13 + 6 + 3 reserves
+//   24hr Update:               20 = 13 + 6 + 1 reserve
+//   Final Update (~90min out): 19 = 13 + 6 + 0 reserves — no Reserves
+//     section at all is the *correct* shape here, not a bug.
+// Told directly after an earlier version of this only special-cased Final
+// and still warned on a normal 24hr's 1 reserve: "the three team-list
+// stages have genuinely different expected shapes, not just 'reserves
+// count varies'."
+const EXPECTED_SHAPE: Record<Stage, { starters: number; interchange: number; reserves: number }> = {
+  INITIAL: { starters: 13, interchange: 6, reserves: 3 },
+  TWENTY_FOUR_HOUR: { starters: 13, interchange: 6, reserves: 1 },
+  FINAL: { starters: 13, interchange: 6, reserves: 0 },
+};
+
+// Specific, readable mismatch messages rather than one generic boolean —
+// e.g. a Final unexpectedly still showing a reserve is just as worth
+// surfacing as an Initial that's short on them, and either message says
+// exactly what's off rather than making the admin re-derive it.
+function shapeWarnings(
+  stage: Stage,
+  sheet: { starters: ParsedPlayer[]; interchange: ParsedPlayer[]; reserves: ParsedPlayer[] }
+): string[] {
+  const expected = EXPECTED_SHAPE[stage];
+  const warnings: string[] = [];
+  if (sheet.starters.length !== expected.starters) {
+    warnings.push(`${sheet.starters.length} starter${sheet.starters.length === 1 ? "" : "s"} found (expected ${expected.starters})`);
+  }
+  if (sheet.interchange.length !== expected.interchange) {
+    warnings.push(`${sheet.interchange.length} on the interchange (expected ${expected.interchange})`);
+  }
+  if (sheet.reserves.length !== expected.reserves) {
+    warnings.push(`${sheet.reserves.length} reserve${sheet.reserves.length === 1 ? "" : "s"} found (expected ${expected.reserves} at this stage)`);
+  }
+  return warnings;
+}
+
 const parseSchema = z.object({ url: z.string().url().optional() });
 
 // POST /api/admin/late-mail/parse — fetches + parses NRL.com's Late Mail
@@ -126,6 +168,7 @@ router.post("/parse", async (req, res) => {
 
       const homeOmitted = computeOmitted(m.homeTeam, homeInitial?.body);
       const awayOmitted = computeOmitted(m.awayTeam, awayInitial?.body);
+      const stage = game ? suggestStage(game.kickoffAt) : "INITIAL";
 
       return {
         matchLabel: m.matchLabel,
@@ -137,8 +180,8 @@ router.post("/parse", async (req, res) => {
           starters: m.homeTeam.starters,
           interchange: m.homeTeam.interchange,
           reserves: m.homeTeam.reserves,
-          reserveWarning: m.homeTeam.reserveWarning,
-          suggestedStage: game ? suggestStage(game.kickoffAt) : "INITIAL",
+          shapeWarnings: shapeWarnings(stage, m.homeTeam),
+          suggestedStage: stage,
           generatedBody: buildBody(m.homeTeam, homeOmitted),
         },
         away: {
@@ -149,8 +192,8 @@ router.post("/parse", async (req, res) => {
           starters: m.awayTeam.starters,
           interchange: m.awayTeam.interchange,
           reserves: m.awayTeam.reserves,
-          reserveWarning: m.awayTeam.reserveWarning,
-          suggestedStage: game ? suggestStage(game.kickoffAt) : "INITIAL",
+          shapeWarnings: shapeWarnings(stage, m.awayTeam),
+          suggestedStage: stage,
           generatedBody: buildBody(m.awayTeam, awayOmitted),
         },
       };

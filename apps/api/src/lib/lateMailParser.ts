@@ -42,11 +42,14 @@ export interface ParsedTeamSheet {
   teamName: string; // raw name as it appears on NRL.com, e.g. "Titans" — matched against Team.shortName by the caller
   starters: ParsedPlayer[]; // Backs + Forwards sections combined, in listed order (1-13)
   interchange: ParsedPlayer[];
+  // Whatever NRL.com actually lists — commonly 3 at the Tuesday/INITIAL
+  // release, shrinking through the week, and normally 0 by Final (the 19
+  // named players — 13 + 6 bench — are the complete squad by then, nothing
+  // held in reserve). Never assumed to be any particular count here; see
+  // routes/adminLateMail.ts for the stage-aware reserveWarning built from
+  // this, since "how many reserves is normal" depends on which stage this
+  // data represents, which the parser itself has no way to know.
   reserves: ParsedPlayer[];
-  // True when reserves.length < 3 — NRL.com doesn't always name a full
-  // three-player reserve bench, and assuming it does was the exact source
-  // of a past manual-reading error. Surfaced, never silently assumed.
-  reserveWarning: boolean;
 }
 
 export interface ParsedMatch {
@@ -145,20 +148,8 @@ function parseMatchChunk(chunkHtml: string, matchLabel: string): ParsedMatch {
 
   return {
     matchLabel,
-    homeTeam: {
-      teamName: homeName,
-      starters: homeStarters,
-      interchange: homeInterchange,
-      reserves: homeReserves,
-      reserveWarning: homeReserves.length < 3,
-    },
-    awayTeam: {
-      teamName: awayName,
-      starters: awayStarters,
-      interchange: awayInterchange,
-      reserves: awayReserves,
-      reserveWarning: awayReserves.length < 3,
-    },
+    homeTeam: { teamName: homeName, starters: homeStarters, interchange: homeInterchange, reserves: homeReserves },
+    awayTeam: { teamName: awayName, starters: awayStarters, interchange: awayInterchange, reserves: awayReserves },
   };
 }
 

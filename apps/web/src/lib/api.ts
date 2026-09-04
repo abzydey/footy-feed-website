@@ -175,7 +175,7 @@ export interface LateMailTeamSheet {
   starters: LateMailPlayer[];
   interchange: LateMailPlayer[];
   reserves: LateMailPlayer[];
-  reserveWarning: boolean;
+  shapeWarnings: string[];
   suggestedStage: "INITIAL" | "TWENTY_FOUR_HOUR" | "FINAL";
   generatedBody: string;
 }

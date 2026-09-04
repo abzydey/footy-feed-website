@@ -9,6 +9,33 @@ function playerList(players: LateMailPlayer[]): string {
   return players.map((p) => `${p.number}. ${p.name} (${p.position})`).join(", ");
 }
 
+// Mirrors adminLateMail.ts's EXPECTED_SHAPE exactly — each stage is a
+// genuinely different shape, not just "reserves count varies": Initial
+// names a fuller 3-reserve bench, 24hr trims to 1, and Final has none at
+// all (19 = 13 + 6 bench is the complete matchday squad by then). Kept
+// reactive to the live stage dropdown, not just the server's initial
+// suggestion, so flipping the dropdown updates which warnings apply.
+const EXPECTED_SHAPE: Record<TeamListStage, { starters: number; interchange: number; reserves: number }> = {
+  INITIAL: { starters: 13, interchange: 6, reserves: 3 },
+  TWENTY_FOUR_HOUR: { starters: 13, interchange: 6, reserves: 1 },
+  FINAL: { starters: 13, interchange: 6, reserves: 0 },
+};
+
+function computeShapeWarnings(stage: TeamListStage, sheet: LateMailTeamSheet): string[] {
+  const expected = EXPECTED_SHAPE[stage];
+  const warnings: string[] = [];
+  if (sheet.starters.length !== expected.starters) {
+    warnings.push(`${sheet.starters.length} starter${sheet.starters.length === 1 ? "" : "s"} found (expected ${expected.starters})`);
+  }
+  if (sheet.interchange.length !== expected.interchange) {
+    warnings.push(`${sheet.interchange.length} on the interchange (expected ${expected.interchange})`);
+  }
+  if (sheet.reserves.length !== expected.reserves) {
+    warnings.push(`${sheet.reserves.length} reserve${sheet.reserves.length === 1 ? "" : "s"} found (expected ${expected.reserves} at this stage)`);
+  }
+  return warnings;
+}
+
 function TeamSheetCard({ token, sheet }: { token: string; sheet: LateMailTeamSheet }) {
   const [stage, setStage] = useState<TeamListStage>(sheet.suggestedStage);
   const [body, setBody] = useState(sheet.generatedBody);
@@ -16,6 +43,7 @@ function TeamSheetCard({ token, sheet }: { token: string; sheet: LateMailTeamShe
   const [error, setError] = useState<string | null>(null);
 
   const canPublish = Boolean(sheet.matchedTeamId && sheet.matchedGameId);
+  const shapeWarnings = computeShapeWarnings(stage, sheet);
 
   // Re-fetching the same URL later in the week (see lib/lateMailParser.ts —
   // NRL.com updates this same article in place) should update that stage's
@@ -78,11 +106,12 @@ function TeamSheetCard({ token, sheet }: { token: string; sheet: LateMailTeamShe
       {sheet.matchedTeamId && !sheet.matchedGameId && (
         <p className="text-brand-siren text-xs font-bold">⚠ No matching Game found for this fixture — can't publish.</p>
       )}
-      {sheet.reserveWarning && (
-        <p className="text-brand-siren text-xs font-bold">
-          ⚠ Only {sheet.reserves.length} reserve{sheet.reserves.length === 1 ? "" : "s"} found on the source page — not
-          assumed to be 3, this is what NRL.com actually listed. Double-check before publishing.
-        </p>
+      {shapeWarnings.length > 0 && (
+        <div className="text-brand-siren text-xs font-bold space-y-0.5">
+          {shapeWarnings.map((w) => (
+            <p key={w}>⚠ {w} — this is what NRL.com actually listed, not assumed. Double-check before publishing.</p>
+          ))}
+        </div>
       )}
 
       <div className="text-[11px] text-slate-500 space-y-0.5">
