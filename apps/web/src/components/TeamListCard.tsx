@@ -289,15 +289,23 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
         {team.shortName}
       </Link>
       <div className="space-y-2">
+        {/* omittedNames only ever applies to the INITIAL grid — it's the
+            "who got cut from this original list" annotation. A 24hr/Final
+            grid renders its own actual current squad, so a name appearing
+            there is present, full stop — even if an earlier stage's
+            sentence once dropped them and a later one brought them back
+            (e.g. a player omitted at 24hr, then recalled for Final). Passing
+            the same combined set to every stage struck that recalled name
+            through on its own Final listing, which is exactly backwards. */}
         <StageRow stage="INITIAL" event={stages.INITIAL} kickoffAt={kickoffAt} omittedNames={omittedNames} changedNames={new Set()} />
         <StageRow
           stage="TWENTY_FOUR_HOUR"
           event={stages.TWENTY_FOUR_HOUR}
           kickoffAt={kickoffAt}
-          omittedNames={omittedNames}
+          omittedNames={new Set()}
           changedNames={changedAt24hr}
         />
-        <StageRow stage="FINAL" event={stages.FINAL} kickoffAt={kickoffAt} omittedNames={omittedNames} changedNames={changedAtFinal} />
+        <StageRow stage="FINAL" event={stages.FINAL} kickoffAt={kickoffAt} omittedNames={new Set()} changedNames={changedAtFinal} />
       </div>
     </div>
   );
