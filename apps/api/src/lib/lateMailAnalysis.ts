@@ -31,7 +31,7 @@ function buildBody(sheet: ParsedTeamSheet, omitted: { names: string[]; initialSq
 // initialSquadSize is the actual count of names in that INITIAL body, not
 // assumed to always be 22 — matches how every hand-entered omission
 // sentence this session used the real original squad count.
-function computeOmitted(sheet: ParsedTeamSheet, initialBody: string | undefined): { names: string[]; initialSquadSize: number } {
+export function computeOmitted(sheet: ParsedTeamSheet, initialBody: string | undefined): { names: string[]; initialSquadSize: number } {
   if (!initialBody) return { names: [], initialSquadSize: 0 };
   const currentNames = new Set(
     [...sheet.starters, ...sheet.interchange, ...sheet.reserves].map((p) => p.name.toLowerCase())
@@ -96,6 +96,111 @@ export function shapeWarnings(
   return warnings;
 }
 
+// Same "N. Name" parsing convention as parseTeamList in TeamListCard.tsx,
+// ported server-side to read a *stored* body (INITIAL) back into named
+// sections — needed by generateTwentyFourHourBody below to know who was
+// where at INITIAL, not just who's missing entirely (computeOmitted only
+// answers the latter).
+const STORED_NUMBERED_PLAYER = /(\d{1,2})\.\s*([^,.]+?)(?=,|\.|$)/g;
+
+interface StoredSheet {
+  starters: string[];
+  interchange: string[];
+  reserves: string[];
+}
+
+function parseStoredBody(body: string): StoredSheet | null {
+  const total = [...body.matchAll(STORED_NUMBERED_PLAYER)];
+  if (total.length < 10) return null; // not a full structured list (e.g. already prose) — nothing to diff against
+  const benchIdx = body.indexOf("Bench:");
+  if (benchIdx === -1) return null;
+  const reservesIdx = body.indexOf("Reserves:");
+  const extract = (seg: string) => [...seg.matchAll(STORED_NUMBERED_PLAYER)].map((m) => m[2].trim());
+  return {
+    starters: extract(body.slice(0, benchIdx)),
+    interchange: extract(reservesIdx === -1 ? body.slice(benchIdx) : body.slice(benchIdx, reservesIdx)),
+    reserves: reservesIdx === -1 ? [] : extract(body.slice(reservesIdx)),
+  };
+}
+
+export interface TwentyFourHourResult {
+  // null when the change is too novel to safely template (a genuine
+  // starting-side change, or a name appearing from nowhere) — see reason.
+  body: string | null;
+  reason?: string;
+}
+
+// Auto-generates the hand-written-style 24hr prose sentence this app has
+// used all session ("Omitted from the NN — ...; X remains the one reserve
+// as the Team trim their squad ahead of Day's clash with Opponent") —
+// covering the two patterns that account for essentially every real 24hr
+// update seen this season: a plain reserve trim, and a reserve promoted
+// onto the bench (e.g. Isaah Yeo, Round 27 Panthers). Deliberately refuses
+// (returns body: null) rather than guess at anything involving an actual
+// starting-lineup change — that needs real football judgment (why: injury,
+// form, tactics) a template can't responsibly fabricate, and getting a
+// 24hr body wrong once already cost a correction this session (the
+// full-grid mistake). Those cases are left for a human/chat-triggered
+// write-up, same as a shape warning.
+export function generateTwentyFourHourBody(
+  side: Pick<AnalyzedSide, "starters" | "interchange" | "reserves" | "matchedTeamShortName" | "initialBody">,
+  opponentShortName: string,
+  kickoffAt: Date
+): TwentyFourHourResult {
+  if (!side.initialBody) return { body: null, reason: "no INITIAL list on file to diff against" };
+  const initial = parseStoredBody(side.initialBody);
+  if (!initial) return { body: null, reason: "INITIAL body isn't a structured list" };
+
+  const lower = (s: string) => s.toLowerCase();
+  const currentStarterNames = side.starters.map((p) => p.name);
+
+  for (let i = 0; i < Math.max(initial.starters.length, currentStarterNames.length); i++) {
+    const fromName = initial.starters[i];
+    const toName = currentStarterNames[i];
+    if (!toName) continue;
+    if (!fromName || lower(fromName) !== lower(toName)) {
+      return { body: null, reason: `starting side changed (slot ${i + 1}: ${fromName ?? "—"} -> ${toName})` };
+    }
+  }
+
+  const initialInterchangeSet = new Set(initial.interchange.map(lower));
+  const initialReserveSet = new Set(initial.reserves.map(lower));
+  const currentInterchangeNames = side.interchange.map((p) => p.name);
+  const newBenchNames = currentInterchangeNames.filter((n) => !initialInterchangeSet.has(lower(n)));
+  const promotions = newBenchNames.filter((n) => initialReserveSet.has(lower(n)));
+  const unexplainedBenchJoins = newBenchNames.filter((n) => !initialReserveSet.has(lower(n)));
+  if (unexplainedBenchJoins.length > 0) {
+    return { body: null, reason: `unexpected bench addition (${unexplainedBenchJoins.join(", ")})` };
+  }
+
+  const combinedSheet = { starters: side.starters, interchange: side.interchange, reserves: side.reserves };
+  const omitted = computeOmitted(combinedSheet as ParsedTeamSheet, side.initialBody);
+
+  const dayLabel = kickoffAt.toLocaleDateString("en-AU", { weekday: "long", timeZone: "Australia/Sydney" });
+  const team = side.matchedTeamShortName;
+  const trimClause = `as the ${team} trim their squad ahead of ${dayLabel}'s clash with the ${opponentShortName}`;
+
+  const parts: string[] = [];
+  if (omitted.names.length > 0) {
+    parts.push(`Omitted from the ${omitted.initialSquadSize} — ${omitted.names.join(", ")}.`);
+  }
+  for (const name of promotions) {
+    parts.push(`${name} is promoted from the reserves onto the bench.`);
+  }
+
+  const remaining = side.reserves.map((p) => p.name);
+  if (remaining.length === 0) {
+    parts.push(`No reserves remain ${trimClause}.`);
+  } else if (remaining.length === 1) {
+    parts.push(`${remaining[0]} remains the one reserve ${trimClause}.`);
+  } else {
+    const countWord = remaining.length === 2 ? "two" : String(remaining.length);
+    parts.push(`${remaining.join(" and ")} remain the ${countWord} reserves ${trimClause}.`);
+  }
+
+  return { body: parts.join(" ") };
+}
+
 export interface AnalyzedSide {
   rawTeamName: string;
   matchedTeamId: string | null;
@@ -108,6 +213,10 @@ export interface AnalyzedSide {
   shapeWarnings: string[];
   suggestedStage: Stage;
   generatedBody: string;
+  // The team's stored INITIAL body text, when one exists — lets a caller
+  // (lib/lateMailPoller.ts's 24hr auto-prose generator) diff against the
+  // actual original squad without a second DB round-trip.
+  initialBody: string | null;
 }
 
 export interface AnalyzedMatch {
@@ -178,6 +287,7 @@ export async function analyzeLateMail(lateMail: ParsedLateMail): Promise<Analyze
           shapeWarnings: shapeWarnings(stage, m.homeTeam),
           suggestedStage: stage,
           generatedBody: buildBody(m.homeTeam, homeOmitted),
+          initialBody: homeInitial?.body ?? null,
         },
         away: {
           rawTeamName: m.awayTeam.teamName,
@@ -191,6 +301,7 @@ export async function analyzeLateMail(lateMail: ParsedLateMail): Promise<Analyze
           shapeWarnings: shapeWarnings(stage, m.awayTeam),
           suggestedStage: stage,
           generatedBody: buildBody(m.awayTeam, awayOmitted),
+          initialBody: awayInitial?.body ?? null,
         },
       };
     })
