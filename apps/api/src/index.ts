@@ -32,6 +32,7 @@ import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
 import { startEpisodeAutoPolling } from "./lib/episodeAutoPoller";
+import { startLateMailPolling } from "./lib/lateMailPoller";
 
 const app = express();
 
@@ -93,4 +94,5 @@ app.listen(port, () => {
   startPodcastDiscoveryPoller();
   startLiveScorePolling();
   startEpisodeAutoPolling();
+  startLateMailPolling();
 });
