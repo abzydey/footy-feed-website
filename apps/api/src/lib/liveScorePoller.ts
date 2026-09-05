@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { isTwitterConfigured, getTwitterClient } from "./twitter";
 import { buildMatchCentreUrl, fetchMatchCentre, parseTrySummaries, MatchCentreData } from "./matchCentreParser";
+import { HANDLE_TO_TEAM_SLUG } from "./teamTwitterHandles";
 
 // The live-blog account(s) to read scores from — distinct from
 // SOURCE_USERNAMES in socialPoller.ts, which feeds the app's own Social
@@ -23,30 +24,11 @@ const POLL_INTERVAL_MS = 2.5 * 60 * 1000;
 const WINDOW_BEFORE_KICKOFF_MS = 15 * 60 * 1000;
 const WINDOW_AFTER_KICKOFF_MS = 3.5 * 60 * 60 * 1000;
 
-// Maps a club's tracked X handle (lowercase, no @) to its Team.slug — the
-// same 17 handles already tracked in socialPoller.ts's SOURCE_USERNAMES,
-// reused here so a tweet's "@NRL_Bulldogs 20 / @brisbanebroncos 34" score
-// line can be matched to the real Team rows rather than just trusted at
-// face value.
-const HANDLE_TO_TEAM_SLUG: Record<string, string> = {
-  brisbanebroncos: "broncos",
-  raiderscanberra: "raiders",
-  nrl_bulldogs: "bulldogs",
-  cronullasharks: "sharks",
-  dolphinsnrl: "dolphins",
-  gctitans: "titans",
-  seaeagles: "sea-eagles",
-  storm: "storm",
-  nzwarriors: "warriors",
-  nrlknights: "knights",
-  nthqldcowboys: "cowboys",
-  theparraeels: "eels",
-  penrithpanthers: "panthers",
-  ssfcrabbitohs: "rabbitohs",
-  nrl_dragons: "dragons",
-  sydneyroosters: "roosters",
-  weststigers: "wests-tigers",
-};
+// HANDLE_TO_TEAM_SLUG (lib/teamTwitterHandles.ts) maps a club's tracked X
+// handle to its Team.slug — the same 17 handles already tracked in
+// socialPoller.ts's SOURCE_USERNAMES, reused here so a tweet's
+// "@NRL_Bulldogs 20 / @brisbanebroncos 34" score line can be matched to the
+// real Team rows rather than just trusted at face value.
 
 interface ParsedScoreTweet {
   minute: string | null;

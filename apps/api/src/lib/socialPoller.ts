@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { isTwitterConfigured, getTwitterClient } from "./twitter";
 import { notifyFollowersOfEvent } from "./notify";
 import { fetchTweetAuthorName } from "./twitterEmbed";
+import { HANDLE_TO_TEAM_SLUG } from "./teamTwitterHandles";
 
 // Comma-separated X usernames to poll, no leading "@". Starts with just the
 // app's own account for an end-to-end test; widen later via env, no code
@@ -29,6 +30,21 @@ async function pruneOldSocialPosts(): Promise<void> {
 
 // Username -> user id, resolved once per process rather than on every poll.
 const userIdCache = new Map<string, string>();
+
+// slug -> Team.id, resolved once and reused for the life of the process —
+// team rows essentially never change once seeded, so there's no need to
+// re-query on every single tweet.
+let teamIdBySlug: Map<string, string> | null = null;
+
+async function resolveTeamIdForHandle(handle: string): Promise<string | undefined> {
+  const slug = HANDLE_TO_TEAM_SLUG[handle.toLowerCase()];
+  if (!slug) return undefined;
+  if (!teamIdBySlug) {
+    const teams = await prisma.team.findMany({ select: { id: true, slug: true } });
+    teamIdBySlug = new Map(teams.map((t) => [t.slug, t.id]));
+  }
+  return teamIdBySlug.get(slug);
+}
 
 async function resolveUserId(client: TwitterApi, username: string): Promise<string> {
   const cached = userIdCache.get(username);
@@ -110,9 +126,19 @@ export async function pollTwitterSources(): Promise<void> {
         // held the tweet text, which is what caused the on-card duplication.)
         if (!retweetRef) authorName = await fetchTweetAuthorName(sourceUrl);
 
+        // Tags the post to a real Team when its actual author (not
+        // necessarily the tracked account itself — a reposted tweet
+        // resolves to whoever really wrote it) is a known club account, so
+        // the Social page's team filter has something to filter by. A
+        // journalist/media account's post stays untagged, only showing
+        // under "All" — there's no reliable way to say a given post is
+        // "about" one specific club just from who tweeted it.
+        const teamId = await resolveTeamIdForHandle(authorUsername);
+
         const event = await prisma.event.create({
           data: {
             type: "SOCIAL_POST",
+            teamId,
             headline: `@${authorUsername}`,
             body: text,
             sourceUrl,
