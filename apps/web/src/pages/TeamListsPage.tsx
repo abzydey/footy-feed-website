@@ -56,24 +56,32 @@ export default function TeamListsPage() {
     <div className="max-w-3xl mx-auto p-4 space-y-8">
       <PageHero eyebrow={data.round ?? undefined} title="Team lists" subtitle="Every matchup's team list, all in one place." />
 
-      {data.games.length === 0 && <p className="text-slate-500 text-sm">No fixtures found.</p>}
+      {/* Once a game's finished, its team lists are historical rather than
+          something to check ahead of kickoff — they stay fully visible on
+          the game's own page (see GamePage.tsx, unaffected by this filter),
+          just no longer clutter this "what's coming up" round view. */}
+      {data.games.filter(({ game }) => game.status !== "FULL_TIME").length === 0 && (
+        <p className="text-slate-500 text-sm">No fixtures found.</p>
+      )}
 
-      {data.games.map(({ game, homeTeamLineup, awayTeamLineup }) => (
-        <section key={game.id}>
-          <SectionLabel>
-            <Link to={`/games/${game.id}`} className="hover:text-white transition-colors duration-150">
-              {game.homeTeam.shortName} vs {game.awayTeam.shortName}
-            </Link>
-          </SectionLabel>
-          <p className="text-[11.5px] font-semibold text-white/42 -mt-2 mb-2.5">
-            {formatKickoff(game.kickoffAt)}
-            {game.venue && ` · ${game.venue}`}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <TeamListCard team={game.homeTeam} stages={homeTeamLineup} kickoffAt={game.kickoffAt} />
-            <TeamListCard team={game.awayTeam} stages={awayTeamLineup} kickoffAt={game.kickoffAt} />
-          </div>
-        </section>
+      {data.games
+        .filter(({ game }) => game.status !== "FULL_TIME")
+        .map(({ game, homeTeamLineup, awayTeamLineup }) => (
+          <section key={game.id}>
+            <SectionLabel>
+              <Link to={`/games/${game.id}`} className="hover:text-white transition-colors duration-150">
+                {game.homeTeam.shortName} vs {game.awayTeam.shortName}
+              </Link>
+            </SectionLabel>
+            <p className="text-[11.5px] font-semibold text-white/42 -mt-2 mb-2.5">
+              {formatKickoff(game.kickoffAt)}
+              {game.venue && ` · ${game.venue}`}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <TeamListCard team={game.homeTeam} stages={homeTeamLineup} kickoffAt={game.kickoffAt} />
+              <TeamListCard team={game.awayTeam} stages={awayTeamLineup} kickoffAt={game.kickoffAt} />
+            </div>
+          </section>
       ))}
     </div>
   );
