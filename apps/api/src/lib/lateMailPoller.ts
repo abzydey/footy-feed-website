@@ -80,7 +80,22 @@ async function publishSide(side: AnalyzedSide, round: string, stage: "INITIAL" |
   notifyFollowersOfEvent(event.id).catch((err) => console.error(`[lateMailPoller] notifyFollowersOfEvent failed for ${event.id}:`, err));
 }
 
+// NRL is an Australian competition run out of Sydney — Late Mail articles
+// get written/updated during Australian business hours and around
+// matchdays, never in the middle of the Australian night. No point hitting
+// nrl.com every 20min through that dead window just to find nothing's
+// changed. Intl's timeZone lookup handles AEST/AEDT daylight saving
+// automatically, unlike a fixed UTC offset.
+function isQuietHours(): boolean {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", hour: "numeric", hourCycle: "h23" }).format(new Date())
+  );
+  return hour < 6; // midnight-6am AEST/AEDT
+}
+
 export async function pollLateMail(): Promise<void> {
+  if (isQuietHours()) return;
+
   const url = await findLatestLateMailUrl().catch((err) => {
     console.warn("[lateMailPoller] failed to find current Late Mail article:", err);
     return null;
@@ -121,5 +136,5 @@ export function startLateMailPolling(): void {
   setInterval(() => {
     pollLateMail().catch((err) => console.error("[lateMailPoller] poll failed:", err));
   }, POLL_INTERVAL_MS);
-  console.log(`[lateMailPoller] auto-publishing clean INITIAL/FINAL team lists every ${POLL_INTERVAL_MS / 60000}min; 24hr updates and anything with a shape warning are left for manual review`);
+  console.log(`[lateMailPoller] auto-publishing clean INITIAL/FINAL team lists every ${POLL_INTERVAL_MS / 60000}min (paused midnight-6am AEST/AEDT); 24hr updates and anything with a shape warning are left for manual review`);
 }
