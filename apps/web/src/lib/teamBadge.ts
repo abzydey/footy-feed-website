@@ -59,6 +59,11 @@ interface BadgeStyle {
   // [primary, ...band, primary] — defaults to a 30/13/13/13/31 split when
   // omitted.
   bandWeights?: number[];
+  // diagonal only: full colour list + weights override, for a club whose
+  // diagonal isn't simply [primaryColor, secondary] — e.g. Dolphins' actual
+  // white/red/gold diagonal doesn't put primaryColor (red) in the corner.
+  diagonalColors?: string[];
+  diagonalWeights?: number[];
 }
 
 const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
@@ -90,18 +95,28 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   // since, per both that image and the current official jersey listing.
   panthers: { pattern: "diagonal-band", secondary: "#FFFFFF", band: ["#BB302F", "#E8D148", "#2C9C29"] }, // black, red/yellow/green band
   // Real jersey is horizontal red/green stripes, not a vertical halves
-  // split — corrected per a direct reference to the official jersey.
-  rabbitohs: { pattern: "stripes-h", secondary: "#003C1A" }, // cardinal red + myrtle green, horizontal stripes
+  // split — corrected per a direct reference to the official jersey, and
+  // pixel-sampled from that same reference for the exact shades used
+  // there (a brighter #15943B/#FD2500 than the earlier cardinal/myrtle
+  // hex, which came from a logo-colour extraction rather than the jersey
+  // itself).
+  rabbitohs: { pattern: "stripes-h", secondary: "#15943B" }, // red + green, horizontal stripes
   dragons: { pattern: "stripes-h", secondary: "#FFFFFF" }, // red + white
   // True tricolour, not a 2-tone approximation — Roosters have worn navy/
   // white/red since 1908, so a plain halves split was dropping a whole
   // official colour.
   roosters: { pattern: "tri-stripes-h", secondary: "#FFFFFF", tertiary: "#E82C2E" }, // navy + white + red
-  // Corrected per a direct reference: red + sand gold diagonal split, not
-  // red + white — the club's own branding calls this "sand gold" (a warm
-  // khaki tone, distinct from the brighter yellow-gold used by Titans/
-  // Storm/Cowboys elsewhere in this palette), not a plain bright gold.
-  dolphins: { pattern: "diagonal", secondary: "#C6A664" }, // red + sand gold
+  // Pixel-sampled from the club's own official reference swatch
+  // ("Dolphins colours.png"): a white/red/gold diagonal, not a plain
+  // 2-tone — white top-left, a dominant red band through the middle, gold
+  // bottom-right. primaryColor (red) sits in the middle of the diagonal
+  // here, not the first stop, hence the diagonalColors override.
+  dolphins: {
+    pattern: "diagonal",
+    secondary: "#FFFFFF",
+    diagonalColors: ["#FFFFFF", "#FB141E", "#E5CC7A"],
+    diagonalWeights: [28, 44, 28],
+  }, // white + red + gold
   "wests-tigers": { pattern: "stripes-v", secondary: "#000000" }, // orange + black tiger stripes
 };
 
@@ -181,7 +196,7 @@ function conicBands(colors: string[], seamTurn = 0.014): string {
 const SHEEN = "linear-gradient(155deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,0) 48%)";
 
 function patternBackground(style: BadgeStyle, c1: string): string {
-  const { pattern, secondary: c2, tertiary: c3, band, bandWeights } = style;
+  const { pattern, secondary: c2, tertiary: c3, band, bandWeights, diagonalColors, diagonalWeights } = style;
   let fill: string;
   switch (pattern) {
     case "halves-v":
@@ -191,7 +206,7 @@ function patternBackground(style: BadgeStyle, c1: string): string {
       fill = linearBands(180, [c1, c2]);
       break;
     case "diagonal":
-      fill = linearBands(135, [c1, c2]);
+      fill = linearBands(135, diagonalColors ?? [c1, c2], diagonalWeights);
       break;
     case "stripes-h":
       fill = repeatingBands(180, [c1, c2], 18);
