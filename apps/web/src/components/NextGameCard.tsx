@@ -57,7 +57,7 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="snap-center shrink-0 w-[85%] sm:w-full cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06]"
+      className="snap-center shrink-0 w-[85%] sm:w-full cursor-pointer rounded-[18px] p-[1.5px] bg-brand-violet"
     >
       <div className="rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 pt-4 pb-[14px]">
         <div className="flex items-center justify-between mb-[14px]">

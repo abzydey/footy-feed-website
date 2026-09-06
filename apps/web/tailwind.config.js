@@ -10,7 +10,15 @@ export default {
         brand: {
           DEFAULT: "#8B4DFF",
           violet: "#8B4DFF", // Full Set Purple — buttons, links, section labels, kickers, top-8 rail
-          heliotrope: "#A472FF", // accent/link — links and small purple type on navy (6.4:1 contrast)
+          // Was #A472FF (a deliberately lighter shade for small purple text's
+          // contrast on navy — 6.4:1 vs violet's own ~4.3:1, borderline for
+          // WCAG AA at small sizes). Set equal to violet on request ("I want
+          // my brand colouring to be violet") so every brand-heliotrope use
+          // across the app (~21 files: kickers, section labels, links)
+          // renders as the exact same purple with a one-line change here,
+          // rather than hunting down each usage — small violet text on navy
+          // is a real, if minor, contrast regression from before.
+          heliotrope: "#8B4DFF",
           siren: "#FF6B2C", // the one warm accent — live now, kickoff imminent, late change, OUT. Never decorative.
         },
         // Card background, one step up from the page's app background so
