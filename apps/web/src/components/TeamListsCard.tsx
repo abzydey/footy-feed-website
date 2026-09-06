@@ -7,10 +7,14 @@ function hasAnyStage(stages: RoundLineups["games"][number]["homeTeamLineup"]) {
   return stages.INITIAL != null || stages.TWENTY_FOUR_HOUR != null || stages.FINAL != null;
 }
 
-// A standalone summary card linking into the Team Lists page — same visual
-// weight as NextGameCard, and deliberately its own element rather than
-// folded into the news feed below, since "have team lists dropped for my
-// game yet" is a different kind of check than reading news.
+// A standalone summary card linking into the Team Lists page — deliberately
+// its own element rather than folded into the news feed below, since "have
+// team lists dropped for my game yet" is a different kind of check than
+// reading news. With the old hero banner gone, this is the first bordered
+// card on Home, doing the "grab attention immediately" job the banner used
+// to do — so it carries a violet glow + a live-pulse kicker dot that
+// GeneralNewsFollow below deliberately doesn't, rather than the two reading
+// as same-weight siblings.
 export default function TeamListsCard() {
   const navigate = useNavigate();
   const [data, setData] = useState<RoundLineups | null>(null);
@@ -31,14 +35,20 @@ export default function TeamListsCard() {
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && navigate("/team-lists")}
-      className="cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06]"
+      className="cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06] shadow-[0_0_28px_-6px_rgba(139,77,255,0.55)]"
     >
-      <div className="flex items-center justify-between gap-3 rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 py-[18px]">
+      <div className="flex items-center justify-between gap-3 rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 py-5">
         <div className="min-w-0">
-          <div className="font-display font-bold text-[12.5px] tracking-[.16em] text-white/50 uppercase mb-1">
-            Team lists
+          <div className="flex items-center gap-[7px] mb-1.5">
+            <span className="relative flex h-[7px] w-[7px] shrink-0">
+              <span className="absolute inset-0 rounded-full bg-brand-violet animate-ping opacity-75" />
+              <span className="relative rounded-full h-[7px] w-[7px] bg-brand-violet" />
+            </span>
+            <span className="font-display font-bold text-[12.5px] tracking-[.16em] text-brand-heliotrope uppercase">
+              Team lists
+            </span>
           </div>
-          <div className="font-display font-extrabold text-lg text-white truncate">
+          <div className="font-display font-extrabold text-xl text-white truncate">
             {data.round ? `${data.round} team lists` : "Team lists"} — {updatedCount} of {data.games.length} games
             updated
           </div>

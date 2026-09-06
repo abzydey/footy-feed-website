@@ -114,20 +114,27 @@ export default function WhatsBeenSaidTeaser() {
         )}
       </div>
 
-      {/* Trimmed to one truncated line — was a podcast/date line + a
-          2-line headline + a 2-line quoted snippet, which read as a wall of
-          text for what's meant to be a lightweight teaser ("too much
-          writing and font"). The snippet especially often just restated
-          the headline (a chapter-marker title, not real prose), so it's
-          gone entirely rather than shortened. */}
+      {/* Leads with the actual quote, not the podcast name — a one-line
+          "Podcast — Episode" summary (tried previously) named the source but
+          never showed what was actually said, so the search-term-to-result
+          link wasn't obvious without tapping in. The quote itself is what
+          makes that link obvious: it's the sentence that contains the term,
+          so the connection reads at a glance. Podcast/episode moves to a
+          small attribution line underneath instead of disappearing. */}
       {state === undefined ? (
-        <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+        <div className="space-y-1.5">
+          <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+          <div className="h-3 w-2/3 bg-white/[.06] rounded animate-pulse" />
+        </div>
       ) : (
-        <h3 className="text-[15px] leading-snug truncate">
-          <span className="font-bold text-brand-heliotrope">{state.result.podcast}</span>
-          <span className="text-white/35"> — </span>
-          <span className="font-bold text-white">{state.result.episodeTitle}</span>
-        </h3>
+        <>
+          <p className="text-[14.5px] leading-snug text-white/92 line-clamp-2">
+            &ldquo;{state.result.snippet}&rdquo;
+          </p>
+          <p className="mt-1 text-[11.5px] font-semibold text-white/40 truncate">
+            {state.result.podcast} — {state.result.episodeTitle}
+          </p>
+        </>
       )}
 
       <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-white/[.06]">

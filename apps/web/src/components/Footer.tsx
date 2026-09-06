@@ -14,23 +14,37 @@ import { Link } from "react-router-dom";
 // is gone along with the tiering it existed to express.
 //
 // All three logos are pixel-scanned/cropped to their true visible bounding
-// box (not raw file dimensions, which vary a lot between source assets) so
-// that one shared CSS height renders them at comparable visual weight:
-//  - house-money-wordmark.png: cropped to just the "HOUSE"/"MONEY" text
-//    block (icon excluded), ~99.8% visible.
-//  - arcane-accountants-logo.png / dream-drafting-sydney-logo.png: cropped
-//    to their true visible bounds, background chroma-keyed to transparent,
-//    Dream's near-black text/tagline recoloured to white (HSL
-//    chroma/lightness classification, not a flat swap) while its saturated
-//    red icon was left untouched.
-const PARTNER_LOGO_HEIGHT = 20;
+// box (not raw file dimensions, which vary a lot between source assets), but
+// a single shared height still isn't equal *visual weight*: House Money is a
+// solid-fill bold wordmark that reads instantly at any size, while Arcane's
+// mark is a thin outline icon + a mix of medium/regular weight text, and
+// Dream's is a thin line-art icon + a fully regular-weight (non-bold)
+// wordmark — both objectively quieter marks per pixel of height. Rather than
+// recolour/re-weight the source files (the logos themselves are off limits),
+// each partner gets its own height + a brightness/contrast filter so the
+// thinner two read with comparable punch instead of visually receding next
+// to House Money — confirmed against a real dark-background render, not
+// guessed from the flat files alone.
 const PARTNERS = [
-  { name: "House Money", href: "https://housemoney.au", logo: "/partners/house-money-wordmark.png" },
-  { name: "Arcane Accountants", href: "https://arcaneaccountants.com", logo: "/partners/arcane-accountants-logo.png" },
+  {
+    name: "House Money",
+    href: "https://housemoney.au",
+    logo: "/partners/house-money-wordmark.png",
+    height: 17,
+  },
+  {
+    name: "Arcane Accountants",
+    href: "https://arcaneaccountants.com",
+    logo: "/partners/arcane-accountants-logo.png",
+    height: 30,
+    filter: "brightness(1.35) contrast(1.25)",
+  },
   {
     name: "Dream Drafting Sydney",
     href: "https://dreamdraftingsydney.com.au",
     logo: "/partners/dream-drafting-sydney-logo.png",
+    height: 32,
+    filter: "brightness(1.4) contrast(1.3)",
   },
 ];
 
@@ -62,7 +76,7 @@ export default function Footer() {
                   <img
                     src={p.logo}
                     alt={p.name}
-                    style={{ height: PARTNER_LOGO_HEIGHT }}
+                    style={{ height: p.height, filter: p.filter }}
                     className="w-auto object-contain"
                   />
                 </a>

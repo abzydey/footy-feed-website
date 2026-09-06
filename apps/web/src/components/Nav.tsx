@@ -6,10 +6,13 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-white border-brand-violet" : "text-slate-400 border-transparent hover:text-white"
   }`;
 
-// Every public section, in the drawer — Admin tucked at the very end since
-// it's not fan-facing. Ladder is second-last (ahead of Admin only): with
-// the regular season over and finals underway, the ladder is frozen and no
-// longer the thing anyone's checking day to day.
+// Every public section, in the drawer. Admin is deliberately not in this
+// list — it's an unlisted route (see App.tsx: "Routes not listed here
+// (search, admin) are handled separately below"), reached only by typing
+// /admin directly, not surfaced in any nav a tester/fan would see, even
+// though the page itself is already auth-gated regardless. Ladder is last:
+// with the regular season over and finals underway, the ladder is frozen
+// and no longer the thing anyone's checking day to day.
 const DRAWER_LINKS: { to: string; label: string }[] = [
   { to: "/", label: "Home" },
   { to: "/news", label: "News" },
@@ -22,17 +25,16 @@ const DRAWER_LINKS: { to: string; label: string }[] = [
   { to: "/highlights", label: "Highlights" },
   { to: "/search", label: "What's Been Said" },
   { to: "/ladder", label: "Ladder" },
-  { to: "/admin", label: "Admin" },
 ];
 
-// The quick-access row under the logo — every public page (not Admin),
-// same order/reasoning as the drawer above ("the menu bar still needs to
-// have every page"). The drawer duplicates all of these too, same as
-// Bleacher Report's own row + hamburger both existing at once — this row
-// is the one-tap default, the drawer's just an alternate way in.
-const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = DRAWER_LINKS.filter(
-  (l) => l.to !== "/admin"
-).map((l) => (l.to === "/" ? { ...l, end: true } : l));
+// The quick-access row under the logo — every public page, same order as
+// the drawer above ("the menu bar still needs to have every page"). The
+// drawer duplicates all of these too, same as Bleacher Report's own row +
+// hamburger both existing at once — this row is the one-tap default, the
+// drawer's just an alternate way in.
+const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = DRAWER_LINKS.map((l) =>
+  l.to === "/" ? { ...l, end: true } : l
+);
 
 const HamburgerIcon = () => (
   <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
@@ -46,16 +48,11 @@ const CloseIcon = () => (
   </svg>
 );
 
-const ChevronRight = () => (
-  <svg width="8" height="13" viewBox="0 0 8 13" fill="none" className="shrink-0">
-    <path d="M1 1l5.5 5.5L1 12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 // Slide-in drawer, same shape as Bleacher Report's hamburger menu: a
 // backdrop, a fixed-width panel from the left edge, a plain vertical list of
-// every section with a trailing chevron. Closes on backdrop click or
-// picking a link.
+// every section. Closes on backdrop click or picking a link. No trailing
+// chevrons — every item here navigates directly, none open a submenu, so an
+// arrow implying "more inside" would misrepresent what tapping it does.
 function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <div className={`fixed inset-0 z-30 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
@@ -63,12 +60,16 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
         onClick={onClose}
         className={`absolute inset-0 bg-black/60 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
       />
+      {/* surface-hover (not the plain surface card colour) plus its own
+          shadow on the right edge — surface alone sits too close in
+          luminance to the dimmed backdrop for the panel to read as a
+          distinct layer on top of the page. */}
       <div
-        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs bg-surface border-r border-white/10 transition-transform duration-200 flex flex-col ${
+        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs bg-surface-hover border-r border-brand-violet/25 shadow-[12px_0_40px_-8px_rgba(0,0,0,0.65)] transition-transform duration-200 flex flex-col ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-brand-violet/20">
           <div className="flex items-center gap-2">
             <img src="/nav-icon.png" alt="" className="h-7 w-7 rounded-md" />
             <span className="font-display font-black text-white tracking-tight">FULL SET</span>
@@ -90,13 +91,14 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
               end={link.to === "/"}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center justify-between px-4 py-3 text-[15px] font-bold tracking-tight transition-colors duration-150 ${
-                  isActive ? "text-white bg-white/[.05]" : "text-slate-300 hover:text-white hover:bg-white/[.03]"
+                `block border-l-2 px-4 py-3 text-[15px] font-bold tracking-tight transition-colors duration-150 ${
+                  isActive
+                    ? "border-brand-violet bg-brand-violet/10 text-white"
+                    : "border-transparent text-slate-300 hover:text-white hover:bg-white/[.04]"
                 }`
               }
             >
               {link.label}
-              <ChevronRight />
             </NavLink>
           ))}
         </nav>
