@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { api, JudiciaryCharge } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
-import TeamBadge from "../components/TeamBadge";
+import JudiciaryChargeCard from "../components/JudiciaryChargeCard";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 const ChevronLeft = () => (
@@ -15,13 +15,6 @@ const ChevronRight = () => (
     <path d="M1 1L5.5 5.5L1 10" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-
-function formatPenalty(charge: JudiciaryCharge): string {
-  const parts: string[] = [];
-  if (charge.matchesToServe) parts.push(`${charge.matchesToServe} match${charge.matchesToServe === 1 ? "" : "es"}`);
-  if (charge.financialPenalty) parts.push(`$${charge.financialPenalty.toLocaleString()}`);
-  return parts.length > 0 ? parts.join(" + ") : "—";
-}
 
 // Round navigation mirrors GamesPage: defaults to the most recent round with
 // any charges (GET /api/judiciary with no ?round=), then steps through
@@ -97,23 +90,7 @@ export default function JudiciaryPage() {
       {charges && charges.length > 0 && (
         <div className="space-y-2">
           {charges.map((c) => (
-            <div key={c.id} className="rounded-xl bg-surface border border-white/10 shadow-card p-3">
-              <div className="flex items-center gap-2.5">
-                <TeamBadge team={c.team} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-display font-bold text-sm text-white truncate">{c.player}</div>
-                  <div className="text-[11px] text-slate-500">{c.team.shortName}</div>
-                </div>
-                <span className="shrink-0 text-[11px] font-bold text-brand-heliotrope uppercase tracking-wider">
-                  {c.grade}
-                </span>
-              </div>
-              <p className="text-sm text-slate-300 mt-2">{c.charge}</p>
-              <div className="flex items-center justify-between gap-2 mt-2 text-xs">
-                <span className="text-slate-400">{c.result}</span>
-                <span className="font-bold text-white">{formatPenalty(c)}</span>
-              </div>
-            </div>
+            <JudiciaryChargeCard key={c.id} charge={c} />
           ))}
         </div>
       )}

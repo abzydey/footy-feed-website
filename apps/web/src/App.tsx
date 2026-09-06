@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import { onForegroundMessage } from "./lib/push";
 import { api } from "./lib/api";
 import HomePage from "./pages/HomePage";
+import FeedPage from "./pages/FeedPage";
 import GeneralNewsPage from "./pages/GeneralNewsPage";
 import TeamsPage from "./pages/TeamsPage";
 import TeamPage from "./pages/TeamPage";
@@ -28,6 +29,10 @@ import AdminPage from "./pages/AdminPage";
 // handled separately below. Routes not listed here (search, admin) are
 // deliberately not tracked.
 const PAGE_BY_PATH_PREFIX: [prefix: string, page: "news" | "teams" | "games" | "team-lists" | "ladder" | "social" | "podcasts" | "highlights" | "judiciary"][] = [
+  // /feed/* (Top/My Teams/Signing News, formerly Home's in-place filter
+  // chips) counts under the same "news" bucket the backend already tracks —
+  // no new page label needed for what's conceptually still news browsing.
+  ["/feed", "news"],
   ["/news", "news"],
   ["/teams", "teams"],
   ["/team-lists", "team-lists"],
@@ -78,6 +83,7 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/feed/:view" element={<FeedPage />} />
           <Route path="/news" element={<GeneralNewsPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:slug" element={<TeamPage />} />
