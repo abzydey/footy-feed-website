@@ -129,14 +129,42 @@ function isQuietHours(): boolean {
   return hour < 6; // midnight-6am AEST/AEDT
 }
 
+// The same article stays live-updated by NRL.com across the whole round
+// (Tuesday's Initial through Sunday's Final), but nrl.com/news/'s own
+// listing moves on well before that — it dropped this round's Late Mail
+// article days before Sunday's games even kicked off, which meant
+// findLatestLateMailUrl() started returning null while the article itself
+// was still perfectly live and current. Caching the last URL that actually
+// worked and falling back to it here is what keeps the poller running
+// through that gap instead of going silent (see the missed Dragons v Eels
+// Final check this caused — "Can't see the eels dragons team list
+// updated").
+// Seeded with this round's actual article as a one-time bootstrap: the
+// in-memory cache resets on every deploy, and nrl.com/news/ had already
+// dropped this round's article by the time of the deploy that's live right
+// now, so a fresh process would otherwise start with nothing to fall back
+// to. Harmless once stale — `discovered` always wins over this the moment
+// next round's article shows up in the index again, so this only ever
+// matters on a cold start during a gap like the current one.
+let lastKnownUrl: string | null =
+  "https://www.nrl.com/news/2026/09/02/nrl-late-mail-round-27--yeo-in-frame-duncan-hamstrung/";
+
 export async function pollLateMail(): Promise<void> {
   if (isQuietHours()) return;
 
-  const url = await findLatestLateMailUrl().catch((err) => {
-    console.warn("[lateMailPoller] failed to find current Late Mail article:", err);
+  const discovered = await findLatestLateMailUrl().catch((err) => {
+    console.warn("[lateMailPoller] failed to check nrl.com/news/ for the current Late Mail article:", err);
     return null;
   });
-  if (!url) return;
+
+  const url = discovered ?? lastKnownUrl;
+  if (!url) {
+    console.warn("[lateMailPoller] no current Late Mail article found on nrl.com/news/, and no previously-known URL to fall back to");
+    return;
+  }
+  if (!discovered) {
+    console.log(`[lateMailPoller] nrl.com/news/ no longer lists this round's article — falling back to the last known URL: ${url}`);
+  }
 
   let lateMail;
   try {
@@ -145,6 +173,7 @@ export async function pollLateMail(): Promise<void> {
     console.warn(`[lateMailPoller] failed to fetch/parse ${url}:`, err);
     return;
   }
+  lastKnownUrl = url;
   if (!lateMail.round) return; // can't tell which round this is — nothing safe to key events to
 
   const matches = await analyzeLateMail(lateMail);
