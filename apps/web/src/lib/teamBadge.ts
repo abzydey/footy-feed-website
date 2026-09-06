@@ -45,15 +45,20 @@ type BadgePattern =
   | "quarters"
   | "ring"
   | "tri-stripes-h"
-  | "diagonal-band";
+  | "diagonal-band"
+  | "band-h";
 
 interface BadgeStyle {
   pattern: BadgePattern;
   secondary: string;
   tertiary?: string;
-  // diagonal-band only: a 2-3 colour band cutting across the primary field,
-  // for a club whose real identity needs more than a 2-tone split.
+  // diagonal-band/band-h only: a 2-3 colour band cutting across the primary
+  // field, for a club whose real identity needs more than a 2-tone split.
   band?: string[];
+  // diagonal-band/band-h only: explicit widths (must sum to 100) for
+  // [primary, ...band, primary] — defaults to a 30/13/13/13/31 split when
+  // omitted.
+  bandWeights?: number[];
 }
 
 const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
@@ -64,7 +69,10 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   // (Wikimedia Commons "2024 Cronulla-Sutherland Sharks Colours.png": sky
   // blue #6FD0EF, black #000000, no white shown at all) rather than a
   // third-party logo-colour extraction — primaryColor updated to match.
-  sharks: { pattern: "stripes-v", secondary: "#000000" }, // sky blue + black
+  // Pattern per a follow-up reference: blue-black-white-black-blue bands
+  // with blue dominant, not an even 50/50 split (which read as too thin/
+  // washed out for how bold the real jersey is).
+  sharks: { pattern: "band-h", secondary: "#FFFFFF", band: ["#000000", "#FFFFFF", "#000000"], bandWeights: [32, 12, 12, 12, 32] }, // sky blue dominant, black/white/black bands
   titans: { pattern: "diagonal", secondary: "#FFD02F" }, // light blue + gold
   "sea-eagles": { pattern: "stripes-h", secondary: "#FFFFFF" }, // maroon + white
   storm: { pattern: "quarters", secondary: "#F9B019" }, // purple + gold
@@ -81,13 +89,19 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   // teal for this scheme ahead of the 2017 season and has stayed on it
   // since, per both that image and the current official jersey listing.
   panthers: { pattern: "diagonal-band", secondary: "#FFFFFF", band: ["#BB302F", "#E8D148", "#2C9C29"] }, // black, red/yellow/green band
-  rabbitohs: { pattern: "halves-v", secondary: "#003C1A" }, // cardinal red + myrtle green
+  // Real jersey is horizontal red/green stripes, not a vertical halves
+  // split — corrected per a direct reference to the official jersey.
+  rabbitohs: { pattern: "stripes-h", secondary: "#003C1A" }, // cardinal red + myrtle green, horizontal stripes
   dragons: { pattern: "stripes-h", secondary: "#FFFFFF" }, // red + white
   // True tricolour, not a 2-tone approximation — Roosters have worn navy/
   // white/red since 1908, so a plain halves split was dropping a whole
   // official colour.
   roosters: { pattern: "tri-stripes-h", secondary: "#FFFFFF", tertiary: "#E82C2E" }, // navy + white + red
-  dolphins: { pattern: "ring", secondary: "#FFFFFF" }, // red + white (gold is a minor trim, not equal partner)
+  // Corrected per a direct reference: red + sand gold diagonal split, not
+  // red + white — the club's own branding calls this "sand gold" (a warm
+  // khaki tone, distinct from the brighter yellow-gold used by Titans/
+  // Storm/Cowboys elsewhere in this palette), not a plain bright gold.
+  dolphins: { pattern: "diagonal", secondary: "#C6A664" }, // red + sand gold
   "wests-tigers": { pattern: "stripes-v", secondary: "#000000" }, // orange + black tiger stripes
 };
 
@@ -167,7 +181,7 @@ function conicBands(colors: string[], seamTurn = 0.014): string {
 const SHEEN = "linear-gradient(155deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,0) 48%)";
 
 function patternBackground(style: BadgeStyle, c1: string): string {
-  const { pattern, secondary: c2, tertiary: c3, band } = style;
+  const { pattern, secondary: c2, tertiary: c3, band, bandWeights } = style;
   let fill: string;
   switch (pattern) {
     case "halves-v":
@@ -190,7 +204,12 @@ function patternBackground(style: BadgeStyle, c1: string): string {
       break;
     case "diagonal-band": {
       const [b1, b2, b3] = band ?? [c2, c2, c2];
-      fill = linearBands(135, [c1, b1, b2, b3, c1], [30, 13, 13, 13, 31]);
+      fill = linearBands(135, [c1, b1, b2, b3, c1], bandWeights ?? [30, 13, 13, 13, 31]);
+      break;
+    }
+    case "band-h": {
+      const [b1, b2, b3] = band ?? [c2, c2, c2];
+      fill = linearBands(180, [c1, b1, b2, b3, c1], bandWeights ?? [30, 13, 13, 13, 31]);
       break;
     }
     case "quarters":
