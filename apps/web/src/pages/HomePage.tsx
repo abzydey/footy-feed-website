@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api, EventItem, Team } from "../lib/api";
 import { getStoredFcmToken } from "../lib/push";
 import EventCard from "../components/EventCard";
+import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
@@ -132,6 +133,11 @@ export default function HomePage() {
           sees ("not sure if i like it on the home page anymore but i still
           want people to see it"). */}
       <WhatsBeenSaidTeaser />
+
+      {/* Same podcast-sourced family as the teaser above, styled as a
+          matched-but-distinct pair — sits right before the news feed
+          heading so News itself isn't pushed any further down. */}
+      <LatestEpisodeTeaser />
 
       <div className="flex items-baseline justify-between">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase">
