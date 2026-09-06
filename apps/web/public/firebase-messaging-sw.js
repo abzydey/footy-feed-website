@@ -22,11 +22,23 @@ firebase.initializeApp({
 // A real (if minimal) fetch handler — required for Chrome's automatic PWA
 // install prompt, which specifically ignores a service worker with no
 // fetch listener, or one that never calls respondWith(). This just passes
-// every request straight to the network (no caching/offline behavior), so
-// it changes nothing about how the app actually loads — it exists purely
-// to satisfy that installability check.
+// requests straight to the network (no caching/offline behavior), so it
+// changes nothing about how the app actually loads — it exists purely to
+// satisfy that installability check.
+//
+// Scoped to same-origin GET requests only, and .catch()'d rather than left
+// to reject: re-issuing EVERY request through the SW (POSTs, cross-origin
+// embeds like the Twitter widget, requests the page itself later aborts)
+// surfaced as "FetchEvent.respondWith received an error: TypeError: Load
+// failed" in the console whenever one of those couldn't be replayed
+// identically. Letting non-GET/cross-origin requests fall through
+// untouched (no respondWith call at all) and returning Response.error()
+// on a genuine failure avoids both the console noise and the risk of a
+// user-visible failure that wasn't actually there without the SW.
 self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request));
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
+  event.respondWith(fetch(event.request).catch(() => Response.error()));
 });
 
 const messaging = firebase.messaging();
