@@ -60,7 +60,11 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   broncos: { pattern: "ring", secondary: "#FABF16" }, // maroon + gold
   raiders: { pattern: "stripes-h", secondary: "#FFFFFF" }, // lime green + white
   bulldogs: { pattern: "halves-v", secondary: "#FFFFFF" }, // blue + white
-  sharks: { pattern: "stripes-v", secondary: "#FFFFFF" }, // sky blue + white
+  // Pixel-sampled directly from the club's own official reference swatch
+  // (Wikimedia Commons "2024 Cronulla-Sutherland Sharks Colours.png": sky
+  // blue #6FD0EF, black #000000, no white shown at all) rather than a
+  // third-party logo-colour extraction — primaryColor updated to match.
+  sharks: { pattern: "stripes-v", secondary: "#000000" }, // sky blue + black
   titans: { pattern: "diagonal", secondary: "#FFD02F" }, // light blue + gold
   "sea-eagles": { pattern: "stripes-h", secondary: "#FFFFFF" }, // maroon + white
   storm: { pattern: "quarters", secondary: "#F9B019" }, // purple + gold
@@ -87,35 +91,119 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   "wests-tigers": { pattern: "stripes-v", secondary: "#000000" }, // orange + black tiger stripes
 };
 
+// A thin neutral "seam" at every hard colour boundary — softens what would
+// otherwise be a stark 50/50 pie-chart-style split into something that
+// reads more like a stitched/moulded badge. Generated once per pattern
+// rather than hand-typed per boundary, since several patterns (tri-stripe,
+// quarters) have 3-4 boundaries each and hand-authoring every percentage
+// is exactly the kind of thing that drifts out of sync when a pattern
+// changes.
+const SEAM = "rgba(0,0,0,0.32)";
+
+// Bands along a straight line, each flanked by a seam on every internal
+// boundary (not the two outer edges, which meet the badge's own silhouette
+// instead). Used for halves-v/h and diagonal (equal widths, n=2 — this is
+// what "soften the halves" resolves to by construction) and for
+// diagonal-band's asymmetric black/colour/colour/colour/black split, via
+// explicit weights rather than assuming every band is the same size.
+function linearBands(angleDeg: number, colors: string[], weights?: number[], seamPct = 1.6): string {
+  const n = colors.length;
+  const total = weights ? weights.reduce((a, b) => a + b, 0) : n;
+  const widths = (weights ?? colors.map(() => 1)).map((w) => (w / total) * 100);
+  const stops: string[] = [];
+  let boundary = 0;
+  for (let i = 0; i < n; i++) {
+    const start = boundary;
+    const end = start + widths[i];
+    const segStart = i === 0 ? start : start + seamPct;
+    const segEnd = i === n - 1 ? end : end - seamPct;
+    stops.push(`${colors[i]} ${segStart}%`, `${colors[i]} ${segEnd}%`);
+    if (i < n - 1) stops.push(`${SEAM} ${segEnd}%`, `${SEAM} ${end + seamPct}%`);
+    boundary = end;
+  }
+  return `linear-gradient(${angleDeg}deg, ${stops.join(", ")})`;
+}
+
+// Same idea, but every band (including the first and last) is flanked by a
+// seam on both sides, because a repeating pattern's "last" band sits right
+// next to its own "first" band at the tile wrap — without a seam there too,
+// one of the four-plus boundaries in a repeating stripe would stay a hard
+// cut while the others were softened.
+function repeatingBands(angleDeg: number, colors: string[], bandPct: number, seamPct = 1.6): string {
+  const stops: string[] = [];
+  let pos = 0;
+  for (const color of colors) {
+    stops.push(`${SEAM} ${pos}%`, `${SEAM} ${pos + seamPct}%`);
+    pos += seamPct;
+    stops.push(`${color} ${pos}%`, `${color} ${pos + bandPct}%`);
+    pos += bandPct;
+  }
+  return `repeating-linear-gradient(${angleDeg}deg, ${stops.join(", ")})`;
+}
+
+// Same wrap-aware seaming, in turns, for the conic "quarters" pattern.
+function conicBands(colors: string[], seamTurn = 0.014): string {
+  const n = colors.length;
+  const bandTurn = 1 / n;
+  const stops: string[] = [`${SEAM} 0turn`, `${SEAM} ${seamTurn}turn`];
+  let pos = seamTurn;
+  for (let i = 0; i < n; i++) {
+    const segEnd = pos + bandTurn - seamTurn * 2;
+    stops.push(`${colors[i]} ${pos}turn`, `${colors[i]} ${segEnd}turn`);
+    pos = segEnd;
+    stops.push(`${SEAM} ${pos}turn`, `${SEAM} ${pos + seamTurn * 2}turn`);
+    pos += seamTurn * 2;
+  }
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
 // CSS background values only — no SVG needed, and every one of these packs
-// down to a single declarative gradient string.
+// down to a single declarative gradient string. A soft diagonal sheen is
+// layered on top of every pattern (painted first — background layers stack
+// with the first listed on top) so the fill reads as a moulded badge with
+// some depth rather than a flat colour block; the outer drop-shadow that
+// does the rest of that job lives in TeamBadge.tsx since box/drop-shadow
+// isn't a background value.
+const SHEEN = "linear-gradient(155deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,0) 48%)";
+
 function patternBackground(style: BadgeStyle, c1: string): string {
   const { pattern, secondary: c2, tertiary: c3, band } = style;
+  let fill: string;
   switch (pattern) {
     case "halves-v":
-      return `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)`;
+      fill = linearBands(90, [c1, c2]);
+      break;
     case "halves-h":
-      return `linear-gradient(180deg, ${c1} 50%, ${c2} 50%)`;
+      fill = linearBands(180, [c1, c2]);
+      break;
     case "diagonal":
-      return `linear-gradient(135deg, ${c1} 50%, ${c2} 50%)`;
+      fill = linearBands(135, [c1, c2]);
+      break;
     case "stripes-h":
-      return `repeating-linear-gradient(180deg, ${c1} 0, ${c1} 20%, ${c2} 20%, ${c2} 40%)`;
+      fill = repeatingBands(180, [c1, c2], 18);
+      break;
     case "stripes-v":
-      return `repeating-linear-gradient(90deg, ${c1} 0, ${c1} 20%, ${c2} 20%, ${c2} 40%)`;
+      fill = repeatingBands(90, [c1, c2], 18);
+      break;
     case "tri-stripes-h":
-      return `repeating-linear-gradient(180deg, ${c1} 0, ${c1} 16%, ${c2} 16%, ${c2} 32%, ${c3 ?? c2} 32%, ${c3 ?? c2} 48%)`;
+      fill = repeatingBands(180, [c1, c2, c3 ?? c2], 13);
+      break;
     case "diagonal-band": {
       const [b1, b2, b3] = band ?? [c2, c2, c2];
-      return `linear-gradient(135deg, ${c1} 0, ${c1} 30%, ${b1} 30%, ${b1} 43%, ${b2} 43%, ${b2} 56%, ${b3} 56%, ${b3} 69%, ${c1} 69%, ${c1} 100%)`;
+      fill = linearBands(135, [c1, b1, b2, b3, c1], [30, 13, 13, 13, 31]);
+      break;
     }
     case "quarters":
-      return `conic-gradient(${c1} 0turn 0.25turn, ${c2} 0.25turn 0.5turn, ${c1} 0.5turn 0.75turn, ${c2} 0.75turn 1turn)`;
+      fill = conicBands([c1, c2, c1, c2]);
+      break;
     case "ring":
-      return `radial-gradient(circle, ${c2} 0 55%, ${c1} 55% 100%)`;
+      fill = `radial-gradient(circle, ${c2} 0 52%, ${SEAM} 52% 56%, ${c1} 56% 100%)`;
+      break;
     case "solid":
     default:
-      return c1;
+      fill = c1;
   }
+  return `${SHEEN}, ${fill}`;
 }
 
 // Falls back to a flat surface-inset fill (no pattern) when a team has no
