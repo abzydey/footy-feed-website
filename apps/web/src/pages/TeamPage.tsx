@@ -5,6 +5,7 @@ import { api, EventItem, Game, LadderRow, Player, Team, TeamListStages } from ".
 import { ordinal } from "../lib/format";
 import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
+import TeamBadge from "../components/TeamBadge";
 import TeamListCard from "../components/TeamListCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
@@ -179,12 +180,7 @@ export default function TeamPage() {
         </div>
 
         <div className="max-w-3xl mx-auto flex items-center gap-3.5">
-          <div className="shrink-0 w-[62px] h-[62px] rounded-2xl bg-white/[.08] border border-white/[.14] flex flex-col items-center justify-center gap-0.5">
-            <span className="font-display font-bold text-xl tracking-[.04em] text-white">
-              {team.shortName.slice(0, 3).toUpperCase()}
-            </span>
-            <span className="font-mono text-[6px] tracking-[.06em] text-white/40">CREST</span>
-          </div>
+          <TeamBadge team={team} size="lg" />
           <div className="min-w-0">
             <h1 className="font-display italic font-black text-[32px] leading-[.95] tracking-[.01em] text-white uppercase">
               {line1 && (

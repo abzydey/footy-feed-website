@@ -67,7 +67,13 @@ interface BadgeStyle {
 }
 
 const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
-  broncos: { pattern: "ring", secondary: "#FABF16" }, // maroon + gold
+  // Was "ring" (gold inner disc + maroon outer ring), which combined with
+  // the shield clip-path made the maroon read as a thin, easy-to-miss edge
+  // rather than an equal partner — looked like a flat gold circle at a
+  // glance, exactly the "no maroon at all" bug reported live. Diagonal
+  // gives both colours equal visual weight, same as Titans/Cowboys/
+  // Dolphins already do for their own two-tone splits.
+  broncos: { pattern: "diagonal", secondary: "#FABF16" }, // maroon + gold
   raiders: { pattern: "stripes-h", secondary: "#FFFFFF" }, // lime green + white
   bulldogs: { pattern: "halves-v", secondary: "#FFFFFF" }, // blue + white
   // Pixel-sampled directly from the club's own official reference swatch
