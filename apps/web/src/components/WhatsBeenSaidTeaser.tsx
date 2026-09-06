@@ -24,16 +24,21 @@ const ChevronRight = () => (
   </svg>
 );
 
-// Prefers a rich episode-description match (a real sentence, not a terse
-// chapter-marker label) and the most recently published one, so the card
-// shows something that reads like a genuine "look what they're saying"
-// moment rather than a three-word fragment. Falls back to whatever search
-// actually returns if nothing meets that bar, rather than showing nothing.
+// Prefers a real spoken excerpt over a mere label/description, and the most
+// recently published one within whichever kind wins. "transcript" is an
+// actual Whisper-transcribed sentence (dormant today — no OPENAI_API_KEY,
+// see routes/search.ts — but wired for when that roadmap item ships).
+// "chapter" is a creator-written chapter marker, "episode" is just the
+// video's own title/description. Only "transcript" is a genuine quote of
+// something said; the render below relies on that distinction to decide
+// whether to use quotation marks at all.
+const KIND_RANK: Record<SearchResult["kind"], number> = { transcript: 0, chapter: 1, episode: 2 };
+
 function pickBestResult(results: SearchResult[]): SearchResult | null {
-  const rich = results.filter((r) => r.kind === "episode" && r.snippet.trim().length > 20);
-  const pool = rich.length > 0 ? rich : results;
-  if (pool.length === 0) return null;
-  return [...pool].sort((a, b) => {
+  if (results.length === 0) return null;
+  return [...results].sort((a, b) => {
+    const rank = KIND_RANK[a.kind] - KIND_RANK[b.kind];
+    if (rank !== 0) return rank;
     const at = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
     const bt = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
     return bt - at;
@@ -114,26 +119,35 @@ export default function WhatsBeenSaidTeaser() {
         )}
       </div>
 
-      {/* Leads with the actual quote, not the podcast name — a one-line
-          "Podcast — Episode" summary (tried previously) named the source but
-          never showed what was actually said, so the search-term-to-result
-          link wasn't obvious without tapping in. The quote itself is what
-          makes that link obvious: it's the sentence that contains the term,
-          so the connection reads at a glance. Podcast/episode moves to a
-          small attribution line underneath instead of disappearing. */}
+      {/* Only "transcript" results are an actual spoken excerpt (see
+          pickBestResult above) — "chapter" and "episode" are a label or a
+          video description, not something anyone said on air. Quoting
+          those would misrepresent them as real quotes (they previously
+          were, including the episode title showing up quoted with its own
+          emoji intact), so only the transcript case gets quotation marks;
+          everything else gets an honest "Discussed on" line instead, with
+          the episode title underneath rather than the podcast name
+          repeated a second time. */}
       {state === undefined ? (
         <div className="space-y-1.5">
           <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
           <div className="h-3 w-2/3 bg-white/[.06] rounded animate-pulse" />
         </div>
-      ) : (
+      ) : state.result.kind === "transcript" ? (
         <>
           <p className="text-[14.5px] leading-snug text-white/92 line-clamp-2">
             &ldquo;{state.result.snippet}&rdquo;
           </p>
-          <p className="mt-1 text-[11.5px] font-semibold text-white/40 truncate">
+          <p className="mt-1 text-[12px] font-bold text-white/75 truncate">
             {state.result.podcast} — {state.result.episodeTitle}
           </p>
+        </>
+      ) : (
+        <>
+          <p className="text-[14.5px] leading-snug font-bold text-white/92 truncate">
+            Discussed on {state.result.podcast}
+          </p>
+          <p className="mt-1 text-[12px] font-bold text-white/75 truncate">{state.result.episodeTitle}</p>
         </>
       )}
 
