@@ -10,16 +10,13 @@ import { api, SearchResult } from "../lib/api";
 // returns a qualifying result.
 const FALLBACK_TOPICS = ["NRL Finals", "State of Origin", "Grand Final", "Judiciary"];
 
-// Temporary pin, set 2026-09-04: "Keep on Jai Arrow search for at least 24
-// hours" — his 100th-game milestone is the story tonight, and the normal
-// self-updating trending-topic logic (still runs underneath, see
-// resolveQueryAndResult below) could otherwise hand the teaser to whatever
-// else picks up podcast mentions before this story's had its full run.
-// Once PIN_UNTIL passes, this block is simply skipped and resolution falls
-// straight back through to normal trending/fallback behavior — nothing
-// else needs to be reverted by hand.
-const PINNED_TOPIC = "Jai Arrow";
-const PIN_UNTIL = new Date("2026-09-05T09:00:00Z").getTime();
+// Temporary pin, set 2026-09-07: swapped from the default trending pick
+// ("Sam Walker") to Cam Munster per direct request. Once PIN_UNTIL passes,
+// this block is simply skipped and resolution falls straight back through
+// to normal trending/fallback behavior — nothing else needs to be reverted
+// by hand.
+const PINNED_TOPIC = "Cameron Munster";
+const PIN_UNTIL = new Date("2026-09-09T09:00:00Z").getTime();
 
 const ChevronRight = () => (
   <svg width="11" height="9" viewBox="0 0 11 9" fill="none" className="shrink-0">
