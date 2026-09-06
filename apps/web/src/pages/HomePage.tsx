@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { api, EventItem, Team } from "../lib/api";
 import { getStoredFcmToken } from "../lib/push";
 import EventCard from "../components/EventCard";
-import GeneralNewsFollow from "../components/GeneralNewsFollow";
 import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
@@ -127,7 +126,6 @@ export default function HomePage() {
       </div>
 
       <TeamListsCard />
-      <GeneralNewsFollow />
 
       {/* Moved down from its old spot right under the header — still on
           Home, still one scroll away, just not the very first thing anyone

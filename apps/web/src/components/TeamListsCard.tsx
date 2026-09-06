@@ -12,9 +12,8 @@ function hasAnyStage(stages: RoundLineups["games"][number]["homeTeamLineup"]) {
 // team lists dropped for my game yet" is a different kind of check than
 // reading news. With the old hero banner gone, this is the first bordered
 // card on Home, doing the "grab attention immediately" job the banner used
-// to do — so it carries a violet glow + a live-pulse kicker dot that
-// GeneralNewsFollow below deliberately doesn't, rather than the two reading
-// as same-weight siblings.
+// to do — so it carries a violet glow + a live-pulse kicker dot that no
+// other Home card gets, rather than everything reading as same-weight.
 export default function TeamListsCard() {
   const navigate = useNavigate();
   const [data, setData] = useState<RoundLineups | null>(null);
