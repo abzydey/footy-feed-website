@@ -12,6 +12,20 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Mobile Safari/Chrome flash every tappable element (links, buttons) with a
+   default translucent BLUE overlay on tap — never something we styled, just
+   the browser's own default, and it clashes with the brand's actual
+   interaction states (hover/active background changes, active:scale-95,
+   etc. already used throughout). Every real interaction already has its
+   own deliberate feedback, so the browser's default highlight is just
+   turned off everywhere rather than recoloured — a transparent tap
+   highlight is the standard fix, not a violet-tinted one, since a flash of
+   any solid colour still fights with the custom active states already in
+   place ("keep the colours consistent... as you would normally do"). */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Hides the scrollbar on horizontally-scrolling regions (filter chip row,
    ladder table) per the design handoff — scroll still works, just no
    visible track/thumb. */

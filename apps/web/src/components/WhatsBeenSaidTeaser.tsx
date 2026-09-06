@@ -43,13 +43,6 @@ function pickBestResult(results: SearchResult[]): SearchResult | null {
   })[0];
 }
 
-function formatWhen(iso: string | null): string {
-  if (!iso) return "";
-  const date = new Date(iso);
-  if (date.toDateString() === new Date().toDateString()) return "Today";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
 // Picks what to search for: the player most mentioned across recent
 // podcast content (GET /api/search/trending — cross-references real Player
 // names against Episode/ExternalEpisode titles+descriptions server-side,
@@ -124,28 +117,23 @@ export default function WhatsBeenSaidTeaser() {
         )}
       </div>
 
+      {/* Trimmed to one truncated line — was a podcast/date line + a
+          2-line headline + a 2-line quoted snippet, which read as a wall of
+          text for what's meant to be a lightweight teaser ("too much
+          writing and font"). The snippet especially often just restated
+          the headline (a chapter-marker title, not real prose), so it's
+          gone entirely rather than shortened. */}
       {state === undefined ? (
-        <div className="space-y-1.5 animate-pulse py-0.5">
-          <div className="h-2.5 w-24 bg-white/10 rounded" />
-          <div className="h-3.5 w-full bg-white/10 rounded" />
-          <div className="h-3.5 w-2/3 bg-white/10 rounded" />
-        </div>
+        <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
       ) : (
-        <>
-          <div className="flex items-center gap-1.5 text-[11.5px] font-semibold text-white/46 mb-1">
-            <span className="text-brand-heliotrope font-bold">{state.result.podcast}</span>
-            <span>· {formatWhen(state.result.publishedAt)}</span>
-          </div>
-          <h3 className="font-extrabold text-white tracking-[-.018em] text-[17px] leading-[1.2] [text-wrap:pretty] line-clamp-2">
-            {state.result.episodeTitle}
-          </h3>
-          <p className="text-white/56 leading-[1.48] text-[13px] mt-[7px] [text-wrap:pretty] line-clamp-2">
-            &ldquo;{state.result.snippet}&rdquo;
-          </p>
-        </>
+        <h3 className="text-[15px] leading-snug truncate">
+          <span className="font-bold text-brand-heliotrope">{state.result.podcast}</span>
+          <span className="text-white/35"> — </span>
+          <span className="font-bold text-white">{state.result.episodeTitle}</span>
+        </h3>
       )}
 
-      <div className="flex items-center justify-between mt-[13px] pt-3 border-t border-white/[.06]">
+      <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-white/[.06]">
         <span className="text-[11.5px] font-semibold text-white/46">Search what else they're saying</span>
         <span className="shrink-0 flex items-center gap-[5px] text-xs font-extrabold tracking-[.02em] text-brand-violet">
           <ChevronRight />

@@ -90,15 +90,25 @@ export default function HomePage() {
   }, [feed, chip, followedTeamNames]);
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
-      {/* The old hero tagline text lived here — dropped once the header's
-          logo lockup (icon + FULLSET + "Your team. The full set.") started
-          saying the exact same thing on every page, making a second copy on
-          Home specifically redundant. Game card leads instead, right under
-          the header, same spot the tagline used to occupy. */}
-      <div className="pt-3 sm:pt-4">
-        <NextGameCard />
-      </div>
+    <>
+      {/* Full-bleed stadium hero banner, edge to edge above the constrained
+          content column below — same lockup as the nav logo but on a
+          cinematic stadium backdrop, so Home opens with more visual weight
+          than the plain nav on its own. */}
+      <img
+        src="/home-banner.png"
+        alt="Full Set — Your team. The full set."
+        className="w-full h-28 sm:h-36 md:h-44 object-cover"
+      />
+      <div className="max-w-3xl mx-auto p-4 space-y-6">
+        {/* The old hero tagline text lived here — dropped once the header's
+            logo lockup (icon + FULLSET + "Your team. The full set.") started
+            saying the exact same thing on every page, making a second copy on
+            Home specifically redundant. Game card leads instead, right under
+            the header, same spot the tagline used to occupy. */}
+        <div className="pt-3 sm:pt-4">
+          <NextGameCard />
+        </div>
 
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {CHIPS.map((c) => {
@@ -164,6 +174,7 @@ export default function HomePage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

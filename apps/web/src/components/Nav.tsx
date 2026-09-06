@@ -6,35 +6,33 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-white border-brand-violet" : "text-slate-400 border-transparent hover:text-white"
   }`;
 
-// The full section list — everything that used to sit in one long
-// horizontally-scrolling top row now lives here instead, opened from the
-// hamburger (same pattern as Bleacher Report's side menu: a short row of
-// the most-used sections up top, everything else one tap away in a drawer).
+// Every public section, in the drawer — Admin tucked at the very end since
+// it's not fan-facing. Ladder is second-last (ahead of Admin only): with
+// the regular season over and finals underway, the ladder is frozen and no
+// longer the thing anyone's checking day to day.
 const DRAWER_LINKS: { to: string; label: string }[] = [
   { to: "/", label: "Home" },
   { to: "/news", label: "News" },
   { to: "/teams", label: "Teams" },
   { to: "/games", label: "Games" },
   { to: "/team-lists", label: "Team Lists" },
-  { to: "/ladder", label: "Ladder" },
   { to: "/judiciary", label: "Judiciary" },
   { to: "/social", label: "Social" },
   { to: "/podcasts", label: "Podcasts" },
   { to: "/highlights", label: "Highlights" },
   { to: "/search", label: "What's Been Said" },
+  { to: "/ladder", label: "Ladder" },
   { to: "/admin", label: "Admin" },
 ];
 
-// The quick-access row: the handful of sections used constantly, kept one
-// tap away without opening the drawer. Everything else (including these
-// same links) is still in the drawer too — no dead ends.
-const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = [
-  { to: "/", label: "Home", end: true },
-  { to: "/games", label: "Games" },
-  { to: "/teams", label: "Teams" },
-  { to: "/team-lists", label: "Team Lists" },
-  { to: "/ladder", label: "Ladder" },
-];
+// The quick-access row under the logo — every public page (not Admin),
+// same order/reasoning as the drawer above ("the menu bar still needs to
+// have every page"). The drawer duplicates all of these too, same as
+// Bleacher Report's own row + hamburger both existing at once — this row
+// is the one-tap default, the drawer's just an alternate way in.
+const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = DRAWER_LINKS.filter(
+  (l) => l.to !== "/admin"
+).map((l) => (l.to === "/" ? { ...l, end: true } : l));
 
 const HamburgerIcon = () => (
   <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
@@ -118,7 +116,7 @@ export default function Nav() {
             separately, which is what made that text redundant. */}
         <div className="max-w-5xl mx-auto flex items-center justify-center px-3 pt-2.5 pb-2">
           <NavLink to="/">
-            <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="h-8 sm:h-9 w-auto" />
+            <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="h-12 sm:h-14 w-auto" />
           </NavLink>
         </div>
         <div className="max-w-5xl mx-auto flex items-center gap-3 px-3 pb-2.5">

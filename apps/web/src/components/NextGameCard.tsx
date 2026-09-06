@@ -45,7 +45,7 @@ function FixtureCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
     >
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[10px] font-bold text-white/45 uppercase tracking-wide">
-          {new Date(game.kickoffAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          {new Date(game.kickoffAt).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
         </span>
         <span
           className={`text-[10px] font-bold uppercase tracking-wide ${live ? "text-brand-siren" : "text-white/45"}`}
@@ -55,6 +55,11 @@ function FixtureCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
       </div>
       <TeamRow team={game.homeTeam} score={game.homeScore} live={live} />
       <TeamRow team={game.awayTeam} score={game.awayScore} live={live} />
+      {game.venue && (
+        <div className="mt-1.5 pt-1.5 border-t border-white/[.06]">
+          <span className="text-[9.5px] font-semibold text-white/35 truncate block">{game.venue}</span>
+        </div>
+      )}
     </div>
   );
 }
