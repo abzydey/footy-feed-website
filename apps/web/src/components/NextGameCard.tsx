@@ -1,54 +1,38 @@
-import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { api, Game, LadderRow } from "../lib/api";
-import { ordinal } from "../lib/format";
+import { api, Game } from "../lib/api";
+import { teamAbbreviation } from "../lib/teamBadge";
 import TeamBadge from "./TeamBadge";
 
-const REMINDERS_KEY = "footy-feed:reminders";
-
-function loadReminders(): Record<string, boolean> {
-  try {
-    return JSON.parse(localStorage.getItem(REMINDERS_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
+// Just the time (e.g. "7:50 PM") — previously derived by splitting a
+// combined weekday+time string on ", ", which silently rendered nothing
+// whenever the resolved locale's toLocaleString format didn't happen to use
+// a comma there (confirmed live: it did exactly that, leaving every card's
+// top-right corner blank). Asking for only the time fields directly has no
+// such assumption to break.
+function formatKickoffTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-function formatCountdown(kickoffAt: string): string {
-  const diffMs = new Date(kickoffAt).getTime() - Date.now();
-  if (diffMs <= 0) return "live";
-  const totalMins = Math.floor(diffMs / 60000);
-  const hours = Math.floor(totalMins / 60);
-  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h`;
-  return `${hours}h ${totalMins % 60}m`;
-}
-
-function formatKickoff(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
-}
-
-function TeamColumn({ team, record }: { team: Game["homeTeam"]; record: string | null }) {
+function TeamRow({ team, score, live }: { team: Game["homeTeam"]; score: number | null; live: boolean }) {
   return (
-    <div className="flex flex-col items-center gap-2">
-      <TeamBadge team={team} />
-      <div className="text-[15px] font-extrabold tracking-[-.01em] text-white">{team.shortName}</div>
-      {record && <div className="text-[11px] font-semibold text-white/42">{record}</div>}
+    <div className="flex items-center justify-between gap-2 py-[3px]">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <TeamBadge team={team} size="sm" />
+        <span className="text-[13px] font-extrabold text-white truncate">{teamAbbreviation(team)}</span>
+      </div>
+      {live && <span className="text-[13px] font-extrabold text-white tabular-nums shrink-0">{score}</span>}
     </div>
   );
 }
 
-interface FixtureCardProps {
-  game: Game;
-  label: string;
-  recordFor: (teamId: string) => string | null;
-  reminderSet: boolean;
-  onToggleReminder: (e: MouseEvent) => void;
-  onOpen: () => void;
-}
-
-function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, onOpen }: FixtureCardProps) {
-  const countdown = formatCountdown(game.kickoffAt);
+// Compact, Bleacher-Report-style fixture card — small enough that several
+// sit side by side in the swipeable row, no "Set reminder" affordance (that
+// feature's been dropped entirely, not just hidden here — there was no
+// real kickoff-push behind it anyway, see the old REMINDERS_KEY
+// localStorage-only note this replaced).
+function FixtureCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
   const live = game.status === "LIVE";
 
   return (
@@ -57,89 +41,38 @@ function FixtureCard({ game, label, recordFor, reminderSet, onToggleReminder, on
       role="link"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="snap-center shrink-0 w-[85%] sm:w-full cursor-pointer rounded-[18px] p-[1.5px] bg-brand-violet"
+      className="snap-center shrink-0 w-[136px] cursor-pointer rounded-xl bg-surface border border-white/10 px-2.5 py-2 active:scale-[0.98] transition-transform duration-100"
     >
-      <div className="rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 pt-4 pb-[14px]">
-        <div className="flex items-center justify-between mb-[14px]">
-          <span className="font-display font-bold text-[12.5px] tracking-[.16em] text-white/50 uppercase">
-            {game.round} · {label}
-          </span>
-          <span
-            className={`flex items-center gap-[5px] text-[11px] font-bold tracking-[.06em] px-2 py-1 rounded-full uppercase ${
-              live ? "text-brand-siren bg-brand-siren/[.14] animate-pulse" : "text-brand-violet bg-brand-violet/[.14]"
-            }`}
-          >
-            {live ? `● Live${game.liveClock ? ` · ${game.liveClock}` : ""}` : countdown === "live" ? "Live" : `In ${countdown}`}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[10px]">
-          <TeamColumn team={game.homeTeam} record={recordFor(game.homeTeam.id)} />
-          {live ? (
-            <span className="font-display font-extrabold text-xl tabular-nums text-white whitespace-nowrap">
-              {game.homeScore}&ndash;{game.awayScore}
-            </span>
-          ) : (
-            <span className="font-display font-bold text-[15px] tracking-[.1em] text-white/34">VS</span>
-          )}
-          <TeamColumn team={game.awayTeam} record={recordFor(game.awayTeam.id)} />
-        </div>
-
-        <div className="h-px bg-white/[.08] my-[15px]" />
-
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[13.5px] font-bold text-white">{formatKickoff(game.kickoffAt)}</div>
-            {game.venue && <div className="text-[11.5px] font-medium text-white/45 mt-0.5">{game.venue}</div>}
-          </div>
-          {!live && (
-            <button
-              type="button"
-              onClick={onToggleReminder}
-              className={
-                reminderSet
-                  ? "shrink-0 flex items-center gap-1.5 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 border border-white/25 text-white transition-all duration-150 active:scale-95"
-                  : "shrink-0 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app hover:bg-[#DCD2FF] transition-all duration-150 active:scale-95"
-              }
-            >
-              {reminderSet ? "✓ Reminder set" : "Set reminder"}
-            </button>
-          )}
-        </div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-bold text-white/45 uppercase tracking-wide">
+          {new Date(game.kickoffAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        </span>
+        <span
+          className={`text-[10px] font-bold uppercase tracking-wide ${live ? "text-brand-siren" : "text-white/45"}`}
+        >
+          {live ? `Live${game.liveClock ? ` ${game.liveClock}` : ""}` : formatKickoffTime(game.kickoffAt)}
+        </span>
       </div>
+      <TeamRow team={game.homeTeam} score={game.homeScore} live={live} />
+      <TeamRow team={game.awayTeam} score={game.awayScore} live={live} />
     </div>
   );
 }
 
 // A horizontally swipeable carousel of the round's remaining fixtures,
-// starting at the next one — real data throughout: kickoff/venue from Game,
-// W-L/rank from the Ladder (cross-referenced by teamId). Uses native CSS
-// scroll-snap rather than a gesture library: touch swipe, trackpad, and
-// mouse-wheel scrolling all just work, and a tap still fires the card's
-// navigate-to-game click normally since nothing intercepts the gesture.
-// "SET REMINDER" is a client-side-only toggle (localStorage) — there's no
-// kickoff-push infrastructure behind it yet, unlike the team/player/league
-// follow alerts, which are real FCM pushes (see lib/push.ts).
+// starting at the next one — real data throughout: kickoff/venue from Game.
+// Uses native CSS scroll-snap rather than a gesture library: touch swipe,
+// trackpad, and mouse-wheel scrolling all just work, and a tap still fires
+// the card's navigate-to-game click normally since nothing intercepts the
+// gesture.
 export default function NextGameCard() {
   const navigate = useNavigate();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [allGames, setAllGames] = useState<Game[] | null>(null);
-  const [ladder, setLadder] = useState<LadderRow[]>([]);
-  const [reminders, setReminders] = useState<Record<string, boolean>>(loadReminders);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [, forceTick] = useState(0);
 
   useEffect(() => {
     api.listGames().then(setAllGames).catch(() => setAllGames([]));
-    api
-      .getLadder()
-      .then((ladder) => setLadder(ladder.rows))
-      .catch(() => setLadder([]));
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => forceTick((n) => n + 1), 60_000);
-    return () => clearInterval(id);
   }, []);
 
   // A LIVE game keeps a past kickoffAt (see schema.prisma GameStatus design
@@ -172,41 +105,19 @@ export default function NextGameCard() {
   if (fixtures === null) return null; // still loading — no layout shift for a null result
   if (fixtures.length === 0) return null; // no upcoming fixtures this round
 
-  function toggleReminder(e: MouseEvent, gameId: string) {
-    e.stopPropagation(); // don't also trigger the card's navigate-to-game click
-    setReminders((prev) => {
-      const next = { ...prev, [gameId]: !prev[gameId] };
-      localStorage.setItem(REMINDERS_KEY, JSON.stringify(next));
-      return next;
-    });
-  }
-
-  const recordFor = (teamId: string) => {
-    const row = ladder.find((r) => r.team.id === teamId);
-    return row ? `${row.wins}-${row.losses} · ${ordinal(row.rank)}` : null;
-  };
-
   return (
     <div>
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
-        className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
+        className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0"
       >
-        {fixtures.map((game, i) => (
-          <FixtureCard
-            key={game.id}
-            game={game}
-            label={game.status === "LIVE" ? "Live now" : i === 0 ? "Next up" : `Up next +${i}`}
-            recordFor={recordFor}
-            reminderSet={!!reminders[game.id]}
-            onToggleReminder={(e) => toggleReminder(e, game.id)}
-            onOpen={() => navigate(`/games/${game.id}`)}
-          />
+        {fixtures.map((game) => (
+          <FixtureCard key={game.id} game={game} onOpen={() => navigate(`/games/${game.id}`)} />
         ))}
       </div>
       {fixtures.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+        <div className="flex items-center justify-center gap-1.5 mt-2">
           {fixtures.map((game, i) => (
             <span
               key={game.id}

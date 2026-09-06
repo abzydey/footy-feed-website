@@ -91,24 +91,14 @@ export default function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
-      {/* Hero tagline, not a page title — deliberately reuses two existing
-          tokens from elsewhere rather than one-off sizes: the bold lead is
-          GeneralNewsFollow's "NRL News" treatment (font-display extrabold
-          tracking-tight text-base), the supporting line is the same
-          text-slate-400 text-sm used under SearchPage's/AboutPage's own
-          headlines. Extra top padding (beyond the container's own p-4,
-          which every other page's H1 sits directly under) gives it room
-          to read as its own hero moment rather than crowding the nav. */}
-      <div className="pt-3 sm:pt-4 space-y-0.5">
-        <p className="font-display font-extrabold tracking-tight text-base text-white leading-snug [text-wrap:pretty]">
-          Your team. The full set.
-        </p>
-        <p className="text-slate-400 text-sm leading-snug [text-wrap:pretty]">
-          News, team lists, podcasts, and more — tracked automatically, all in one place.
-        </p>
+      {/* The old hero tagline text lived here — dropped once the header's
+          logo lockup (icon + FULLSET + "Your team. The full set.") started
+          saying the exact same thing on every page, making a second copy on
+          Home specifically redundant. Game card leads instead, right under
+          the header, same spot the tagline used to occupy. */}
+      <div className="pt-3 sm:pt-4">
+        <NextGameCard />
       </div>
-
-      <WhatsBeenSaidTeaser />
 
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {CHIPS.map((c) => {
@@ -136,9 +126,14 @@ export default function HomePage() {
         </Link>
       </div>
 
-      <NextGameCard />
       <TeamListsCard />
       <GeneralNewsFollow />
+
+      {/* Moved down from its old spot right under the header — still on
+          Home, still one scroll away, just not the very first thing anyone
+          sees ("not sure if i like it on the home page anymore but i still
+          want people to see it"). */}
+      <WhatsBeenSaidTeaser />
 
       <div className="flex items-baseline justify-between">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase">

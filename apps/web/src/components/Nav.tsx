@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -5,54 +6,149 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-white border-brand-violet" : "text-slate-400 border-transparent hover:text-white"
   }`;
 
-export default function Nav() {
+// The full section list — everything that used to sit in one long
+// horizontally-scrolling top row now lives here instead, opened from the
+// hamburger (same pattern as Bleacher Report's side menu: a short row of
+// the most-used sections up top, everything else one tap away in a drawer).
+const DRAWER_LINKS: { to: string; label: string }[] = [
+  { to: "/", label: "Home" },
+  { to: "/news", label: "News" },
+  { to: "/teams", label: "Teams" },
+  { to: "/games", label: "Games" },
+  { to: "/team-lists", label: "Team Lists" },
+  { to: "/ladder", label: "Ladder" },
+  { to: "/judiciary", label: "Judiciary" },
+  { to: "/social", label: "Social" },
+  { to: "/podcasts", label: "Podcasts" },
+  { to: "/highlights", label: "Highlights" },
+  { to: "/search", label: "What's Been Said" },
+  { to: "/admin", label: "Admin" },
+];
+
+// The quick-access row: the handful of sections used constantly, kept one
+// tap away without opening the drawer. Everything else (including these
+// same links) is still in the drawer too — no dead ends.
+const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = [
+  { to: "/", label: "Home", end: true },
+  { to: "/games", label: "Games" },
+  { to: "/teams", label: "Teams" },
+  { to: "/team-lists", label: "Team Lists" },
+  { to: "/ladder", label: "Ladder" },
+];
+
+const HamburgerIcon = () => (
+  <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+    <path d="M0 1h22M0 8h22M0 15h22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <path d="M1 1l16 16M17 1L1 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const ChevronRight = () => (
+  <svg width="8" height="13" viewBox="0 0 8 13" fill="none" className="shrink-0">
+    <path d="M1 1l5.5 5.5L1 12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Slide-in drawer, same shape as Bleacher Report's hamburger menu: a
+// backdrop, a fixed-width panel from the left edge, a plain vertical list of
+// every section with a trailing chevron. Closes on backdrop click or
+// picking a link.
+function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <header className="sticky top-0 z-10 bg-app/90 backdrop-blur-sm border-b border-white/10">
-      <nav className="max-w-5xl mx-auto flex items-center gap-4 px-3 py-3 overflow-x-auto">
-        <div className="flex items-center gap-2 shrink-0">
-          <img src="/nav-icon.png" alt="Full Set" className="h-7 w-auto" />
-          <span className="font-display font-black text-lg tracking-tight text-white">
-            NRL
-          </span>
+    <div className={`fixed inset-0 z-30 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/60 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
+      />
+      <div
+        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs bg-surface border-r border-white/10 transition-transform duration-200 flex flex-col ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <img src="/nav-icon.png" alt="" className="h-7 w-7 rounded-md" />
+            <span className="font-display font-black text-white tracking-tight">FULL SET</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className="text-slate-400 hover:text-white p-1"
+          >
+            <CloseIcon />
+          </button>
         </div>
-        <div className="h-5 w-px bg-white/10 shrink-0" />
-        <NavLink to="/" className={linkClass} end>
-          Home
-        </NavLink>
-        <NavLink to="/news" className={linkClass}>
-          News
-        </NavLink>
-        <NavLink to="/teams" className={linkClass}>
-          Teams
-        </NavLink>
-        <NavLink to="/games" className={linkClass}>
-          Games
-        </NavLink>
-        <NavLink to="/team-lists" className={linkClass}>
-          Team Lists
-        </NavLink>
-        <NavLink to="/ladder" className={linkClass}>
-          Ladder
-        </NavLink>
-        <NavLink to="/judiciary" className={linkClass}>
-          Judiciary
-        </NavLink>
-        <NavLink to="/social" className={linkClass}>
-          Social
-        </NavLink>
-        <NavLink to="/podcasts" className={linkClass}>
-          Podcasts
-        </NavLink>
-        <NavLink to="/highlights" className={linkClass}>
-          Highlights
-        </NavLink>
-        <NavLink to="/search" className={linkClass}>
-          What's Been Said
-        </NavLink>
-        <NavLink to="/admin" className={linkClass}>
-          Admin
-        </NavLink>
-      </nav>
-    </header>
+        <nav className="flex-1 overflow-y-auto py-2">
+          {DRAWER_LINKS.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === "/"}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center justify-between px-4 py-3 text-[15px] font-bold tracking-tight transition-colors duration-150 ${
+                  isActive ? "text-white bg-white/[.05]" : "text-slate-300 hover:text-white hover:bg-white/[.03]"
+                }`
+              }
+            >
+              {link.label}
+              <ChevronRight />
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+export default function Nav() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  return (
+    <>
+      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/10">
+        {/* Logo gets its own row — the full lockup (icon + FULLSET + tagline)
+            already says everything Home's old intro text block used to say
+            separately, which is what made that text redundant. */}
+        <div className="max-w-5xl mx-auto flex items-center justify-center px-3 pt-2.5 pb-2">
+          <NavLink to="/">
+            <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="h-8 sm:h-9 w-auto" />
+          </NavLink>
+        </div>
+        <div className="max-w-5xl mx-auto flex items-center gap-3 px-3 pb-2.5">
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open menu"
+            className="shrink-0 text-white/80 hover:text-white p-1 -ml-1"
+          >
+            <HamburgerIcon />
+          </button>
+          <nav className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+            {QUICK_LINKS.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </header>
+      {/* Rendered as a sibling of <header>, not inside it — the header has
+          backdrop-blur-sm (a backdrop-filter), and per the CSS spec any of
+          filter/backdrop-filter/transform/perspective/will-change on an
+          ancestor establishes a new containing block for position:fixed
+          descendants. With the drawer nested inside <header>, its "fixed
+          inset-0" was being sized against the header's own ~86px content
+          height instead of the viewport — confirmed by measuring the actual
+          rendered rect before this fix (height: 86 instead of the full
+          viewport height). Moving it outside sidesteps the whole issue. */}
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
   );
 }
