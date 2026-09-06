@@ -48,19 +48,32 @@ export function parseTrySummaries(summaries: string[]): ParsedTry[] {
 // /draw/nrl-premiership/{year}/round-{n}/{home-slug}-v-{away-slug}/ —
 // confirmed against every real Round 27 fixture's own /draw/ link on the
 // Late Mail page: every slug matched this app's Team.slug exactly, no
-// translation needed. Returns null for a round with no plain number
-// (finals rounds like "Grand Final") — that's a real gap, not a bug to
-// paper over with a guess; the poller falls back to tweets for those.
+// translation needed. Finals rounds use a different segment entirely —
+// /finals-week-{n}/, confirmed against the real Round 28 draw fetch
+// (NRL.com's own roundTitle for it is literally "Finals Week 1") — checked
+// for FIRST, since "Finals Week 1".match(/\d+/) would otherwise silently
+// match the "1" and build a wrong (not missing) round-1 URL, actively
+// fetching the wrong match's data rather than just failing to find one.
+// Anything else with no plain number (e.g. "Grand Final") still returns
+// null — a real gap, not a bug to paper over with a guess; the poller falls
+// back to tweets for those.
 export function buildMatchCentreUrl(game: {
   round: string;
   kickoffAt: Date;
   homeTeam: { slug: string };
   awayTeam: { slug: string };
 }): string | null {
+  const year = game.kickoffAt.getUTCFullYear();
+  const slugs = `${game.homeTeam.slug}-v-${game.awayTeam.slug}`;
+
+  const finalsMatch = game.round.match(/finals week (\d+)/i);
+  if (finalsMatch) {
+    return `https://www.nrl.com/draw/nrl-premiership/${year}/finals-week-${finalsMatch[1]}/${slugs}/`;
+  }
+
   const roundMatch = game.round.match(/(\d+)/);
   if (!roundMatch) return null;
-  const year = game.kickoffAt.getUTCFullYear();
-  return `https://www.nrl.com/draw/nrl-premiership/${year}/round-${roundMatch[1]}/${game.homeTeam.slug}-v-${game.awayTeam.slug}/`;
+  return `https://www.nrl.com/draw/nrl-premiership/${year}/round-${roundMatch[1]}/${slugs}/`;
 }
 
 // The entire match state — score, live clock (as gameSeconds), status,
