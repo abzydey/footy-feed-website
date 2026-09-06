@@ -23,12 +23,14 @@ const POLL_INTERVAL_MS = 20 * 60 * 1000;
 // ~90min before kickoff) — INITIAL doesn't, it's a league-wide Tuesday
 // release with no per-game anchor, so it just rides the generic interval
 // below. Checking exactly at the expected moment risks polling a beat
-// before NRL.com has actually published — CHECK_BUFFER_MS waits 2 minutes
-// past it instead, so a 7:35pm kickoff's Final check fires at 6:07pm
-// (90min - 2min = 88min before kickoff), not 6:05pm.
+// before NRL.com has actually published — CHECK_BUFFER_MS waits 5 minutes
+// past it instead, so a 7:35pm kickoff's Final check fires at 6:10pm
+// (90min - 5min = 85min before kickoff), not 6:05pm. Widened from an
+// initial 2min buffer, still on top of the generic interval as a
+// safety net.
 const TWENTY_FOUR_HOUR_OFFSET_MS = 24 * 60 * 60 * 1000;
 const FINAL_OFFSET_MS = 90 * 60 * 1000;
-const CHECK_BUFFER_MS = 2 * 60 * 1000;
+const CHECK_BUFFER_MS = 5 * 60 * 1000;
 
 // Dedup state so a shape-warning or unmatched-team problem that isn't going
 // away doesn't get re-logged every single poll cycle — only worth a fresh
@@ -256,6 +258,6 @@ export function startLateMailPolling(): void {
   }, 60 * 60 * 1000); // re-arm hourly to pick up newly added fixtures
 
   console.log(
-    `[lateMailPoller] auto-publishing INITIAL/24hr/FINAL team lists — every ${POLL_INTERVAL_MS / 60000}min plus a precise check ~2min after each game's expected 24hr/Final release (paused midnight-6am AEST/AEDT); anything needing real judgment (a starting-lineup change, a shape warning) is flagged for manual review instead of guessed at`
+    `[lateMailPoller] auto-publishing INITIAL/24hr/FINAL team lists — every ${POLL_INTERVAL_MS / 60000}min plus a precise check ~${CHECK_BUFFER_MS / 60000}min after each game's expected 24hr/Final release (paused midnight-6am AEST/AEDT); anything needing real judgment (a starting-lineup change, a shape warning) is flagged for manual review instead of guessed at`
   );
 }
