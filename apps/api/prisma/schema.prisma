@@ -109,6 +109,7 @@ model Team {
   ladderEntry     LadderEntry?
   tries           Try[]
   judiciaryCharges JudiciaryCharge[]
+  finalsInjuries   FinalsInjuryEntry[]
 
   @@map("teams")
 }
@@ -629,4 +630,39 @@ model JudiciaryReport {
   createdAt DateTime @default(now())
 
   @@map("judiciary_reports")
+}
+
+// ---------------------------------------------------------------------------
+// Finals Injury Watch — a finals-specific cross-team injury snapshot for the
+// /finals hub, deliberately separate from Player.currentStatus (the
+// ongoing/general per-team injury cache used on team pages year-round).
+// This is a live current-state table, not a history log — same "one full
+// replace per update" pattern as LadderEntry, not JudiciaryCharge's
+// per-round history: the whole point is "here's the state of play right
+// now," and a team eliminated from finals should disappear from this list
+// entirely rather than leaving stale rows behind. player is free text, not
+// a Player FK, same reasoning as JudiciaryCharge.player — this is a quick
+// cross-team snapshot entered from a screenshot, not built from roster data.
+// ---------------------------------------------------------------------------
+
+enum FinalsInjuryStatus {
+  OUT
+  LIKELY
+  UNLIKELY
+  TBA
+  TBC
+}
+
+model FinalsInjuryEntry {
+  id        String             @id @default(cuid())
+  teamId    String
+  team      Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player    String
+  injury    String
+  status    FinalsInjuryStatus
+  updatedAt DateTime           @updatedAt
+  createdAt DateTime           @default(now())
+
+  @@index([teamId])
+  @@map("finals_injury_entries")
 }

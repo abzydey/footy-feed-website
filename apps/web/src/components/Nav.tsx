@@ -15,6 +15,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 // and no longer the thing anyone's checking day to day.
 const DRAWER_LINKS: { to: string; label: string }[] = [
   { to: "/", label: "Home" },
+  { to: "/finals", label: "Finals" },
   { to: "/news", label: "News" },
   { to: "/teams", label: "Teams" },
   { to: "/games", label: "Games" },

@@ -161,6 +161,17 @@ export interface JudiciaryCharge {
   createdAt: string;
 }
 
+export type FinalsInjuryStatus = "OUT" | "LIKELY" | "UNLIKELY" | "TBA" | "TBC";
+
+export interface FinalsInjuryEntry {
+  id: string;
+  team: Team;
+  player: string;
+  injury: string;
+  status: FinalsInjuryStatus;
+  updatedAt: string;
+}
+
 export interface LateMailPlayer {
   number: number;
   name: string;
@@ -396,6 +407,16 @@ export const api = {
   ) =>
     request<JudiciaryCharge[]>(`/admin/judiciary`, {
       method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+  listFinalsInjuries: () => request<FinalsInjuryEntry[]>(`/finals-injuries`),
+  adminSetFinalsInjuries: (
+    token: string,
+    data: { entries: { teamId: string; player: string; injury: string; status: FinalsInjuryStatus }[] }
+  ) =>
+    request<FinalsInjuryEntry[]>(`/admin/finals-injuries`, {
+      method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),

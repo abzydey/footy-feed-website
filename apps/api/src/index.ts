@@ -27,6 +27,8 @@ import adminJudiciaryRouter from "./routes/adminJudiciary";
 import adminLateMailRouter from "./routes/adminLateMail";
 import adminTrackedShowsRouter from "./routes/adminTrackedShows";
 import adminPlayersRouter from "./routes/adminPlayers";
+import finalsInjuriesRouter from "./routes/finalsInjuries";
+import adminFinalsInjuriesRouter from "./routes/adminFinalsInjuries";
 import sitemapRouter from "./routes/sitemap";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
@@ -70,6 +72,7 @@ app.use("/api/social", socialRouter);
 app.use("/api/pageviews", pageviewsRouter);
 app.use("/api/ladder", ladderRouter);
 app.use("/api/judiciary", judiciaryRouter);
+app.use("/api/finals-injuries", finalsInjuriesRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)
 app.use("/api/admin/auth", adminAuthRouter);
@@ -82,6 +85,7 @@ app.use("/api/admin/judiciary", adminJudiciaryRouter);
 app.use("/api/admin/late-mail", adminLateMailRouter);
 app.use("/api/admin/tracked-shows", adminTrackedShowsRouter);
 app.use("/api/admin/players", adminPlayersRouter);
+app.use("/api/admin/finals-injuries", adminFinalsInjuriesRouter);
 
 // Railway sets PORT itself and its edge proxy expects the app bound to all
 // interfaces, which app.listen(port, cb) already does by default (no host
