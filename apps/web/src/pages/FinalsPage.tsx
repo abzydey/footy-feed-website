@@ -49,15 +49,23 @@ export default function FinalsPage() {
   const loading = !top8 || !games || !bracket;
 
   // The Home widget deep-links to /finals#injury-watch, at the bottom of the
-  // page — the browser's own automatic hash-scroll fires once on navigation,
-  // before this section's content (gated behind the loading state above) has
-  // actually mounted, so it misses. Re-triggers the scroll manually once the
-  // injuries data (and therefore the section) is actually on the page.
+  // page — this is an SPA route change (no full page load), so there's no
+  // browser-native hash-scroll to rely on; this effect does it manually.
+  // Waits on `!loading` (Bracket/Predictor's own data), not just `injuries` —
+  // those two sections sit *above* Injury Watch and each render a skeleton
+  // until their own fetch resolves. Scrolling as soon as injuries alone
+  // loaded (its fetch is a single request, so it often wins the race) meant
+  // scrolling into position while the sections above were still short
+  // skeletons, then watching them expand to full height right after and
+  // push the anchor back down past the viewport — the scroll technically
+  // ran, it just got undone by a layout shift a moment later. Waiting for
+  // every section to reach final height first means nothing shifts under
+  // the scroll afterward.
   useEffect(() => {
-    if (location.hash === "#injury-watch" && injuries) {
+    if (location.hash === "#injury-watch" && injuries && !loading) {
       document.getElementById("injury-watch")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [location.hash, injuries]);
+  }, [location.hash, injuries, loading]);
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-8">
