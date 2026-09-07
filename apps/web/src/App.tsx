@@ -16,6 +16,7 @@ import TeamListsPage from "./pages/TeamListsPage";
 import LadderPage from "./pages/LadderPage";
 import FinalsPage from "./pages/FinalsPage";
 import JudiciaryPage from "./pages/JudiciaryPage";
+import InjuriesPage from "./pages/InjuriesPage";
 import SocialPage from "./pages/SocialPage";
 import PodcastsPage from "./pages/PodcastsPage";
 import HighlightsPage from "./pages/HighlightsPage";
@@ -97,6 +98,7 @@ export default function App() {
           <Route path="/podcasts" element={<PodcastsPage />} />
           <Route path="/highlights" element={<HighlightsPage />} />
           <Route path="/judiciary" element={<JudiciaryPage />} />
+          <Route path="/injuries" element={<InjuriesPage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/admin" element={<AdminPage />} />

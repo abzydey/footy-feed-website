@@ -21,6 +21,7 @@ const DRAWER_LINKS: { to: string; label: string }[] = [
   { to: "/games", label: "Games" },
   { to: "/team-lists", label: "Team Lists" },
   { to: "/judiciary", label: "Judiciary" },
+  { to: "/injuries", label: "Injuries" },
   { to: "/social", label: "Social" },
   { to: "/podcasts", label: "Podcasts" },
   { to: "/highlights", label: "Highlights" },

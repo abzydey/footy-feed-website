@@ -22,7 +22,20 @@ export function getFirebaseMessaging(): Messaging | undefined {
   if (!isFirebaseConfigured) return undefined;
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return undefined;
 
-  if (!app) app = initializeApp(firebaseConfig);
-  if (!messaging) messaging = getMessaging(app);
-  return messaging;
+  try {
+    if (!app) app = initializeApp(firebaseConfig);
+    if (!messaging) messaging = getMessaging(app);
+    return messaging;
+  } catch (err) {
+    // getMessaging() throws synchronously (not a rejected promise) when the
+    // browser fails Firebase's internal isSupported() check — e.g. no active
+    // service worker registration yet, a privacy-focused browser config, or
+    // (confirmed) Playwright's headless Chromium. Was previously unguarded
+    // despite this file's own stated intent to degrade gracefully — App.tsx
+    // calls this unconditionally on every page via onForegroundMessage(), so
+    // an uncaught throw here crashed the entire app (blank page, every
+    // route) instead of just leaving push notifications unavailable.
+    console.warn("[firebase] messaging unavailable:", err);
+    return undefined;
+  }
 }

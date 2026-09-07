@@ -125,6 +125,10 @@ export interface Player {
   statusUpdatedAt: string | null;
 }
 
+export interface InjuredPlayer extends Player {
+  team: Team;
+}
+
 export interface LadderRow {
   rank: number;
   team: { id: string; name: string; shortName: string; slug: string; primaryColor: string | null };
@@ -236,6 +240,7 @@ export interface AdminStats {
 
 export const api = {
   listTeams: () => request<Team[]>("/teams"),
+  listInjuries: () => request<InjuredPlayer[]>("/injuries"),
   getTeamBrief: (slug: string) =>
     request<{
       team: Team;
