@@ -96,44 +96,69 @@ export default function FinalsPredictor({ top8, realBracket }: { top8: LadderRow
 
   const predicted = buildPredictedBracket(top8, picks);
 
+  // Picking the team already picked for that slot clears it instead — a
+  // toggle, not a one-way commitment, since a decided slot is what actually
+  // locks a pick in (see PickableTeamRow's disabled prop below).
   function pick(slotId: SlotId, teamId: string) {
-    const next = { ...picks, [slotId]: teamId };
+    const next = { ...picks };
+    if (next[slotId] === teamId) delete next[slotId];
+    else next[slotId] = teamId;
     setPicks(next);
     savePicks(next);
   }
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-      {SLOT_ORDER.map((id) => {
-        const realSlot = realBracket.slots[id];
-        const realWinner = winnerOf(realSlot);
-        const isDecided = realWinner != null;
-        const slot = predicted[id];
-        const userPickId = picks[id];
+  function resetPicks() {
+    setPicks({});
+    savePicks({});
+  }
 
-        return (
-          <div key={id} className="rounded-xl bg-surface border border-white/10 shadow-card px-3 py-2.5">
-            <div className="text-[10.5px] font-bold text-white/40 uppercase tracking-wider mb-1">{SLOT_LABEL[id]}</div>
-            {(["home", "away"] as const).map((side) => {
-              const team = slot[side];
-              const isPick = !!team && userPickId === team.id;
-              const isActual = isDecided && team ? (realWinner!.id === team.id ? "winner" : "loser") : null;
-              const correctness = isDecided && isPick ? (isActual === "winner" ? "correct" : "wrong") : null;
-              return (
-                <PickableTeamRow
-                  key={side}
-                  team={team}
-                  isPick={isPick}
-                  isActual={isActual}
-                  correctness={correctness}
-                  disabled={isDecided || !team}
-                  onPick={() => team && pick(id, team.id)}
-                />
-              );
-            })}
-          </div>
-        );
-      })}
+  const hasPicks = Object.keys(picks).length > 0;
+
+  return (
+    <div>
+      {hasPicks && (
+        <div className="flex justify-end mb-2">
+          <button
+            type="button"
+            onClick={resetPicks}
+            className="text-[11px] font-bold text-slate-500 hover:text-brand-siren uppercase tracking-wider transition-colors duration-150"
+          >
+            Reset picks
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {SLOT_ORDER.map((id) => {
+          const realSlot = realBracket.slots[id];
+          const realWinner = winnerOf(realSlot);
+          const isDecided = realWinner != null;
+          const slot = predicted[id];
+          const userPickId = picks[id];
+
+          return (
+            <div key={id} className="rounded-xl bg-surface border border-white/10 shadow-card px-3 py-2.5">
+              <div className="text-[10.5px] font-bold text-white/40 uppercase tracking-wider mb-1">{SLOT_LABEL[id]}</div>
+              {(["home", "away"] as const).map((side) => {
+                const team = slot[side];
+                const isPick = !!team && userPickId === team.id;
+                const isActual = isDecided && team ? (realWinner!.id === team.id ? "winner" : "loser") : null;
+                const correctness = isDecided && isPick ? (isActual === "winner" ? "correct" : "wrong") : null;
+                return (
+                  <PickableTeamRow
+                    key={side}
+                    team={team}
+                    isPick={isPick}
+                    isActual={isActual}
+                    correctness={correctness}
+                    disabled={isDecided || !team}
+                    onPick={() => team && pick(id, team.id)}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
