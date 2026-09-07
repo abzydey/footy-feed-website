@@ -306,75 +306,59 @@ export default function TeamPage() {
 
         {teamTab === "Overview" && (
           <>
-            {isStaleTeamList && nextFixture && nextOpponent && (
-              <div className="rounded-lg border border-dashed border-white/15 px-3.5 py-3 mb-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Last team list — {nextFixture.round} team list not yet released
-                </p>
-                <Link
-                  to={`/games/${nextFixture.id}`}
-                  className="block text-[12.5px] font-semibold text-white/70 hover:text-white mt-1.5 transition-colors duration-150"
-                >
-                  Next: {team.shortName} vs {nextOpponent.shortName},{" "}
-                  {new Date(nextFixture.kickoffAt).toLocaleDateString(undefined, {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </Link>
-              </div>
-            )}
-            {isStaleTeamList && !nextFixture && (
-              <div className="rounded-lg border border-dashed border-white/15 px-3.5 py-3 mb-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Last team list — {currentGame?.round}, no upcoming fixture scheduled
-                </p>
-              </div>
-            )}
-            <div className="mb-2.5">
-              <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase">
-                {isStaleTeamList && !nextFixture
-                  ? "Final team list of the season"
-                  : currentGame && opponent
-                    ? `Team list for ${team.shortName} vs ${opponent.shortName}`
-                    : "Team list"}
-              </h2>
-              {/* The small dashed banner above already flags this as stale —
-                  but a big bold "Team list for Broncos vs Bulldogs" heading
-                  right underneath it still reads as a live upcoming-match
-                  header to anyone skimming past the banner, which is exactly
-                  the "looks current" complaint this whole fix is for. Once
-                  there's no next fixture at all (eliminated, season over for
-                  this team), the heading itself drops the "vs {opponent}"
-                  framing instead of just relying on the banner above it to
-                  do all the work. */}
-              {currentGame && opponent && !(isStaleTeamList && !nextFixture) && (
-                <Link
-                  to={`/games/${currentGame.id}`}
-                  className="text-[11.5px] font-semibold text-white/42 hover:text-white transition-colors duration-150"
-                >
-                  {currentGame.round} ·{" "}
-                  {new Date(currentGame.kickoffAt).toLocaleDateString(undefined, {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </Link>
-              )}
-              {isStaleTeamList && !nextFixture && currentGame && opponent && (
-                <Link
-                  to={`/games/${currentGame.id}`}
-                  className="text-[11.5px] font-semibold text-white/42 hover:text-white transition-colors duration-150"
-                >
-                  {currentGame.round}: {team.shortName} vs {opponent.shortName}
-                </Link>
-              )}
-            </div>
+            {/* A team with no next fixture at all is eliminated — season
+                over for them. Per direct request, that case drops the team
+                list section entirely (no banner, no heading, no stale
+                roster card) rather than relabeling it — Overview just opens
+                straight on Injury list/News/Social for a team that's out.
+                A team still alive (nextFixture exists, list just not
+                released yet for the next round) keeps the normal
+                stale-list banner + card below, unchanged. */}
+            {isStaleTeamList && !nextFixture ? null : (
+              <>
+                {isStaleTeamList && nextFixture && nextOpponent && (
+                  <div className="rounded-lg border border-dashed border-white/15 px-3.5 py-3 mb-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Last team list — {nextFixture.round} team list not yet released
+                    </p>
+                    <Link
+                      to={`/games/${nextFixture.id}`}
+                      className="block text-[12.5px] font-semibold text-white/70 hover:text-white mt-1.5 transition-colors duration-150"
+                    >
+                      Next: {team.shortName} vs {nextOpponent.shortName},{" "}
+                      {new Date(nextFixture.kickoffAt).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </Link>
+                  </div>
+                )}
+                <div className="mb-2.5">
+                  <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase">
+                    {currentGame && opponent ? `Team list for ${team.shortName} vs ${opponent.shortName}` : "Team list"}
+                  </h2>
+                  {currentGame && opponent && (
+                    <Link
+                      to={`/games/${currentGame.id}`}
+                      className="text-[11.5px] font-semibold text-white/42 hover:text-white transition-colors duration-150"
+                    >
+                      {currentGame.round} ·{" "}
+                      {new Date(currentGame.kickoffAt).toLocaleDateString(undefined, {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Link>
+                  )}
+                </div>
 
-            {currentGame && lineupStages ? (
-              <TeamListCard team={team} stages={lineupStages} kickoffAt={currentGame.kickoffAt} />
-            ) : (
-              <p className="text-slate-500 text-sm">No team list logged yet.</p>
+                {currentGame && lineupStages ? (
+                  <TeamListCard team={team} stages={lineupStages} kickoffAt={currentGame.kickoffAt} />
+                ) : (
+                  <p className="text-slate-500 text-sm">No team list logged yet.</p>
+                )}
+              </>
             )}
 
             <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mt-[26px] mb-2.5">
