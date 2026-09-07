@@ -333,15 +333,22 @@ export default function TeamPage() {
             )}
             <div className="mb-2.5">
               <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase">
-                {currentGame && opponent ? (
-                  <>
-                    Team list for {team.shortName} vs {opponent.shortName}
-                  </>
-                ) : (
-                  "Team list"
-                )}
+                {isStaleTeamList && !nextFixture
+                  ? "Final team list of the season"
+                  : currentGame && opponent
+                    ? `Team list for ${team.shortName} vs ${opponent.shortName}`
+                    : "Team list"}
               </h2>
-              {currentGame && opponent && (
+              {/* The small dashed banner above already flags this as stale —
+                  but a big bold "Team list for Broncos vs Bulldogs" heading
+                  right underneath it still reads as a live upcoming-match
+                  header to anyone skimming past the banner, which is exactly
+                  the "looks current" complaint this whole fix is for. Once
+                  there's no next fixture at all (eliminated, season over for
+                  this team), the heading itself drops the "vs {opponent}"
+                  framing instead of just relying on the banner above it to
+                  do all the work. */}
+              {currentGame && opponent && !(isStaleTeamList && !nextFixture) && (
                 <Link
                   to={`/games/${currentGame.id}`}
                   className="text-[11.5px] font-semibold text-white/42 hover:text-white transition-colors duration-150"
@@ -352,6 +359,14 @@ export default function TeamPage() {
                     month: "short",
                     day: "numeric",
                   })}
+                </Link>
+              )}
+              {isStaleTeamList && !nextFixture && currentGame && opponent && (
+                <Link
+                  to={`/games/${currentGame.id}`}
+                  className="text-[11.5px] font-semibold text-white/42 hover:text-white transition-colors duration-150"
+                >
+                  {currentGame.round}: {team.shortName} vs {opponent.shortName}
                 </Link>
               )}
             </div>
