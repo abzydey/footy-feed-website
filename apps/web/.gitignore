@@ -26,3 +26,8 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 # nothing else in the app breaks.
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
+
+# Written by Codemagic's Android workflow from its managed keystore env vars
+# right before the release build runs (see /codemagic.yaml) — never committed,
+# never generated locally.
+android/app/keystore.properties

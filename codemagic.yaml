@@ -1,0 +1,111 @@
+definitions:
+  npm_workspace_install: &npm_workspace_install
+    name: Install dependencies (npm workspaces)
+    script: npm ci
+  build_web: &build_web
+    name: Build the web bundle (apps/web/dist — what Capacitor wraps)
+    script: npm run build --workspace apps/web
+
+workflows:
+  android-release:
+    name: Android release
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      # Create this keystore under App settings -> Code signing identities ->
+      # Android in the Codemagic dashboard (its "Generate keystore" button
+      # creates and stores it entirely on Codemagic's side — nothing to keep
+      # track of locally). Reference name must match what you name it there.
+      android_signing:
+        - fullset-android-keystore
+      groups:
+        # Create this variable group under App settings -> Environment
+        # variables with one secure file variable named GOOGLE_SERVICES_JSON
+        # holding the real android/app/google-services.json content (needed
+        # for push — see apps/web/.gitignore for why it isn't in the repo).
+        - firebase_android
+      node: 20.11.1
+    scripts:
+      - <<: *npm_workspace_install
+      - <<: *build_web
+      - name: Restore google-services.json
+        script: |
+          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > apps/web/android/app/google-services.json
+          fi
+      - name: Sync the web build into the Android shell
+        script: cd apps/web && npx cap sync android
+      - name: Write keystore.properties from Codemagic's injected signing vars
+        script: |
+          cat > apps/web/android/app/keystore.properties <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Build the signed release bundle
+        script: |
+          cd apps/web/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+    artifacts:
+      - apps/web/android/app/build/outputs/**/*.aab
+      - apps/web/android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - abzydey@gmail.com
+
+  ios-release:
+    name: iOS release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      ios_signing:
+        # Register the app in App Store Connect with bundle ID au.fullset.app
+        # first, then connect it here — App settings -> Code signing
+        # identities -> iOS -> Automatic. Codemagic then fetches/creates the
+        # certificate and provisioning profile itself for every build.
+        distribution_type: app_store
+        bundle_identifier: au.fullset.app
+      groups:
+        # Same file, second copy — ios/App/App/GoogleService-Info.plist isn't
+        # in the repo either. One secure file variable, GOOGLE_SERVICE_INFO_PLIST.
+        - firebase_ios
+      vars:
+        XCODE_SCHEME: "App"
+        XCODE_PROJECT: "apps/web/ios/App/App.xcodeproj"
+      node: 20.11.1
+      xcode: latest
+    integrations:
+      # Name of the App Store Connect API key added under Team settings ->
+      # Integrations in Codemagic — needed for automatic signing above and
+      # for the App Store Connect publish step below.
+      app_store_connect: fullset-asc-key
+    scripts:
+      - <<: *npm_workspace_install
+      - <<: *build_web
+      - name: Restore GoogleService-Info.plist
+        script: |
+          if [ -n "${GOOGLE_SERVICE_INFO_PLIST:-}" ]; then
+            echo "$GOOGLE_SERVICE_INFO_PLIST" > apps/web/ios/App/App/GoogleService-Info.plist
+          fi
+      - name: Sync the web build into the iOS shell
+        script: cd apps/web && npx cap sync ios
+      - name: Fetch signing files matching the bundle ID above
+        script: xcode-project use-profiles
+      - name: Build the archive and export an IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - abzydey@gmail.com
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

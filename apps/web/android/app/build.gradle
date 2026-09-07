@@ -1,8 +1,29 @@
 apply plugin: 'com.android.application'
 
+// Release signing reads from keystore.properties (gitignored — real values come
+// from Codemagic's managed keystore, written by the CI workflow before this
+// build runs; see /codemagic.yaml). Missing locally is fine: release builds just
+// fall back to unsigned, same as before this file existed.
+def keystorePropertiesFile = rootProject.file("app/keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystoreProperties = keystorePropertiesFile.exists()
+if (hasKeystoreProperties) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "au.fullset.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    if (hasKeystoreProperties) {
+        signingConfigs {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     defaultConfig {
         applicationId "au.fullset.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +41,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasKeystoreProperties) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
