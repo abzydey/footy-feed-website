@@ -55,9 +55,18 @@ function FixtureCard({ game, onOpen }: { game: Game; onOpen: () => void }) {
       </div>
       <TeamRow team={game.homeTeam} score={game.homeScore} live={live} />
       <TeamRow team={game.awayTeam} score={game.awayScore} live={live} />
-      {game.venue && (
-        <div className="mt-1.5 pt-1.5 border-t border-white/[.06]">
-          <span className="text-[9.5px] font-semibold text-white/35 truncate block">{game.venue}</span>
+      {(game.venue || game.weatherFlag) && (
+        <div className="mt-1.5 pt-1.5 border-t border-white/[.06] flex items-center gap-1 min-w-0">
+          {game.venue && <span className="text-[9.5px] font-semibold text-white/35 truncate">{game.venue}</span>}
+          {game.weatherFlag && (
+            <span
+              title={game.weatherNote ?? "Weather-affected fixture"}
+              className="shrink-0 text-[9.5px]"
+              aria-label="Weather-affected fixture"
+            >
+              ☔
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -56,6 +56,8 @@ export interface Game {
   awayScore: number | null;
   liveClock: string | null;
   liveScoreUpdatedAt: string | null;
+  weatherFlag: boolean;
+  weatherNote: string | null;
 }
 
 export interface TryScorer {
@@ -323,6 +325,12 @@ export const api = {
   adminSetLiveScore: (token: string, gameId: string, data: { homeScore: number; awayScore: number; liveClock?: string }) =>
     request<Game>(`/admin/games/${gameId}/live-score`, {
       method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    }),
+  adminSetGameWeather: (token: string, gameId: string, data: { weatherFlag: boolean; weatherNote?: string }) =>
+    request<Game>(`/admin/games/${gameId}/weather`, {
+      method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),

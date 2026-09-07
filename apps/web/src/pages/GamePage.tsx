@@ -37,7 +37,14 @@ function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
 function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail["game"]; eyebrow: string; eyebrowClass: string; children?: ReactNode }) {
   return (
     <div className="rounded-2xl bg-surface border border-white/10 shadow-card p-5">
-      <div className={`text-center text-[11px] font-bold uppercase tracking-wider mb-3 ${eyebrowClass}`}>{eyebrow}</div>
+      <div className={`text-center text-[11px] font-bold uppercase tracking-wider mb-3 ${eyebrowClass}`}>
+        {eyebrow}
+        {game.weatherFlag && (
+          <span className="ml-1.5 font-normal normal-case tracking-normal" title={game.weatherNote ?? "Weather-affected fixture"}>
+            ☔{game.weatherNote ? ` ${game.weatherNote}` : ""}
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="text-center min-w-0">
           <Link
@@ -188,7 +195,11 @@ export default function GamePage() {
       ) : (
         <PageHero
           eyebrow={game.round}
-          subtitle={game.venue ? `${formatKickoff(game.kickoffAt)} · ${game.venue}` : formatKickoff(game.kickoffAt)}
+          subtitle={
+            [formatKickoff(game.kickoffAt), game.venue, game.weatherFlag ? `☔ ${game.weatherNote ?? "Weather-affected"}` : null]
+              .filter(Boolean)
+              .join(" · ")
+          }
           title={
             <>
               <Link to={`/teams/${game.homeTeam.slug}`} className="hover:text-brand-heliotrope transition-colors duration-150">

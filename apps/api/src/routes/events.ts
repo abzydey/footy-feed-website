@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { requireAdmin, AdminAuthedRequest } from "../middleware/adminAuth";
 import { notifyFollowersOfEvent } from "../lib/notify";
 import { fetchTweetAuthorName } from "../lib/twitterEmbed";
+import { hasRosterChanged } from "../lib/teamListDiff";
 
 const router = Router();
 router.use(requireAdmin);
@@ -74,6 +75,22 @@ router.post("/", async (req: AdminAuthedRequest, res) => {
     data.sourceAuthor ??
     (data.type === "SOCIAL_POST" && data.sourceUrl ? (await fetchTweetAuthorName(data.sourceUrl)) ?? undefined : undefined);
 
+  // For a 24hr/Final team-list stage, look up the immediately preceding
+  // stage for this same game+team so we can skip the notification below if
+  // nothing actually changed — an INITIAL post (or the first team-list post
+  // ever for this game+team) has nothing to compare against, so it always
+  // notifies.
+  const priorTeamListEvent =
+    data.type === "LINEUP_CHANGE" &&
+    (data.teamListStage === "TWENTY_FOUR_HOUR" || data.teamListStage === "FINAL") &&
+    data.gameId &&
+    data.teamId
+      ? await prisma.event.findFirst({
+          where: { type: "LINEUP_CHANGE", gameId: data.gameId, teamId: data.teamId },
+          orderBy: { createdAt: "desc" },
+        })
+      : null;
+
   const event = await prisma.event.create({
     data: {
       type: data.type,
@@ -104,11 +121,19 @@ router.post("/", async (req: AdminAuthedRequest, res) => {
     });
   }
 
+  // A 24hr/Final team-list stage that didn't actually change the roster
+  // from the prior stage (e.g. "unchanged from initial") shouldn't spam
+  // followers who already got the earlier notification for the same 22.
+  const isNoOpTeamListStage =
+    priorTeamListEvent !== null && priorTeamListEvent !== undefined && !hasRosterChanged(data.body, priorTeamListEvent.body);
+
   // Fire-and-forget: notify followers of this team/player. Errors here
   // shouldn't fail the admin's save, so they're logged, not thrown.
-  notifyFollowersOfEvent(event.id).catch((err) =>
-    console.error(`notifyFollowersOfEvent failed for event ${event.id}:`, err)
-  );
+  if (!isNoOpTeamListStage) {
+    notifyFollowersOfEvent(event.id).catch((err) =>
+      console.error(`notifyFollowersOfEvent failed for event ${event.id}:`, err)
+    );
+  }
 
   res.status(201).json(event);
 });

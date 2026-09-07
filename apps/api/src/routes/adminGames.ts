@@ -132,4 +132,35 @@ router.post("/:id/live-score", async (req, res) => {
   res.json(updated);
 });
 
+const setWeatherSchema = z.object({
+  weatherFlag: z.boolean(),
+  weatherNote: z.string().max(80).optional(),
+});
+
+// PATCH /api/admin/games/:id/weather — set or clear the weather-affected
+// flag. A separate small endpoint rather than a field on create: this is
+// almost always known closer to game day (forecast checked the day before/
+// of), not at the time the fixture is first entered.
+router.patch("/:id/weather", async (req, res) => {
+  const parsed = setWeatherSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+  const { weatherFlag, weatherNote } = parsed.data;
+
+  const game = await prisma.game
+    .update({
+      where: { id: req.params.id },
+      data: { weatherFlag, weatherNote: weatherFlag ? weatherNote ?? null : null },
+      include: {
+        homeTeam: { select: { id: true, name: true, shortName: true, slug: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true, slug: true } },
+      },
+    })
+    .catch(() => null);
+  if (!game) return res.status(404).json({ error: "Game not found" });
+
+  res.json(game);
+});
+
 export default router;

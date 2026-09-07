@@ -227,6 +227,16 @@ model Game {
   // rather than the score just looking current when it's actually stale.
   liveScoreUpdatedAt DateTime?
 
+  // Manual, admin-entered flag for a fixture that looks weather-affected
+  // (heavy rain, wind, etc.) — same "no live API" pattern as JudiciaryCharge
+  // and FinalsInjuryEntry: games actually needing this are rare, and a live
+  // weather feed risks false positives for a small win. weatherNote is a
+  // short free-text reason (e.g. "Heavy rain forecast") shown alongside the
+  // badge; optional even when weatherFlag is true, since the flag alone is
+  // often enough.
+  weatherFlag Boolean @default(false)
+  weatherNote String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

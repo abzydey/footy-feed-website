@@ -210,6 +210,61 @@ function LiveScoreForm({ token, game, onSaved }: { token: string; game: Game; on
   );
 }
 
+// Manual weather-affected toggle — same "small admin-entered field" pattern
+// as judiciary/injuries, not a live weather API (see schema.prisma design
+// note on Game.weatherFlag). Note only matters once the flag is on, so it's
+// hidden until checked.
+function WeatherForm({ token, game, onSaved }: { token: string; game: Game; onSaved: () => void }) {
+  const [flag, setFlag] = useState(game.weatherFlag);
+  const [note, setNote] = useState(game.weatherNote ?? "");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(nextFlag: boolean, nextNote: string) {
+    setError(null);
+    setStatus("saving");
+    try {
+      await api.adminSetGameWeather(token, game.id, { weatherFlag: nextFlag, weatherNote: nextNote.trim() || undefined });
+      setStatus("saved");
+      onSaved();
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Failed to save.");
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+      <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={flag}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setFlag(next);
+            save(next, note);
+          }}
+          className="accent-brand-violet"
+        />
+        ☔ Weather-affected
+      </label>
+      {flag && (
+        <>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={() => save(flag, note)}
+            placeholder="Note, e.g. Heavy rain forecast (optional)"
+            className="flex-1 min-w-[160px] bg-black border border-white/20 px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
+          />
+        </>
+      )}
+      {status === "saving" && <span className="text-[10px] text-slate-500">Saving…</span>}
+      {status === "error" && <span className="text-brand-siren text-[10px]">{error ?? "Failed to save."}</span>}
+    </div>
+  );
+}
+
 function GameRow({
   game,
   token,
@@ -270,6 +325,7 @@ function GameRow({
           <div className="text-xs text-slate-500 mt-0.5">No auto-update yet — set manually below</div>
         ))}
       {!finished && <LiveScoreForm token={token} game={game} onSaved={onSaved} />}
+      <WeatherForm token={token} game={game} onSaved={onSaved} />
       {expanded && <ResultForm token={token} game={game} onSaved={onSaved} />}
     </div>
   );

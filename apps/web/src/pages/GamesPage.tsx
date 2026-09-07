@@ -129,6 +129,15 @@ export default function GamesPage() {
                   ● Live{game.liveClock ? ` ${game.liveClock}` : ""}
                 </span>
               )}
+              {game.weatherFlag && (
+                <span
+                  title={game.weatherNote ?? "Weather-affected fixture"}
+                  className="shrink-0 text-xs"
+                  aria-label="Weather-affected fixture"
+                >
+                  ☔
+                </span>
+              )}
             </div>
             {game.venue && <div className="text-xs text-slate-500 mt-0.5">{game.venue}</div>}
           </Link>
