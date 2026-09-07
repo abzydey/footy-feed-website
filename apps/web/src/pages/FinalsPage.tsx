@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { api, FinalsInjuryEntry, Game, LadderRow } from "../lib/api";
-import { buildFinalsBracket, teamsAliveInFinals } from "../lib/finalsBracket";
+import { buildFinalsBracket, FINALS_ROUNDS, teamsAliveInFinals } from "../lib/finalsBracket";
 import FinalsBracketView from "../components/FinalsBracketView";
 import FinalsInjuryWatch from "../components/FinalsInjuryWatch";
 import FinalsPredictor from "../components/FinalsPredictor";
@@ -9,9 +10,8 @@ import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
-const FINALS_ROUNDS = ["Finals Week 1", "Finals Week 2", "Finals Week 3", "Grand Final"];
-
 export default function FinalsPage() {
+  const location = useLocation();
   const [ladderRows, setLadderRows] = useState<LadderRow[] | null>(null);
   const [games, setGames] = useState<Game[] | null>(null);
   const [injuries, setInjuries] = useState<FinalsInjuryEntry[] | null>(null);
@@ -48,6 +48,17 @@ export default function FinalsPage() {
 
   const loading = !top8 || !games || !bracket;
 
+  // The Home widget deep-links to /finals#injury-watch, at the bottom of the
+  // page — the browser's own automatic hash-scroll fires once on navigation,
+  // before this section's content (gated behind the loading state above) has
+  // actually mounted, so it misses. Re-triggers the scroll manually once the
+  // injuries data (and therefore the section) is actually on the page.
+  useEffect(() => {
+    if (location.hash === "#injury-watch" && injuries) {
+      document.getElementById("injury-watch")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [location.hash, injuries]);
+
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-8">
       <PageHero
@@ -71,7 +82,7 @@ export default function FinalsPage() {
         {loading ? <FeedSkeleton count={4} /> : <FinalsPredictor top8={top8} realBracket={bracket} />}
       </section>
 
-      <section>
+      <section id="injury-watch">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-3">Injury Watch</h2>
         {loading || !injuries ? (
           <FeedSkeleton count={3} />

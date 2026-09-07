@@ -35,6 +35,12 @@ export const ROUND_BY_SLOT: Record<SlotId, string> = {
   GF: "Grand Final",
 };
 
+// The four round names finals content can appear under — derived from
+// ROUND_BY_SLOT (not hand-duplicated) so anything that needs "every finals
+// round" (fetching games, deciding whether finals have started at all) stays
+// in sync with the routing table above automatically.
+export const FINALS_ROUNDS: string[] = Array.from(new Set(Object.values(ROUND_BY_SLOT)));
+
 export const SLOT_LABEL: Record<SlotId, string> = {
   QF1: "Qualifying Final 1",
   QF2: "Qualifying Final 2",

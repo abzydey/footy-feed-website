@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { api, EventItem } from "../lib/api";
 import { dedupeStories } from "../lib/feed";
 import EventCard from "../components/EventCard";
+import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import NextGameCard from "../components/NextGameCard";
 import TeamListsCard from "../components/TeamListsCard";
@@ -79,6 +80,10 @@ export default function HomePage() {
       </div>
 
       <TeamListsCard />
+
+      {/* Finals-only — renders nothing outside the finals window (no finals
+          game entered yet, or the Grand Final's already been decided). */}
+      <FinalsInjuryHomeCard />
 
       {/* Moved down from its old spot right under the header — still on
           Home, still one scroll away, just not the very first thing anyone
