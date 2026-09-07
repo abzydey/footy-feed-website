@@ -59,31 +59,28 @@ export default function Footer() {
           <span>© {new Date().getFullYear()} Full Set</span>
         </div>
 
-        <div className="flex flex-col items-center sm:items-end gap-1.5">
-          <div className="flex items-center gap-3">
-            <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
-              Our partners
-            </span>
-            <div className="flex items-center gap-4">
-              {PARTNERS.map((p) => (
-                <a
-                  key={p.name}
-                  href={p.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center hover:opacity-80 transition-opacity duration-150"
-                >
-                  <img
-                    src={p.logo}
-                    alt={p.name}
-                    style={{ height: p.height, filter: p.filter }}
-                    className="w-auto object-contain"
-                  />
-                </a>
-              ))}
-            </div>
+        <div className="flex items-center gap-3">
+          <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
+            Our partners
+          </span>
+          <div className="flex items-center gap-4">
+            {PARTNERS.map((p) => (
+              <a
+                key={p.name}
+                href={p.href}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center hover:opacity-80 transition-opacity duration-150"
+              >
+                <img
+                  src={p.logo}
+                  alt={p.name}
+                  style={{ height: p.height, filter: p.filter }}
+                  className="w-auto object-contain"
+                />
+              </a>
+            ))}
           </div>
-          <span className="text-[10px] text-slate-500">House Money is MFAA-accredited for mortgage broking</span>
         </div>
       </div>
     </footer>
