@@ -140,11 +140,15 @@ export default function TeamPage() {
   const form = ladderRow?.form ? ladderRow.form.split("") : [];
   const opponent = currentGame && (currentGame.homeTeam.id === team.id ? currentGame.awayTeam : currentGame.homeTeam);
 
-  // The round has moved on (currentGame — whichever game this team's latest
-  // LINEUP_CHANGE belongs to — is finished) but this team's next INITIAL
-  // list hasn't landed yet, so the card below is showing real but historical
-  // data. Only true once a next fixture actually exists — see routes/teams.ts.
-  const isStaleTeamList = currentGame?.status === "FULL_TIME" && nextFixture != null;
+  // The round has moved on — currentGame (whichever game this team's latest
+  // LINEUP_CHANGE belongs to) is finished — so the card below is showing
+  // real but historical data. True regardless of whether nextFixture exists:
+  // it used to require one, which meant a team with no next fixture at all
+  // (missed the finals, season over for them) never tripped this and just
+  // kept showing last week's list with no indication it was stale — exactly
+  // backwards, since "no next fixture" is the strongest case for "this
+  // definitely isn't current" of the two.
+  const isStaleTeamList = currentGame?.status === "FULL_TIME";
   const nextOpponent = nextFixture && (nextFixture.homeTeam.id === team.id ? nextFixture.awayTeam : nextFixture.homeTeam);
 
   const teamGames = (allGames ?? []).filter((g) => g.homeTeam.id === team.id || g.awayTeam.id === team.id);
@@ -318,6 +322,13 @@ export default function TeamPage() {
                     month: "short",
                   })}
                 </Link>
+              </div>
+            )}
+            {isStaleTeamList && !nextFixture && (
+              <div className="rounded-lg border border-dashed border-white/15 px-3.5 py-3 mb-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Last team list — {currentGame?.round}, no upcoming fixture scheduled
+                </p>
               </div>
             )}
             <div className="mb-2.5">
