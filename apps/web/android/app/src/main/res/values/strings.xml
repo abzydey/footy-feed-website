@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Full Set</string>
+    <string name="title_activity_main">Full Set</string>
+    <string name="package_name">au.fullset.app</string>
+    <string name="custom_url_scheme">au.fullset.app</string>
+</resources>

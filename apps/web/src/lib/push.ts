@@ -1,9 +1,24 @@
+import { Capacitor } from "@capacitor/core";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 import { getToken, onMessage } from "firebase/messaging";
 
 import { api } from "./api";
 import { getFirebaseMessaging, isFirebaseConfigured } from "./firebase";
 
 const FCM_TOKEN_KEY = "footy-feed:fcmToken";
+
+// The native iOS/Android app (Capacitor-wrapped) and the web PWA both end up
+// storing "an FCM token" under the same key, so every caller of
+// getStoredFcmToken()/followTarget() below works unchanged on either — only
+// enablePushNotifications() and onForegroundMessage() need to branch, since
+// those are the two places that actually talk to a *different* SDK
+// (@capacitor-firebase/messaging's native bridge vs. firebase/messaging's
+// web APIs) to get there. Same underlying Firebase project either way — see
+// android/app/google-services.json and ios/App/App/GoogleService-Info.plist
+// (both gitignored; each platform needs its own real file from the Firebase
+// console before push actually works there, same as VITE_FIREBASE_VAPID_KEY
+// does for web).
+const isNative = Capacitor.isNativePlatform();
 
 // Registers the service worker on every page load, not just when someone
 // opts into push — Chrome's automatic install prompt (the beforeinstallprompt
@@ -33,6 +48,10 @@ export function getStoredFcmToken(): string | null {
 // Safari" — user-agent sniffing is the standard, if inelegant, approach
 // every push-notification vendor uses for this exact check.
 export function needsIosHomeScreenInstall(): boolean {
+  // The native app is already a real installed app, not a browser tab —
+  // this whole "Add to Home Screen first" dance is a Safari-PWA-specific
+  // workaround that doesn't apply once wrapped in Capacitor.
+  if (isNative) return false;
   const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
   if (!isIos) return false;
   const isStandalone =
@@ -51,6 +70,23 @@ export function needsIosHomeScreenInstall(): boolean {
  * not configured yet.
  */
 export async function enablePushNotifications(): Promise<string | null> {
+  if (isNative) {
+    try {
+      let status = (await FirebaseMessaging.checkPermissions()).receive;
+      if (status === "prompt" || status === "prompt-with-rationale") {
+        status = (await FirebaseMessaging.requestPermissions()).receive;
+      }
+      if (status !== "granted") return null;
+
+      const { token } = await FirebaseMessaging.getToken();
+      if (token) localStorage.setItem(FCM_TOKEN_KEY, token);
+      return token ?? null;
+    } catch (err) {
+      console.error("[push] native enablePushNotifications failed:", err);
+      return null;
+    }
+  }
+
   if (!isFirebaseConfigured) {
     console.warn("Firebase not configured — set VITE_FIREBASE_* env vars to enable push.");
     return null;
@@ -121,8 +157,26 @@ export async function followTarget(targetType: "TEAM" | "PLAYER" | "LEAGUE", tar
   return api.follow(token, targetType, targetId);
 }
 
-/** Handle a push notification that arrives while the tab is open/focused. */
+/** Handle a push notification that arrives while the app is open/focused. */
 export function onForegroundMessage(callback: (title: string, body: string) => void) {
+  if (isNative) {
+    let removed = false;
+    let handleToRemove: { remove: () => void } | undefined;
+    FirebaseMessaging.addListener("notificationReceived", (event) => {
+      callback(event.notification.title ?? "Full Set", event.notification.body ?? "");
+    }).then((handle) => {
+      // The caller may have already unsubscribed before the async
+      // addListener() call resolved — remove immediately instead of leaking
+      // a listener that outlives its caller.
+      if (removed) handle.remove();
+      else handleToRemove = handle;
+    });
+    return () => {
+      removed = true;
+      handleToRemove?.remove();
+    };
+  }
+
   const messaging = getFirebaseMessaging();
   if (!messaging) return () => {};
   return onMessage(messaging, (payload) => {

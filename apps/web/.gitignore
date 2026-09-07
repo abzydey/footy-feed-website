@@ -1,2 +1,28 @@
 .vercel
 .env*
+
+# Capacitor native projects — build output and machine-specific files, not
+# the project structure itself (android/, ios/ themselves ARE committed so
+# Codemagic has something to build).
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+android/local.properties
+ios/App/build/
+ios/App/DerivedData/
+ios/App/Pods/
+ios/App/*.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Real per-platform Firebase config, downloaded from the Firebase console
+# (Project Settings -> Add app -> package name/bundle ID au.fullset.app) —
+# not committed since this repo may end up public; add these locally and as
+# Codemagic environment/secret files instead. Without them, the native
+# Google Services Gradle plugin/Firebase SDK just no-ops (see
+# android/app/build.gradle's own google-services.json existence check) —
+# push notifications specifically won't work until they're in place, but
+# nothing else in the app breaks.
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
