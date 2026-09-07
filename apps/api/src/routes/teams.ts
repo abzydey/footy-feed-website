@@ -89,15 +89,32 @@ router.get("/:slug", async (req, res) => {
   // LINEUP_CHANGE events are fully owned by the stage tracker above now, not
   // duplicated in the general news list. Excludes SOCIAL_POST too — those
   // get their own Social section (see socialPosts below).
-  const recentEvents = await prisma.event.findMany({
+  //
+  // A signing gets both a TRANSFER row (for Home/Signing News) and a
+  // GENERAL_NEWS copy (for the dedicated News page) sharing the same
+  // headline/sourceUrl — see schema.prisma design notes. Fetching by teamId
+  // with no type filter means a team page would otherwise show that same
+  // story twice, once per type. Fetches extra (60, not 20) before deduping
+  // so a team with several signings recently doesn't end up with fewer than
+  // 20 real stories after collapsing the duplicates back down.
+  const rawRecentEvents = await prisma.event.findMany({
     where: {
       OR: [{ teamId: team.id }, { player: { teamId: team.id } }],
       type: { notIn: ["SOCIAL_POST", "LINEUP_CHANGE"] },
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 60,
     include: { player: { select: { id: true, name: true, slug: true } } },
   });
+  const seenEventKeys = new Set<string>();
+  const recentEvents = rawRecentEvents
+    .filter((e) => {
+      const key = e.sourceUrl ?? e.headline;
+      if (seenEventKeys.has(key)) return false;
+      seenEventKeys.add(key);
+      return true;
+    })
+    .slice(0, 20);
 
   // This team's Social section — SOCIAL_POST events tied directly to this
   // team via teamId (not via a player's team, unlike recentEvents above).

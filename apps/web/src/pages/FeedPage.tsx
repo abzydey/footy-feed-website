@@ -53,7 +53,11 @@ export default function FeedPage() {
   });
 
   useEffect(() => {
-    api.getFeed().then(setFeed).catch((err) => setError(err.message));
+    // A real browsing page, not Home's small teaser — asks for a much
+    // bigger window so an older story (e.g. a signing from a week ago)
+    // doesn't quietly vanish once enough newer stories have accumulated
+    // past Home's default 40-item cap. See routes/feed.ts.
+    api.getFeed(300).then(setFeed).catch((err) => setError(err.message));
     api.listTeams().then(setTeams).catch(() => setTeams([]));
 
     const fcmToken = getStoredFcmToken();

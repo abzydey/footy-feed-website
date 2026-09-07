@@ -234,7 +234,7 @@ export const api = {
       recentEvents: EventItem[];
       socialPosts: EventItem[];
     }>(`/teams/${slug}`),
-  getFeed: () => request<EventItem[]>(`/feed`),
+  getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
   listGames: (round?: string) => request<Game[]>(`/games${round ? `?round=${encodeURIComponent(round)}` : ""}`),
   listRounds: () => request<string[]>("/games/rounds"),
