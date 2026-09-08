@@ -23,7 +23,7 @@ workflows:
         # holding the real android/app/google-services.json content (needed
         # for push — see apps/web/.gitignore for why it isn't in the repo).
         - firebase_android
-      node: 20.11.1
+      node: 22.11.0
     scripts:
       - <<: *npm_workspace_install
       - <<: *build_web
@@ -74,7 +74,7 @@ workflows:
       vars:
         XCODE_SCHEME: "App"
         XCODE_PROJECT: "apps/web/ios/App/App.xcodeproj"
-      node: 20.11.1
+      node: 22.11.0
       xcode: latest
     integrations:
       # Name of the App Store Connect API key added under Team settings ->
