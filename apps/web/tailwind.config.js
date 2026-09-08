@@ -8,8 +8,8 @@ export default {
         // Siren. Purple is a single swappable token (accent) so a future
         // brand change stays a one-line edit. See handoff_fullset_brand/README.md.
         brand: {
-          DEFAULT: "#8B4DFF",
-          violet: "#8B4DFF", // Full Set Purple — buttons, links, section labels, kickers, top-8 rail
+          DEFAULT: "#A855F7",
+          violet: "#A855F7", // Full Set Purple — buttons, links, section labels, kickers, top-8 rail
           // Was #A472FF (a deliberately lighter shade for small purple text's
           // contrast on navy — 6.4:1 vs violet's own ~4.3:1, borderline for
           // WCAG AA at small sizes). Set equal to violet on request ("I want
@@ -18,7 +18,8 @@ export default {
           // renders as the exact same purple with a one-line change here,
           // rather than hunting down each usage — small violet text on navy
           // is a real, if minor, contrast regression from before.
-          heliotrope: "#8B4DFF",
+          heliotrope: "#A855F7",
+          hover: "#AE6BFF", // lighter tone shown on hover for solid brand-coloured buttons/fills and accent-on-hover text/links — deliberately distinct from violet, not an opacity trick
           siren: "#FF6B2C", // the one warm accent — live now, kickoff imminent, late change, OUT. Never decorative.
         },
         // Card background, one step up from the page's app background so

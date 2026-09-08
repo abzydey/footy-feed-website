@@ -249,7 +249,7 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
 
         <button
           disabled={status === "saving"}
-          className="w-full bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]"
+          className="w-full bg-brand-violet hover:bg-brand-hover disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]"
         >
           {status === "saving" ? "Saving…" : "Publish update"}
         </button>

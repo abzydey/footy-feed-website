@@ -49,7 +49,7 @@ function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail
         <div className="text-center min-w-0">
           <Link
             to={`/teams/${game.homeTeam.slug}`}
-            className="font-display font-bold text-lg text-white hover:text-brand-heliotrope transition-colors duration-150 truncate block"
+            className="font-display font-bold text-lg text-white hover:text-brand-hover transition-colors duration-150 truncate block"
           >
             {game.homeTeam.shortName}
           </Link>
@@ -60,7 +60,7 @@ function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail
         <div className="text-center min-w-0">
           <Link
             to={`/teams/${game.awayTeam.slug}`}
-            className="font-display font-bold text-lg text-white hover:text-brand-heliotrope transition-colors duration-150 truncate block"
+            className="font-display font-bold text-lg text-white hover:text-brand-hover transition-colors duration-150 truncate block"
           >
             {game.awayTeam.shortName}
           </Link>
@@ -202,11 +202,11 @@ export default function GamePage() {
           }
           title={
             <>
-              <Link to={`/teams/${game.homeTeam.slug}`} className="hover:text-brand-heliotrope transition-colors duration-150">
+              <Link to={`/teams/${game.homeTeam.slug}`} className="hover:text-brand-hover transition-colors duration-150">
                 {game.homeTeam.shortName}
               </Link>{" "}
               <span className="text-slate-500">vs</span>{" "}
-              <Link to={`/teams/${game.awayTeam.slug}`} className="hover:text-brand-heliotrope transition-colors duration-150">
+              <Link to={`/teams/${game.awayTeam.slug}`} className="hover:text-brand-hover transition-colors duration-150">
                 {game.awayTeam.shortName}
               </Link>
             </>

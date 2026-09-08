@@ -57,7 +57,7 @@ function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
         className="w-full bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
       />
       {error && <p className="text-red-400 text-sm">{error}</p>}
-      <button className="w-full bg-brand-violet hover:bg-brand-violet/90 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]">
+      <button className="w-full bg-brand-violet hover:bg-brand-hover text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]">
         Log in
       </button>
     </form>

@@ -283,7 +283,7 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
     <div className="rounded-xl bg-surface border border-white/10 p-4 shadow-card space-y-2.5">
       <Link
         to={`/teams/${team.slug}`}
-        className="flex items-center gap-2.5 font-display font-extrabold text-white hover:text-brand-heliotrope transition-colors duration-150"
+        className="flex items-center gap-2.5 font-display font-extrabold text-white hover:text-brand-hover transition-colors duration-150"
       >
         <TeamBadge team={team} size="sm" />
         {team.shortName}

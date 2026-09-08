@@ -64,7 +64,7 @@ export default function InjuriesPage() {
             <div key={teamId} className="rounded-xl bg-surface border border-white/10 shadow-card p-3">
               <Link to={`/teams/${team.slug}`} className="flex items-center gap-2 mb-2 w-fit">
                 <TeamBadge team={team} size="sm" />
-                <span className="font-display font-bold text-sm text-white hover:text-brand-heliotrope transition-colors duration-150">
+                <span className="font-display font-bold text-sm text-white hover:text-brand-hover transition-colors duration-150">
                   {team.shortName}
                 </span>
               </Link>

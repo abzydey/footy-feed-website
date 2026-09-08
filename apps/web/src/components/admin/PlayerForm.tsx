@@ -158,7 +158,7 @@ export default function PlayerForm({ token }: { token: string }) {
 
         <button
           disabled={status === "saving" || !teamSlug}
-          className="w-full bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]"
+          className="w-full bg-brand-violet hover:bg-brand-hover disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.98]"
         >
           {status === "saving" ? "Adding…" : "Add player"}
         </button>
@@ -191,7 +191,7 @@ export default function PlayerForm({ token }: { token: string }) {
           <button
             onClick={handleBulkSubmit}
             disabled={!teamSlug || parsedBulk.length === 0 || bulkStatus === "saving"}
-            className="shrink-0 bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-40 text-white font-bold px-4 py-2 text-sm transition-all duration-150 active:scale-[0.98]"
+            className="shrink-0 bg-brand-violet hover:bg-brand-hover disabled:opacity-40 text-white font-bold px-4 py-2 text-sm transition-all duration-150 active:scale-[0.98]"
           >
             {bulkStatus === "saving" ? "Adding…" : `Add ${parsedBulk.length || ""} player${parsedBulk.length === 1 ? "" : "s"}`}
           </button>

@@ -140,7 +140,7 @@ function TeamSheetCard({ token, sheet }: { token: string; sheet: LateMailTeamShe
         type="button"
         onClick={handlePublish}
         disabled={!canPublish || status === "publishing"}
-        className="w-full bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-40 text-white font-bold text-xs px-3 py-2 transition-all duration-150 active:scale-[0.98]"
+        className="w-full bg-brand-violet hover:bg-brand-hover disabled:opacity-40 text-white font-bold text-xs px-3 py-2 transition-all duration-150 active:scale-[0.98]"
       >
         {status === "publishing" ? "Publishing…" : status === "published" ? "✓ Published — publish again" : `Publish ${STAGE_LABEL[stage]}`}
       </button>
@@ -206,7 +206,7 @@ export default function LateMailForm({ token }: { token: string }) {
           type="button"
           onClick={handleFetch}
           disabled={status === "loading"}
-          className="shrink-0 bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white text-sm font-bold px-4 py-2 transition-colors duration-150"
+          className="shrink-0 bg-brand-violet hover:bg-brand-hover disabled:opacity-60 text-white text-sm font-bold px-4 py-2 transition-colors duration-150"
         >
           {status === "loading" ? "Fetching…" : "Fetch"}
         </button>

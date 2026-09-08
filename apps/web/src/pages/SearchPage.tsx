@@ -85,7 +85,7 @@ export default function SearchPage() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-brand-violet hover:bg-brand-violet/90 disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.97]"
+          className="bg-brand-violet hover:bg-brand-hover disabled:opacity-60 text-white font-bold px-4 py-2 transition-all duration-150 active:scale-[0.97]"
         >
           Search
         </button>
