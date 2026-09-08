@@ -6,55 +6,91 @@ definitions:
     name: Build the web bundle (apps/web/dist — what Capacitor wraps)
     script: npm run build --workspace apps/web
 
+  # Shared by both Android workflows below — everything up to the final
+  # Gradle command is identical whether the output is an .aab (for Play
+  # Console) or a plain .apk (for a direct sideload install).
+  android_environment: &android_environment
+    android_signing:
+      - fullset-android-keystore
+    groups:
+      - firebase_android
+    node: 22.11.0
+    # Capacitor 8 generates apps/web/android/app/capacitor.build.gradle with
+    # sourceCompatibility/targetCompatibility JavaVersion.VERSION_21 itself,
+    # regenerated on every `cap sync` — matching the build machine's JDK to
+    # that (rather than fighting Capacitor's own file) is the fix for
+    # "invalid source release: 21".
+    java: 21
+  # YAML anchors can't splice a shared list of steps followed by a workflow-
+  # specific final step, so the four setup steps below (restore config, cap
+  # sync, write keystore.properties) are duplicated as literal text across
+  # android-release and android-apk rather than referenced from here — only
+  # the individually-anchored npm_workspace_install/build_web steps are
+  # actually reused. Keep both copies in sync if either changes.
+  restore_google_services: &restore_google_services
+    name: Restore google-services.json
+    script: |
+      if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+        echo "$GOOGLE_SERVICES_JSON" > apps/web/android/app/google-services.json
+      fi
+  cap_sync_android: &cap_sync_android
+    name: Sync the web build into the Android shell
+    script: cd apps/web && npx cap sync android
+  write_keystore_properties: &write_keystore_properties
+    name: Write keystore.properties from Codemagic's injected signing vars
+    script: |
+      cat > apps/web/android/app/keystore.properties <<EOF
+      storeFile=$CM_KEYSTORE_PATH
+      storePassword=$CM_KEYSTORE_PASSWORD
+      keyAlias=$CM_KEY_ALIAS
+      keyPassword=$CM_KEY_PASSWORD
+      EOF
+
 workflows:
   android-release:
     name: Android release
     max_build_duration: 60
     environment:
-      # Create this keystore under App settings -> Code signing identities ->
-      # Android in the Codemagic dashboard (its "Generate keystore" button
-      # creates and stores it entirely on Codemagic's side — nothing to keep
-      # track of locally). Reference name must match what you name it there.
-      android_signing:
-        - fullset-android-keystore
-      groups:
-        # Create this variable group under App settings -> Environment
-        # variables with one secure file variable named GOOGLE_SERVICES_JSON
-        # holding the real android/app/google-services.json content (needed
-        # for push — see apps/web/.gitignore for why it isn't in the repo).
-        - firebase_android
-      node: 22.11.0
-      # Capacitor 8 generates apps/web/android/app/capacitor.build.gradle
-      # with sourceCompatibility/targetCompatibility JavaVersion.VERSION_21
-      # itself, regenerated on every `cap sync` — matching the build
-      # machine's JDK to that (rather than fighting Capacitor's own file) is
-      # the fix for "invalid source release: 21".
-      java: 21
+      <<: *android_environment
     scripts:
-      - <<: *npm_workspace_install
-      - <<: *build_web
-      - name: Restore google-services.json
-        script: |
-          if [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
-            echo "$GOOGLE_SERVICES_JSON" > apps/web/android/app/google-services.json
-          fi
-      - name: Sync the web build into the Android shell
-        script: cd apps/web && npx cap sync android
-      - name: Write keystore.properties from Codemagic's injected signing vars
-        script: |
-          cat > apps/web/android/app/keystore.properties <<EOF
-          storeFile=$CM_KEYSTORE_PATH
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          keyPassword=$CM_KEY_PASSWORD
-          EOF
-      - name: Build the signed release bundle
+      - *npm_workspace_install
+      - *build_web
+      - *restore_google_services
+      - *cap_sync_android
+      - *write_keystore_properties
+      - name: Build the signed release bundle (.aab, for Play Console)
         script: |
           cd apps/web/android
           chmod +x gradlew
           ./gradlew bundleRelease
     artifacts:
       - apps/web/android/app/build/outputs/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - abzydey@gmail.com
+
+  # Same signing, same everything — just assembleRelease instead of
+  # bundleRelease, which outputs a plain .apk you can download straight to a
+  # phone and install directly (no Play Console account or upload needed).
+  # Good for a real-device sanity check before bothering with the store.
+  android-apk:
+    name: Android APK (direct install)
+    max_build_duration: 60
+    environment:
+      <<: *android_environment
+    scripts:
+      - *npm_workspace_install
+      - *build_web
+      - *restore_google_services
+      - *cap_sync_android
+      - *write_keystore_properties
+      - name: Build the signed installable APK
+        script: |
+          cd apps/web/android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+    artifacts:
       - apps/web/android/app/build/outputs/**/*.apk
     publishing:
       email:
@@ -88,8 +124,8 @@ workflows:
       # for the App Store Connect publish step below.
       app_store_connect: fullset-asc-key
     scripts:
-      - <<: *npm_workspace_install
-      - <<: *build_web
+      - *npm_workspace_install
+      - *build_web
       - name: Restore GoogleService-Info.plist
         script: |
           if [ -n "${GOOGLE_SERVICE_INFO_PLIST:-}" ]; then
