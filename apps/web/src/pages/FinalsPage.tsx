@@ -62,8 +62,9 @@ export default function FinalsPage() {
   // every section to reach final height first means nothing shifts under
   // the scroll afterward.
   useEffect(() => {
-    if (location.hash === "#injury-watch" && injuries && !loading) {
-      document.getElementById("injury-watch")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const id = location.hash.slice(1);
+    if ((id === "injury-watch" || id === "predictor") && injuries && !loading) {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [location.hash, injuries, loading]);
 
@@ -77,12 +78,24 @@ export default function FinalsPage() {
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
+      <button
+        type="button"
+        onClick={() => document.getElementById("predictor")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        className="w-full flex items-center justify-between gap-3 rounded-xl bg-surface border border-brand-violet/30 shadow-[0_0_28px_-6px_rgba(139,77,255,0.45)] px-4 py-3 text-left hover:border-brand-violet/50 active:scale-[0.99] transition-all duration-150"
+      >
+        <div className="min-w-0">
+          <div className="text-[13.5px] font-extrabold text-white">🎯 Make your Finals predictions</div>
+          <div className="text-[12px] text-slate-500">Pick a winner for every matchup — see how you stack up as results land.</div>
+        </div>
+        <span className="shrink-0 text-[11px] font-bold text-brand-heliotrope uppercase tracking-wider">Jump in →</span>
+      </button>
+
       <section>
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-3">Bracket</h2>
         {loading ? <FeedSkeleton count={4} /> : <FinalsBracketView bracket={bracket} top8Ranks={top8Ranks} />}
       </section>
 
-      <section>
+      <section id="predictor">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-1">Predictor</h2>
         <p className="text-[12.5px] text-slate-500 mb-3">
           Pick a winner for each matchup — your picks carry through to the next round automatically.
