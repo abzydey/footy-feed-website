@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api, GameDetail, Team, TryScorer } from "../lib/api";
@@ -8,6 +8,9 @@ import PageHero from "../components/ui/PageHero";
 import SectionLabel from "../components/ui/SectionLabel";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
+import { needsLivePolling, usePolling } from "../lib/liveGamePolling";
+
+const LIVE_POLL_MS = 20_000;
 
 function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
   return (
@@ -124,12 +127,23 @@ export default function GamePage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<GameDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dataRef = useRef(data);
+  dataRef.current = data;
 
   useEffect(() => {
     if (!id) return;
     setData(null);
     api.getGame(id).then(setData).catch((err) => setError(err.message));
   }, [id]);
+
+  // Refreshes score/clock/try-list while this game is live (or about to be)
+  // — without this, a viewer sitting on the page never sees the score move,
+  // even though the API's own liveScorePoller is updating it every 2.5min.
+  usePolling(() => {
+    if (id && needsLivePolling(dataRef.current?.game)) {
+      api.getGame(id).then(setData).catch(() => {});
+    }
+  }, LIVE_POLL_MS);
 
   const metaGame = data?.game;
   const metaFinished = metaGame?.status === "FULL_TIME";

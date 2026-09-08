@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, Game } from "../lib/api";
 import { RowListSkeleton } from "../components/ui/Skeleton";
 import TeamBadge from "../components/TeamBadge";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { needsLivePolling, usePolling } from "../lib/liveGamePolling";
+
+const LIVE_POLL_MS = 20_000;
 
 function formatKickoff(iso: string) {
   return new Date(iso).toLocaleString(undefined, {
@@ -63,6 +66,21 @@ export default function GamesPage() {
     setGames(null);
     api.listGames(round).then(setGames).catch((err) => setError(err.message));
   }, [round]);
+
+  const gamesRef = useRef(games);
+  gamesRef.current = games;
+  const roundRef = useRef(round);
+  roundRef.current = round;
+
+  // Keeps scores/LIVE badges current for whichever round is on screen — see
+  // liveGamePolling.ts. Harmless no-op tick for a round with nothing live or
+  // imminent (finished rounds, or one still days away).
+  usePolling(() => {
+    const currentRound = roundRef.current;
+    if (currentRound && gamesRef.current?.some(needsLivePolling)) {
+      api.listGames(currentRound).then(setGames).catch(() => {});
+    }
+  }, LIVE_POLL_MS);
 
   const roundIndex = rounds && round ? rounds.indexOf(round) : -1;
   const hasPrev = roundIndex > 0;

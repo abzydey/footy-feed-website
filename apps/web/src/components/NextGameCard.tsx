@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { api, Game } from "../lib/api";
+import { needsLivePolling, usePolling } from "../lib/liveGamePolling";
 import { teamAbbreviation } from "../lib/teamBadge";
 import TeamBadge from "./TeamBadge";
+
+const LIVE_POLL_MS = 20_000;
 
 // Just the time (e.g. "7:50 PM") — previously derived by splitting a
 // combined weekday+time string on ", ", which silently rendered nothing
@@ -88,6 +91,16 @@ export default function NextGameCard() {
   useEffect(() => {
     api.listGames().then(setAllGames).catch(() => setAllGames([]));
   }, []);
+
+  const allGamesRef = useRef(allGames);
+  allGamesRef.current = allGames;
+
+  // Keeps the carousel's scores/LIVE badges current — see liveGamePolling.ts.
+  usePolling(() => {
+    if (allGamesRef.current?.some(needsLivePolling)) {
+      api.listGames().then(setAllGames).catch(() => {});
+    }
+  }, LIVE_POLL_MS);
 
   // A LIVE game keeps a past kickoffAt (see schema.prisma GameStatus design
   // note), so filtering by "kickoffAt > now" alone silently drops it off
