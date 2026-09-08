@@ -148,8 +148,7 @@ function isQuietHours(): boolean {
 // to. Harmless once stale — `discovered` always wins over this the moment
 // next round's article shows up in the index again, so this only ever
 // matters on a cold start during a gap like the current one.
-let lastKnownUrl: string | null =
-  "https://www.nrl.com/news/2026/09/02/nrl-late-mail-round-27--yeo-in-frame-duncan-hamstrung/";
+let lastKnownUrl: string | null = "https://www.nrl.com/news/2026/09/08/nrl-team-lists-finals-week-1/";
 
 export async function pollLateMail(): Promise<void> {
   if (isQuietHours()) return;

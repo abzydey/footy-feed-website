@@ -26,9 +26,16 @@ async function fetchHtml(url: string): Promise<string> {
 // but there's no predictable URL pattern to construct directly (no RSS
 // feed either — /news/rss, /rss, /news/feed all 404). Scanning the index
 // for the first matching link is simpler and more reliable than guessing.
+//
+// Finals rounds use a different slug entirely: "nrl-team-lists-finals-
+// week-N" instead of "nrl-late-mail-round-N" (confirmed against the real
+// Finals Week 1 article, 2026-09-08 — same live-updated-through-the-week
+// page and same team-list markup, just not called "late mail").
 export async function findLatestLateMailUrl(): Promise<string | null> {
   const html = await fetchHtml("https://www.nrl.com/news/");
-  const match = html.match(/href="(\/news\/\d{4}\/\d{2}\/\d{2}\/nrl-late-mail-round-\d+[^"]*)"/);
+  const match = html.match(
+    /href="(\/news\/\d{4}\/\d{2}\/\d{2}\/nrl-(?:late-mail-round-\d+|team-lists-finals-week-\d+)[^"]*)"/
+  );
   return match ? `https://www.nrl.com${match[1]}` : null;
 }
 
@@ -156,7 +163,13 @@ function parseMatchChunk(chunkHtml: string, matchLabel: string): ParsedMatch {
 export async function fetchLateMail(url: string): Promise<ParsedLateMail> {
   const html = await fetchHtml(url);
 
-  const roundMatch = html.match(/<h2>NRL Late Mail: (Round \d+)<\/h2>/);
+  // Finals articles carry a differently-worded heading ("NRL Team Lists:
+  // Finals Week N" rather than "NRL Late Mail: Round N") but the captured
+  // group still comes out as "Finals Week N" — matching Game.round exactly
+  // (see finalsBracket.ts), same as "Round N" does for regular-season games.
+  const roundMatch =
+    html.match(/<h2>NRL Late Mail: (Round \d+)<\/h2>/) ??
+    html.match(/<h2>NRL Team Lists: (Finals Week \d+)<\/h2>/);
   const round = roundMatch ? roundMatch[1] : null;
 
   // Free-text narrative: everything inside the article's own content block,
