@@ -12,7 +12,7 @@ interface PageHeroProps {
 export default function PageHero({ eyebrow, title, subtitle, accentColor, children }: PageHeroProps) {
   return (
     <div className="space-y-2">
-      <div className="h-1.5 w-16 rounded-full" style={{ backgroundColor: accentColor ?? "#8B4DFF" }} />
+      <div className="h-1.5 w-16 rounded-full" style={{ backgroundColor: accentColor ?? "#A855F7" }} />
       {eyebrow && <div className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider">{eyebrow}</div>}
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-display italic font-black text-3xl sm:text-4xl tracking-tight text-white">{title}</h1>

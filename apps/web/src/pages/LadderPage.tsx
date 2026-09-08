@@ -99,7 +99,7 @@ export default function LadderPage() {
                       style={{
                         gridTemplateColumns: GRID_COLS,
                         background: top8 ? "rgba(139,77,255,.07)" : "transparent",
-                        boxShadow: top8 ? "inset 3px 0 0 #8B4DFF" : "none",
+                        boxShadow: top8 ? "inset 3px 0 0 #A855F7" : "none",
                       }}
                     >
                       <span className="flex items-center gap-[3px]">
