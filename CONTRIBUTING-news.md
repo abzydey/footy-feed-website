@@ -1,33 +1,26 @@
 # Contributing NRL news to Full Set
 
-How a pasted NRL article (text or screenshot) becomes a tweet draft plus a
-published Full Set News item. This is the standing workflow — apply it
-automatically when an article is pasted into chat, without needing it
-restated.
+How a pasted NRL article (text or screenshot) becomes a published Full Set
+News item. This is the standing workflow — apply it automatically when an
+article is pasted into chat, without needing it restated.
 
 ## The workflow
 
 1. Read the source article.
-2. Generate two pieces of copy from it — see "Tweet vs. app summary" below.
+2. Write the app summary — see "App summary" below.
 3. Determine Category — see "Category" below.
 4. Determine team tag(s) — see "Team tagging" below.
 5. Extract the byline — see "Byline" below.
 6. Publish the app summary directly to Full Set's News section (category,
    team tag(s), byline, and source link included).
-7. Reply with the tweet draft so it can be posted to the separate
-   @NRLCentral X account manually. Never auto-post to X.
 
-## Tweet vs. app summary
+No tweet draft for a plain article — that's team-list (Late Mail) territory
+only, not this workflow. Never auto-post to X regardless.
 
-Two different pieces of copy, two different rules:
+## App summary
 
-- **Tweet** (for the separate NRLCentral X account): quotes and precise
-  figures are fine. Stick strictly to the source — no invented details.
-- **App summary** (Full Set News section): no direct quotes, avoid heavy
-  stacks of figures. Stick strictly to the source.
-
-Neither ever fabricates names, stats, or details not present in the source
-article.
+No direct quotes, avoid heavy stacks of figures. Stick strictly to the
+source — never fabricate names, stats, or details not present in it.
 
 ## Category
 
