@@ -23,14 +23,24 @@ const router = Router();
 // it — the story never stops existing, it just ages out of a limit that was
 // only ever meant to cap a homepage teaser, not bound what "browse all
 // signings" can see.
+//
+// Same dedup as routes/teams.ts's recentEvents, and for the same reason: a
+// signing gets both a TRANSFER row and a matching GENERAL_NEWS copy, and a
+// story tagged to multiple clubs (see CONTRIBUTING-news.md's team-tagging
+// rule — an Event only carries one team each) gets one row per team. All of
+// that is correct for team pages, which query by teamId, but this feed has
+// no teamId filter at all, so every one of those rows would otherwise show
+// up here as its own card. Fetches extra (limit*3) before deduping so a
+// heavy multi-team story doesn't crowd out real distinct stories from the
+// requested page size.
 router.get("/", async (req, res) => {
   const requestedLimit = Number(req.query.limit);
   const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 300) : 40;
 
-  const events = await prisma.event.findMany({
+  const rawEvents = await prisma.event.findMany({
     where: { type: { in: ["GENERAL_NEWS", "TRANSFER"] } },
     orderBy: { createdAt: "desc" },
-    take: limit,
+    take: limit * 3,
     include: {
       team: { select: { id: true, name: true, shortName: true, slug: true } },
       player: { select: { id: true, name: true, slug: true } },
@@ -44,6 +54,17 @@ router.get("/", async (req, res) => {
       },
     },
   });
+
+  const seenEventKeys = new Set<string>();
+  const events = rawEvents
+    .filter((e) => {
+      const key = e.sourceUrl ?? e.headline;
+      if (seenEventKeys.has(key)) return false;
+      seenEventKeys.add(key);
+      return true;
+    })
+    .slice(0, limit);
+
   res.json(events);
 });
 
