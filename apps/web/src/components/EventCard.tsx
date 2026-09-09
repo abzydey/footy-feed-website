@@ -157,7 +157,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
         {event.headline}
       </h3>
       <p
-        className={`text-white/56 leading-[1.48] mt-[7px] [text-wrap:pretty] ${compact ? "text-[13px]" : "text-[13.5px]"}`}
+        className={`text-white/56 leading-[1.48] mt-[7px] [text-wrap:pretty] whitespace-pre-line ${compact ? "text-[13px]" : "text-[13.5px]"}`}
       >
         {event.body}
       </p>
