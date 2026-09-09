@@ -49,3 +49,11 @@ a source has asked not to be named on a given story.
 If a supplied source URL looks mismatched to the article's actual content,
 flag it rather than publishing with a wrong link — publish without a
 `sourceUrl` and ask for the correct one instead of guessing.
+
+Before flagging, though: some source articles are wrap-up columns (e.g.
+Code Sports' "Sport Confidential") that bundle several unrelated stories
+under one URL/headline — the page's own title won't match every item inside
+it, and that's normal, not a wrong link. A mismatch is worth flagging when
+the *content* pasted genuinely isn't found on that page at all, not just
+because the URL's slug/title describes a different item in the same
+column.
