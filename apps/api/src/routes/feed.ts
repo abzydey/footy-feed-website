@@ -24,23 +24,23 @@ const router = Router();
 // only ever meant to cap a homepage teaser, not bound what "browse all
 // signings" can see.
 //
-// Same dedup as routes/teams.ts's recentEvents, and for the same reason: a
-// signing gets both a TRANSFER row and a matching GENERAL_NEWS copy, and a
-// story tagged to multiple clubs (see CONTRIBUTING-news.md's team-tagging
-// rule — an Event only carries one team each) gets one row per team. All of
-// that is correct for team pages, which query by teamId, but this feed has
-// no teamId filter at all, so every one of those rows would otherwise show
-// up here as its own card. Fetches extra (limit*3) before deduping so a
-// heavy multi-team story doesn't crowd out real distinct stories from the
-// requested page size.
+// Deliberately NOT deduped here (a signing's TRANSFER row and its matching
+// GENERAL_NEWS copy, or a story tagged to multiple clubs, both come through
+// as separate rows) — lib/feed.ts's dedupeStories() does that client-side
+// instead, and it has to: FeedPage's "Signing News" view filters this raw
+// list down to type === "TRANSFER" *before* deduping, so an
+// already-deduped-by-the-API list would be missing exactly the rows that
+// view needs whenever a signing's GENERAL_NEWS copy happened to survive the
+// dedup instead of its TRANSFER row (this was tried and broke Signing News
+// entirely — see commit history).
 router.get("/", async (req, res) => {
   const requestedLimit = Number(req.query.limit);
   const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 300) : 40;
 
-  const rawEvents = await prisma.event.findMany({
+  const events = await prisma.event.findMany({
     where: { type: { in: ["GENERAL_NEWS", "TRANSFER"] } },
     orderBy: { createdAt: "desc" },
-    take: limit * 3,
+    take: limit,
     include: {
       team: { select: { id: true, name: true, shortName: true, slug: true } },
       player: { select: { id: true, name: true, slug: true } },
@@ -54,16 +54,6 @@ router.get("/", async (req, res) => {
       },
     },
   });
-
-  const seenEventKeys = new Set<string>();
-  const events = rawEvents
-    .filter((e) => {
-      const key = e.sourceUrl ?? e.headline;
-      if (seenEventKeys.has(key)) return false;
-      seenEventKeys.add(key);
-      return true;
-    })
-    .slice(0, limit);
 
   res.json(events);
 });

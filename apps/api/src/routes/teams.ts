@@ -97,6 +97,11 @@ router.get("/:slug", async (req, res) => {
   // story twice, once per type. Fetches extra (60, not 20) before deduping
   // so a team with several signings recently doesn't end up with fewer than
   // 20 real stories after collapsing the duplicates back down.
+  //
+  // The dedup key is sourceUrl+headline together, not sourceUrl alone: a
+  // single wrap-up article (e.g. Code Sports' "Sport Confidential" column)
+  // can carry several genuinely separate stories under one shared URL, and
+  // keying on sourceUrl alone would wrongly collapse those into one.
   const rawRecentEvents = await prisma.event.findMany({
     where: {
       OR: [{ teamId: team.id }, { player: { teamId: team.id } }],
@@ -109,7 +114,7 @@ router.get("/:slug", async (req, res) => {
   const seenEventKeys = new Set<string>();
   const recentEvents = rawRecentEvents
     .filter((e) => {
-      const key = e.sourceUrl ?? e.headline;
+      const key = `${e.sourceUrl ?? ""}::${e.headline}`;
       if (seenEventKeys.has(key)) return false;
       seenEventKeys.add(key);
       return true;

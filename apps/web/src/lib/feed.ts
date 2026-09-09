@@ -11,10 +11,15 @@ import { EventItem } from "./api";
 // real story, keeping the first (newest, since the feed is already sorted)
 // occurrence. Shared between HomePage's own preview carousel and FeedPage's
 // full "Top"/"My Teams"/"Signing News" pages so the two can't drift apart.
+//
+// Keyed on sourceUrl+headline together, not sourceUrl alone: a single
+// wrap-up article (e.g. Code Sports' "Sport Confidential" column) can carry
+// several genuinely separate stories under one shared URL, and keying on
+// sourceUrl alone would wrongly collapse those into one.
 export function dedupeStories(items: EventItem[]): EventItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
-    const key = item.sourceUrl ?? item.headline;
+    const key = `${item.sourceUrl ?? ""}::${item.headline}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

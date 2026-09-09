@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api, EventItem, Team } from "../lib/api";
 import { GENERAL_NEWS_TARGET_ID } from "../lib/constants";
+import { dedupeStories } from "../lib/feed";
 import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import PageHero from "../components/ui/PageHero";
@@ -74,8 +75,15 @@ export default function GeneralNewsPage() {
     api.listTeams().then(setTeams).catch(() => setTeams([]));
   }, []);
 
+  // A story tagged to more than one club (see schema.prisma design notes —
+  // an Event only carries one team each) is several rows sharing one
+  // headline/sourceUrl. Filtering to one team's chip already lands on
+  // exactly that team's own row, no dedup needed — but the unfiltered "All"
+  // view merges across teams, so it needs dedupeStories() the same way
+  // FeedPage/HomePage do, or a multi-team story shows once per team back to
+  // back.
   const filtered = useMemo(
-    () => (selectedTeamId ? items?.filter((i) => i.team?.id === selectedTeamId) : items),
+    () => (selectedTeamId ? items?.filter((i) => i.team?.id === selectedTeamId) : items && dedupeStories(items)),
     [items, selectedTeamId]
   );
 
