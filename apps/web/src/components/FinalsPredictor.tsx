@@ -94,7 +94,7 @@ export default function FinalsPredictor({ top8, realBracket }: { top8: LadderRow
     setPicks(loadPicks());
   }, []);
 
-  const predicted = buildPredictedBracket(top8, picks);
+  const predicted = buildPredictedBracket(top8, picks, realBracket);
 
   // Picking the team already picked for that slot clears it instead — a
   // toggle, not a one-way commitment, since a decided slot is what actually

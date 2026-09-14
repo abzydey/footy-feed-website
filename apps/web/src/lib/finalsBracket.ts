@@ -147,11 +147,22 @@ export interface PredictedSlot {
 
 export function buildPredictedBracket(
   top8: LadderRow[],
-  picks: Partial<Record<SlotId, string>>
+  picks: Partial<Record<SlotId, string>>,
+  realBracket?: Bracket
 ): Record<SlotId, PredictedSlot> {
   const bySeed = (seed: number): TeamRef | null => top8.find((r) => r.rank === seed)?.team ?? null;
 
+  // Once a slot's real result is in, it stops being a prediction at all —
+  // the actual winner is what advances, regardless of what was picked (or
+  // never picked). Without this, a QF that finished before someone opened
+  // the predictor for the first time — or that they guessed wrong — left
+  // every slot downstream of it stuck on "TBD" forever, since there was no
+  // real winner to fall back on and the picked one was missing/wrong. The
+  // pick vs. real-result *comparison* for the correct/wrong styling still
+  // happens in FinalsPredictor.tsx directly off `picks`, untouched by this.
   function resolve(id: SlotId, home: TeamRef | null, away: TeamRef | null): PredictedSlot {
+    const realWinner = realBracket ? winnerOf(realBracket.slots[id]) : null;
+    if (realWinner) return { id, home, away, winner: realWinner };
     const pickedId = picks[id];
     const winner = !pickedId ? null : home?.id === pickedId ? home : away?.id === pickedId ? away : null;
     return { id, home, away, winner };
@@ -177,12 +188,21 @@ export function buildPredictedBracket(
   return { QF1, QF2, EF1, EF2, SF1, SF2, PF1, PF2, GF };
 }
 
-// Teams still alive: everyone in the top 8 minus whoever has already lost a
-// final. A team with no finals game played yet is still alive by default.
+// Only these slots actually eliminate a team — a QF1/QF2 loss does NOT (see
+// the routing table up top: the loser drops to SF1/SF2 the following week
+// instead of being knocked out). Excluding QF1/QF2 here was the bug: it was
+// wrongly treating every Week 1 qualifying-final loser as eliminated the
+// moment their QF was decided, when they're still very much alive until
+// they also lose their semi.
+const ELIMINATING_SLOTS: SlotId[] = ["EF1", "EF2", "SF1", "SF2", "PF1", "PF2", "GF"];
+
+// Teams still alive: everyone in the top 8 minus whoever has already lost an
+// eliminating final. A team with no finals game played yet is still alive by
+// default.
 export function teamsAliveInFinals(top8: LadderRow[], games: Game[]): TeamRef[] {
   const bracket = buildFinalsBracket(top8, games);
   const eliminated = new Set<string>();
-  for (const id of bracket.order) {
+  for (const id of ELIMINATING_SLOTS) {
     const loser = loserOf(bracket.slots[id]);
     if (loser) eliminated.add(loser.id);
   }
