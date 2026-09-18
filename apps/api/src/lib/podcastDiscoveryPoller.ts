@@ -1,10 +1,15 @@
 import { prisma } from "./prisma";
 import { discoverNewEpisodesForShow, isSpotifyDiscoveryConfigured, isYouTubeDiscoveryConfigured } from "./podcastDiscovery";
 
-// Podcast episodes publish far less often than tweets — 30 min is plenty
+// Podcast episodes publish far less often than tweets — an hour is plenty
 // fresh without wasting quota (see podcastDiscovery.ts on why
-// playlistItems.list keeps this cheap regardless of interval).
-const POLL_INTERVAL_MS = 30 * 60 * 1000;
+// playlistItems.list keeps this cheap regardless of interval). Widened from
+// 30min (2026-09-18) alongside the other background pollers — several
+// independent ones on similar cadences were keeping Neon's compute
+// effectively always-on, never idle long enough to auto-suspend, burning
+// through the monthly CU-hour allowance early. A new episode taking up to
+// an hour longer to appear is a real but low-stakes tradeoff here.
+const POLL_INTERVAL_MS = 60 * 60 * 1000;
 
 export async function pollTrackedShows(): Promise<void> {
   const shows = await prisma.trackedShow.findMany();

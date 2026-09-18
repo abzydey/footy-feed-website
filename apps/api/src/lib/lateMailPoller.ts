@@ -16,7 +16,18 @@ import { notifyFollowersOfEvent } from "./notify";
 // starting-lineup change — that needs real football judgment a template
 // can't fabricate — and falls back to being flagged for manual/chat
 // write-up, same treatment as a shape warning.
-const POLL_INTERVAL_MS = 20 * 60 * 1000;
+// Widened from 20 to 60min (2026-09-18): this generic sweep is only a
+// safety net for INITIAL (no per-game anchor) and for anything that slips
+// past its own precise scheduled check below — the exact-timing case is
+// already covered by scheduleUpcomingChecks()'s per-game setTimeout, fired
+// 5min after each game's real 24hr/Final release. A background poller this
+// frequent, alongside several other independent ones on similar cadences,
+// was keeping Neon's compute effectively always-on (no gap long enough to
+// auto-suspend) and burning through the monthly CU-hour allowance well
+// before month's end — this trades a wider worst-case detection window for
+// a real edge case (a scheduled check's own fetch failing, say) against
+// meaningfully more idle time between cycles.
+const POLL_INTERVAL_MS = 60 * 60 * 1000;
 
 // The two checkpoints have a real, computable kickoff-relative expectation
 // (same offsets TeamListCard.tsx's PLACEHOLDER_OFFSET_MS assumes: ~24h and

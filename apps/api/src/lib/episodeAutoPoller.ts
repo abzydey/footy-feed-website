@@ -6,7 +6,13 @@ import { prisma } from "./prisma";
 // polls TrackedShow/ExternalEpisode rows purely to feed search — that
 // pipeline never touches the browse page. Everything not listed here stays
 // manual via POST /api/admin/episodes, by explicit user choice (2026-09-04).
-const POLL_INTERVAL_MS = 30 * 60 * 1000;
+// Widened from 30min (2026-09-18) alongside the other background pollers —
+// several independent ones on similar cadences were keeping Neon's compute
+// effectively always-on, never idle long enough to auto-suspend, burning
+// through the monthly CU-hour allowance early. A new episode taking up to
+// an hour longer to appear on the browse page is a real but low-stakes
+// tradeoff here.
+const POLL_INTERVAL_MS = 60 * 60 * 1000;
 const isYouTubeConfigured = Boolean(process.env.YOUTUBE_API_KEY);
 
 interface AutoEpisodeSource {
