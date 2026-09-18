@@ -24,6 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Declares up front that the app only uses standard, exempt encryption
+	     (HTTPS/TLS for API calls and Firebase, nothing custom/proprietary) --
+	     without this, App Store Connect asks the export-compliance question
+	     manually on every single build upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
