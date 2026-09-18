@@ -134,12 +134,16 @@ workflows:
       - name: Sync the web build into the iOS shell
         script: cd apps/web && npx cap sync ios
       - name: Fetch signing files matching the bundle ID above
-        # --create: this is the first-ever iOS build for au.fullset.app, so
-        # there's no existing App Store distribution certificate/profile to
-        # fetch yet. Without --create, use-profiles only looks for existing
-        # signing files and fails with "No matching profiles found" instead
-        # of generating them.
-        script: xcode-project use-profiles --create
+        # The real fix for "No matching profiles found" wasn't a flag here --
+        # ios_signing only *references* a certificate/profile, it doesn't
+        # generate one. The Apple Distribution certificate and App Store
+        # provisioning profile for au.fullset.app were created manually via
+        # Team settings -> Code Signing Identities (certificate first, then
+        # a matching profile generated on Apple's Developer Portal and
+        # fetched in). --create isn't a real xcode-project flag (confirmed by
+        # a real failed build: "unrecognized arguments: --create") and isn't
+        # needed now that a matching profile actually exists to find.
+        script: xcode-project use-profiles
       - name: Build the archive and export an IPA
         script: |
           xcode-project build-ipa \
