@@ -131,6 +131,21 @@ workflows:
           if [ -n "${GOOGLE_SERVICE_INFO_PLIST:-}" ]; then
             echo "$GOOGLE_SERVICE_INFO_PLIST" > apps/web/ios/App/App/GoogleService-Info.plist
           fi
+      # Temporary diagnostic step (2026-09-18) — the app crashes on launch
+      # even with the variable restored above, and TestFlight's own crash
+      # feedback doesn't surface a real symbolicated stack trace without a
+      # Mac + Xcode Organizer. plutil -lint gives a definitive valid/invalid
+      # verdict on the actual restored file, rather than inferring it
+      # indirectly from exit codes. Remove once the crash is diagnosed.
+      - name: Verify GoogleService-Info.plist is valid
+        script: |
+          FILE=apps/web/ios/App/App/GoogleService-Info.plist
+          echo "--- file size (bytes) ---"
+          wc -c "$FILE"
+          echo "--- file content ---"
+          cat "$FILE"
+          echo "--- plutil validation ---"
+          plutil -lint "$FILE"
       - name: Sync the web build into the iOS shell
         script: cd apps/web && npx cap sync ios
       - name: Fetch signing files matching the bundle ID above
