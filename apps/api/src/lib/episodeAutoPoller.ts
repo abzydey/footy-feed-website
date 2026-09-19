@@ -50,6 +50,12 @@ interface YouTubeVideo {
   durationSeconds: number;
 }
 
+// YouTube Shorts are classically ≤60s — excluding them here rather than at
+// display time, since a Short slipping into the Podcasts browse page reads
+// as a data problem (junk episode with no real audio content), not
+// something a frontend filter should be papering over.
+const MIN_DURATION_SECONDS = 61;
+
 function isoDurationToSeconds(iso: string): number {
   const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return 0;
@@ -118,7 +124,8 @@ export async function pollAutoEpisodeSources(): Promise<void> {
       }
 
       const videos = await fetchChannelVideos(source.youtubeChannelId, existingIds);
-      const matching = source.titleFilter ? videos.filter((v) => source.titleFilter!.test(v.title)) : videos;
+      const notAShort = videos.filter((v) => v.durationSeconds >= MIN_DURATION_SECONDS);
+      const matching = source.titleFilter ? notAShort.filter((v) => source.titleFilter!.test(v.title)) : notAShort;
       if (matching.length === 0) continue;
 
       for (const v of matching) {
