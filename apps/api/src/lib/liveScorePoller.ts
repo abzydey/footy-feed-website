@@ -113,22 +113,36 @@ function formatLiveClock(mc: MatchCentreData): string {
   return `${Math.floor(mc.gameSeconds / 60)}'`;
 }
 
-// Inserts any try match-centre reports that isn't already recorded — never
-// deletes or edits an existing row, so this is safe to run every time the
-// score changes without disturbing anything a human already entered by
-// hand. Deduped by (team, scorer, minute) rather than just relying on
-// match-centre's own list never repeating, since this runs on a live poll
-// cycle and the same summaries array gets re-sent on every tick until the
-// next try actually happens.
+// Reconciles our Try rows against match-centre's current summaries list,
+// in both directions — not just an insert-only append. A bunker/video-ref
+// overturn makes NRL.com remove a try from its own summaries after
+// already having reported it (confirmed against a real Warriors-Knights
+// game: "Fletcher Sharpe 9'" was reported, then a later poll's summaries
+// only carried "Fletcher Sharpe 28'" once the 9' try was disallowed), so a
+// row that's no longer present in match-centre's list is stale and gets
+// deleted here rather than surviving forever. Deduped by (team, scorer,
+// minute) since the same summaries array gets re-sent on every tick until
+// the next try actually happens.
 async function syncTries(game: Candidate, mc: MatchCentreData): Promise<void> {
   const homeTries = parseTrySummaries(mc.homeTries).map((t) => ({ ...t, teamId: game.homeTeamId }));
   const awayTries = parseTrySummaries(mc.awayTries).map((t) => ({ ...t, teamId: game.awayTeamId }));
+  const currentTries = [...homeTries, ...awayTries];
 
   const existing = await prisma.try.findMany({ where: { gameId: game.id } });
-  const existingKey = (teamId: string, scorer: string, minute: number) => `${teamId}|${scorer.toLowerCase()}|${minute}`;
-  const existingKeys = new Set(existing.map((t) => existingKey(t.teamId, t.scorer, t.minute)));
+  const key = (teamId: string, scorer: string, minute: number) => `${teamId}|${scorer.toLowerCase()}|${minute}`;
+  const currentKeys = new Set(currentTries.map((t) => key(t.teamId, t.scorer, t.minute)));
 
-  const newTries = [...homeTries, ...awayTries].filter((t) => !existingKeys.has(existingKey(t.teamId, t.scorer, t.minute)));
+  const stale = existing.filter((t) => !currentKeys.has(key(t.teamId, t.scorer, t.minute)));
+  if (stale.length > 0) {
+    await prisma.try.deleteMany({ where: { id: { in: stale.map((t) => t.id) } } });
+    for (const t of stale) {
+      const teamName = t.teamId === game.homeTeamId ? game.homeTeam.shortName : game.awayTeam.shortName;
+      console.log(`[matchCentre] TRY DISALLOWED/REMOVED: ${t.scorer} (${teamName}, ${t.minute}')`);
+    }
+  }
+
+  const existingKeys = new Set(existing.map((t) => key(t.teamId, t.scorer, t.minute)));
+  const newTries = currentTries.filter((t) => !existingKeys.has(key(t.teamId, t.scorer, t.minute)));
   if (newTries.length === 0) return;
 
   await prisma.try.createMany({ data: newTries.map((t) => ({ gameId: game.id, teamId: t.teamId, scorer: t.scorer, minute: t.minute })) });
@@ -173,9 +187,9 @@ async function tryMatchCentre(game: Candidate): Promise<boolean> {
   // which is exactly the real complaint that prompted this change ("Dolphins
   // titans game has been finished for a while but still shows live").
   // Try scorers are synced live too (see syncTries above) — not just at
-  // full time. It's purely additive (never deletes/edits), so re-running
-  // the admin result form afterwards still works exactly as before: that
-  // form replaces the whole try list with whatever's typed into it.
+  // full time. Re-running the admin result form afterwards still works
+  // exactly as before: that form replaces the whole try list with whatever's
+  // typed into it, regardless of what match-centre has synced.
   if (mc.matchMode === "Post") {
     await syncTries(game, mc);
     if (game.status === "FULL_TIME" && game.homeScore === mc.homeScore && game.awayScore === mc.awayScore) {
