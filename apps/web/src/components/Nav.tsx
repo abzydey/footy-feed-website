@@ -132,13 +132,24 @@ export default function Nav() {
           >
             <HamburgerIcon />
           </button>
-          <nav className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-            {QUICK_LINKS.map((link) => (
-              <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
+          {/* relative wrapper + an absolutely-positioned fade purely as a
+              "there's more this way" cue — scrollbar-hide below removes the
+              one native signal (the scrollbar itself) that this row
+              scrolls at all, and most of the 13 links here don't fit a
+              phone width, so without this the row reads as a complete,
+              static set of tabs rather than a scrollable one.
+              pointer-events-none so the fade never blocks taps on a link
+              underneath it. */}
+          <div className="relative min-w-0 flex-1">
+            <nav className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+              {QUICK_LINKS.map((link) => (
+                <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
+                  {link.label}
+                </NavLink>
+              ))}
+            </nav>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-app/90 to-transparent" />
+          </div>
         </div>
       </header>
       {/* Rendered as a sibling of <header>, not inside it — the header has

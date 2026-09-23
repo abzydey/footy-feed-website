@@ -87,13 +87,32 @@ export default function GeneralNewsPage() {
     [items, selectedTeamId]
   );
 
+  // Most-active teams first rather than alphabetical — a fan scanning for
+  // their club's pill shouldn't have to hunt past 16 others in A-Z order
+  // when a handful of clubs are generating most of the news right now.
+  // "Activity" here is just a count over the same GENERAL_NEWS/TRANSFER
+  // items already fetched for this page (recency-capped by getFeed's own
+  // limit) — cheap, no extra request, and it's literally counting the
+  // content these pills are about to filter. Ties (including teams with no
+  // recent news at all) fall back to alphabetical.
+  const sortedTeams = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items ?? []) {
+      if (item.team) counts.set(item.team.id, (counts.get(item.team.id) ?? 0) + 1);
+    }
+    return [...teams].sort((a, b) => {
+      const diff = (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0);
+      return diff !== 0 ? diff : a.shortName.localeCompare(b.shortName);
+    });
+  }, [teams, items]);
+
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       <PageHero title="NRL News" subtitle="Breaking league-wide stories, not tied to one team.">
         <FollowButton targetType="LEAGUE" targetId={GENERAL_NEWS_TARGET_ID} />
       </PageHero>
 
-      {teams.length > 0 && <TeamChips teams={teams} selectedId={selectedTeamId} onSelect={setSelectedTeamId} />}
+      {teams.length > 0 && <TeamChips teams={sortedTeams} selectedId={selectedTeamId} onSelect={setSelectedTeamId} />}
 
       <section>
         {error && <p className="text-red-400 text-sm">{error}</p>}
