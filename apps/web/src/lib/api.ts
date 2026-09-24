@@ -259,7 +259,6 @@ export const api = {
       nextFixture: Game | null;
       recentEvents: EventItem[];
       socialPosts: EventItem[];
-      topTryScorers: { scorer: string; tries: number }[];
     }>(`/teams/${slug}`),
   getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),

@@ -129,24 +129,7 @@ router.get("/:slug", async (req, res) => {
     take: 20,
   });
 
-  // Powers the Stats tab's "Top Try Scorers" list — Try.scorer is free text
-  // (not a Player FK, see schema.prisma), so this groups by the literal
-  // scorer string rather than joining to a player row. Note this is
-  // necessarily "since Round 26," not a season total: Full Set only started
-  // tracking individual tries from that round onward (the Try table simply
-  // has no rows for earlier rounds this app never covered) — the frontend
-  // labels it as such rather than presenting a partial count as a season
-  // leaderboard (see TeamPage.tsx's Stats tab).
-  const tryGroups = await prisma.try.groupBy({
-    by: ["scorer"],
-    where: { teamId: team.id },
-    _count: { scorer: true },
-    orderBy: { _count: { scorer: "desc" } },
-    take: 5,
-  });
-  const topTryScorers = tryGroups.map((g) => ({ scorer: g.scorer, tries: g._count.scorer }));
-
-  res.json({ team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts, topTryScorers });
+  res.json({ team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts });
 });
 
 export default router;

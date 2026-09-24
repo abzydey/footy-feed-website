@@ -81,7 +81,6 @@ export default function TeamPage() {
     nextFixture: Game | null;
     recentEvents: EventItem[];
     socialPosts: EventItem[];
-    topTryScorers: { scorer: string; tries: number }[];
   } | null>(null);
   const [ladderRow, setLadderRow] = useState<LadderRow | null>(null);
   const [allGames, setAllGames] = useState<Game[] | null>(null);
@@ -128,7 +127,7 @@ export default function TeamPage() {
     );
   }
 
-  const { team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts, topTryScorers } = data;
+  const { team, players, currentGame, lineupStages, lastGame, nextFixture, recentEvents, socialPosts } = data;
 
   // "Brisbane Broncos" -> "Brisbane" / "Broncos" — name always ends with
   // shortName in the seeded data, so this derives the design's two-line
@@ -268,73 +267,41 @@ export default function TeamPage() {
       </div>
 
       <div className="max-w-3xl mx-auto p-4">
-        {teamTab === "Stats" && (
-          <>
-            {ladderRow ? (
-              <div className="bg-surface border border-white/[.07] rounded-2xl overflow-hidden mb-[26px]">
-                <div className="grid grid-cols-4 divide-x divide-white/[.055]">
-                  {[
-                    { label: "Played", value: ladderRow.played },
-                    { label: "Won", value: ladderRow.wins },
-                    { label: "Lost", value: ladderRow.losses },
-                    { label: "Drawn", value: ladderRow.draws },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center py-3.5">
-                      <div className="font-display font-black text-xl text-white">{s.value}</div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-white/42 mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 divide-x divide-white/[.055] border-t border-white/[.055]">
-                  {[
-                    { label: "Points For", value: ladderRow.pointsFor },
-                    { label: "Points Against", value: ladderRow.pointsAgainst },
-                    {
-                      label: "Differential",
-                      value: ladderRow.pointsDifferential > 0 ? `+${ladderRow.pointsDifferential}` : ladderRow.pointsDifferential,
-                    },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center py-3.5">
-                      <div className="font-display font-black text-xl text-white">{s.value}</div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-white/42 mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-slate-500 text-sm mb-[26px]">Season record not available yet.</p>
-            )}
-
-            <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mb-1">
-              Top Try Scorers
-            </h2>
-            {/* Full Set only started tracking individual tries from Round 26
-                onward (see routes/teams.ts's topTryScorers query — it's a
-                straight count over the Try table, which simply has no rows
-                before that point) — a real season can run 27+ rounds, so
-                this is a recent-form list, not a season leaderboard, and
-                saying so here beats it quietly reading as one. */}
-            <p className="text-[11px] font-semibold text-white/42 mb-2.5">Since Round 26 — not a full-season total</p>
-            {topTryScorers.length === 0 ? (
-              <p className="text-slate-500 text-sm">No tries recorded since Round 26.</p>
-            ) : (
-              <div className="bg-surface border border-white/[.07] rounded-2xl overflow-hidden">
-                {topTryScorers.map((s, i) => (
-                  <div
-                    key={s.scorer}
-                    className="flex items-center justify-between gap-2.5 px-3.5 py-3 border-b border-white/[.055] last:border-0"
-                  >
-                    <span className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-[11px] font-bold text-white/42 w-4 shrink-0">{i + 1}</span>
-                      <span className="text-[13.5px] font-bold text-white truncate">{s.scorer}</span>
-                    </span>
-                    <span className="shrink-0 text-[13px] font-extrabold text-white">{s.tries}</span>
+        {teamTab === "Stats" &&
+          (ladderRow ? (
+            <div className="bg-surface border border-white/[.07] rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-4 divide-x divide-white/[.055]">
+                {[
+                  { label: "Played", value: ladderRow.played },
+                  { label: "Won", value: ladderRow.wins },
+                  { label: "Lost", value: ladderRow.losses },
+                  { label: "Drawn", value: ladderRow.draws },
+                ].map((s) => (
+                  <div key={s.label} className="text-center py-3.5">
+                    <div className="font-display font-black text-xl text-white">{s.value}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-white/42 mt-0.5">{s.label}</div>
                   </div>
                 ))}
               </div>
-            )}
-          </>
-        )}
+              <div className="grid grid-cols-3 divide-x divide-white/[.055] border-t border-white/[.055]">
+                {[
+                  { label: "Points For", value: ladderRow.pointsFor },
+                  { label: "Points Against", value: ladderRow.pointsAgainst },
+                  {
+                    label: "Differential",
+                    value: ladderRow.pointsDifferential > 0 ? `+${ladderRow.pointsDifferential}` : ladderRow.pointsDifferential,
+                  },
+                ].map((s) => (
+                  <div key={s.label} className="text-center py-3.5">
+                    <div className="font-display font-black text-xl text-white">{s.value}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-white/42 mt-0.5">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm">Season record not available yet.</p>
+          ))}
 
         {teamTab === "Fixtures" && (
           <>
