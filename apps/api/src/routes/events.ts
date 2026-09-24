@@ -6,6 +6,7 @@ import { requireAdmin, AdminAuthedRequest } from "../middleware/adminAuth";
 import { notifyFollowersOfEvent } from "../lib/notify";
 import { fetchTweetAuthorName } from "../lib/twitterEmbed";
 import { hasRosterChanged } from "../lib/teamListDiff";
+import { slugify } from "../lib/slugify";
 
 const router = Router();
 router.use(requireAdmin);
@@ -23,6 +24,12 @@ const createEventSchema = z
     sourceUrl: z.string().url().optional(),
     sourceName: z.string().max(80).optional(),
     sourceAuthor: z.string().max(80).optional(),
+    // A Full Set-authored article instead of the usual link-out story — see
+    // schema.prisma's isOriginalArticle design note. slug is server-derived
+    // from the headline (with a collision suffix if needed), never trusted
+    // from the client, so it isn't part of this schema.
+    isOriginalArticle: z.boolean().optional(),
+    articleBody: z.string().min(1).max(50000).optional(),
   })
   // GENERAL_NEWS and SOCIAL_POST are both allowed to skip teamId/playerId —
   // league-wide news and tweet-style chatter usually aren't team-specific.
@@ -33,7 +40,24 @@ const createEventSchema = z
     {
       message: "An event must reference a teamId, playerId, or gameId, or be type GENERAL_NEWS/SOCIAL_POST",
     }
-  );
+  )
+  .refine((data) => !data.isOriginalArticle || !!data.articleBody, {
+    message: "An original article needs articleBody",
+  });
+
+// Derives a unique slug from a headline, the same way createPlayerWithUniqueSlug
+// in adminPlayers.ts dedupes player slugs — suffix -2, -3, ... on collision,
+// checked against the whole events table since Event.slug is globally unique
+// (not scoped per-team the way Player.slug is).
+async function uniqueArticleSlug(headline: string): Promise<string> {
+  const base = slugify(headline) || "article";
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.event.findUnique({ where: { slug } })) {
+    slug = `${base}-${suffix++}`;
+  }
+  return slug;
+}
 
 // GET /api/admin/events — recent entries, for the admin panel's activity feed.
 router.get("/", async (_req, res) => {
@@ -91,6 +115,8 @@ router.post("/", async (req: AdminAuthedRequest, res) => {
         })
       : null;
 
+  const slug = data.isOriginalArticle ? await uniqueArticleSlug(data.headline) : undefined;
+
   const event = await prisma.event.create({
     data: {
       type: data.type,
@@ -104,6 +130,9 @@ router.post("/", async (req: AdminAuthedRequest, res) => {
       sourceUrl: data.sourceUrl,
       sourceName: data.sourceName,
       sourceAuthor,
+      isOriginalArticle: data.isOriginalArticle,
+      slug,
+      articleBody: data.articleBody,
       createdBy: req.admin?.email,
     },
   });

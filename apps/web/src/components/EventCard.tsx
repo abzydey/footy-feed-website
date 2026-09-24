@@ -140,6 +140,14 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
         <span className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase">{kicker}</span>
         <span className="w-[3px] h-[3px] rounded-full bg-white/25 shrink-0" />
         <span className="text-[11px] font-semibold text-white/38">{timeAgo(event.createdAt)}</span>
+        {event.isOriginalArticle && (
+          // Full Set Purple, deliberately not Siren (the "matters right now"
+          // urgency color, e.g. the LINEUP_CHANGE FINAL badge below) — this
+          // badge marks provenance (we wrote it), not urgency.
+          <span className="inline-flex items-center gap-1 text-[9.5px] font-extrabold uppercase tracking-wider text-brand-violet border border-brand-violet/40 bg-brand-violet/10 rounded px-1.5 py-[3px]">
+            Full Set Original
+          </span>
+        )}
       </div>
       {event.type === "LINEUP_CHANGE" && event.teamListStage && (
         <span
@@ -170,15 +178,24 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
           </span>
           <span className="text-[11.5px] font-semibold text-white/46 truncate">{source}</span>
         </div>
-        {event.sourceUrl && (
-          <a
-            href={event.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
+        {event.isOriginalArticle && event.slug ? (
+          <Link
+            to={`/news/${event.slug}`}
             className="shrink-0 flex items-center gap-[5px] text-xs font-extrabold tracking-[.02em] text-brand-violet hover:text-white transition-colors duration-150"
           >
             Read more <ChevronRight />
-          </a>
+          </Link>
+        ) : (
+          event.sourceUrl && (
+            <a
+              href={event.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 flex items-center gap-[5px] text-xs font-extrabold tracking-[.02em] text-brand-violet hover:text-white transition-colors duration-150"
+            >
+              Read more <ChevronRight />
+            </a>
+          )
         )}
       </div>
     </article>

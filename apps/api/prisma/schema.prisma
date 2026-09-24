@@ -337,7 +337,30 @@ model Event {
   game     Game?     @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   headline String // short title, shown in feeds/notifications
-  body     String // the short text summary (a sentence or two)
+  body     String // the short text summary (a sentence or two) — this is the
+  // feed/card blurb even for an original article (see isOriginalArticle
+  // below); the full write-up lives in articleBody, kept separate so a
+  // feed query never has to pull a full markdown article across the wire.
+
+  // True for a Full Set-authored article (see articleBody/slug below)
+  // instead of the normal link-out-to-an-external-source model GENERAL_NEWS
+  // was originally designed around (see design notes at top of file) — an
+  // original article renders at /news/:slug inside the app rather than
+  // linking out via sourceUrl. Not its own EventType: it's still ordinary
+  // GENERAL_NEWS/NEWS content for feed filtering, notification fan-out
+  // (notify.ts never branches on this), etc. — only EventCard's "Read
+  // more" link and the article page itself care about it.
+  isOriginalArticle Boolean @default(false)
+  // Required (and unique) when isOriginalArticle is true; null otherwise.
+  // URL-safe, derived from the headline at creation time — see
+  // slugify() in lib/slugify.ts, shared by the admin form and this route
+  // so the same headline always produces the same slug.
+  slug String? @unique
+  // The full markdown body, only set when isOriginalArticle is true. Kept
+  // as a separate nullable column rather than overloading `body` above so
+  // every existing feed/list query (which selects the whole Event row)
+  // doesn't start pulling a multi-KB article body it never renders.
+  articleBody String?
 
   // Only meaningful when type = INJURY: the new status this event sets.
   newStatus AvailabilityStatus?

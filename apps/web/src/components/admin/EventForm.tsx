@@ -7,6 +7,16 @@ const EVENT_TYPES = ["NEWS", "INJURY", "LINEUP_CHANGE", "TRANSFER", "GENERAL_NEW
 const STATUSES = ["AVAILABLE", "QUESTIONABLE", "OUT", "INJURED", "SUSPENDED"] as const;
 const STAGES: TeamListStage[] = ["INITIAL", "TWENTY_FOUR_HOUR", "FINAL"];
 
+// Preview only — the real slug (with a collision suffix if needed) is
+// derived server-side in routes/events.ts's uniqueArticleSlug, since only
+// the server can check for a collision against every existing article.
+function previewSlug(headline: string): string {
+  return headline
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export default function EventForm({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -24,6 +34,8 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceName, setSourceName] = useState("");
   const [sourceAuthor, setSourceAuthor] = useState("");
+  const [isOriginalArticle, setIsOriginalArticle] = useState(false);
+  const [articleBody, setArticleBody] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
@@ -66,9 +78,11 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
         body,
         newStatus: type === "INJURY" ? newStatus || undefined : undefined,
         teamListStage: type === "LINEUP_CHANGE" ? teamListStage || undefined : undefined,
-        sourceUrl: sourceUrl || undefined,
-        sourceName: sourceName || undefined,
-        sourceAuthor: sourceAuthor || undefined,
+        sourceUrl: isGeneralNews && isOriginalArticle ? undefined : sourceUrl || undefined,
+        sourceName: isGeneralNews && isOriginalArticle ? undefined : sourceName || undefined,
+        sourceAuthor: isGeneralNews && isOriginalArticle ? undefined : sourceAuthor || undefined,
+        isOriginalArticle: isGeneralNews && isOriginalArticle ? true : undefined,
+        articleBody: isGeneralNews && isOriginalArticle ? articleBody : undefined,
       });
       setStatus("saved");
       setHeadline("");
@@ -76,6 +90,8 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
       setSourceUrl("");
       setSourceName("");
       setSourceAuthor("");
+      setIsOriginalArticle(false);
+      setArticleBody("");
       refreshEvents();
     } catch (err) {
       setStatus("error");
@@ -215,10 +231,44 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
         />
         {isGeneralNews && (
           <p className="text-xs text-slate-500">
-            Write this yourself, in plain language — the source may be paywalled, so this summary is often the only
-            part a reader can actually access. The headline above can be copied as published; the URL below is the
-            "Read more" link to the original.
+            {isOriginalArticle
+              ? 'This is the feed-card summary shown on Home/News — the full article goes in "Article body" below.'
+              : 'Write this yourself, in plain language — the source may be paywalled, so this summary is often the ' +
+                'only part a reader can actually access. The headline above can be copied as published; the URL ' +
+                'below is the "Read more" link to the original.'}
           </p>
+        )}
+
+        {isGeneralNews && (
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <input
+              type="checkbox"
+              checked={isOriginalArticle}
+              onChange={(e) => setIsOriginalArticle(e.target.checked)}
+              className="accent-brand-violet"
+            />
+            Full Set original article
+          </label>
+        )}
+
+        {isGeneralNews && isOriginalArticle && (
+          <>
+            {headline && (
+              <p className="text-xs text-slate-500">
+                Will publish at <span className="text-brand-heliotrope">/news/{previewSlug(headline) || "…"}</span>
+                {" "}(a number is appended automatically if that's already taken)
+              </p>
+            )}
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Article body (markdown)</label>
+            <textarea
+              value={articleBody}
+              onChange={(e) => setArticleBody(e.target.value)}
+              placeholder={"## A section heading\n\nA paragraph. Blank line between paragraphs. *italic* and **bold** both work."}
+              required
+              rows={16}
+              className="w-full bg-black border border-white/20 px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
+            />
+          </>
         )}
         {isLineupChange && (
           <p className="text-xs text-slate-500">
@@ -226,26 +276,28 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
             leave a player unnumbered if they're a genuine train-on reserve outside the 19-man squad.
           </p>
         )}
-        <div className="grid grid-cols-3 gap-3">
-          <input
-            value={sourceAuthor}
-            onChange={(e) => setSourceAuthor(e.target.value)}
-            placeholder={isGeneralNews ? 'Author (e.g. "Michael Chammas")' : "Author (optional)"}
-            className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
-          />
-          <input
-            value={sourceName}
-            onChange={(e) => setSourceName(e.target.value)}
-            placeholder={isGeneralNews ? 'Source name (e.g. "Daily Telegraph")' : "Source name (optional)"}
-            className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
-          />
-          <input
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder={isGeneralNews ? "Source URL (Read more link)" : "Source URL (optional)"}
-            className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
-          />
-        </div>
+        {!(isGeneralNews && isOriginalArticle) && (
+          <div className="grid grid-cols-3 gap-3">
+            <input
+              value={sourceAuthor}
+              onChange={(e) => setSourceAuthor(e.target.value)}
+              placeholder={isGeneralNews ? 'Author (e.g. "Michael Chammas")' : "Author (optional)"}
+              className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
+            />
+            <input
+              value={sourceName}
+              onChange={(e) => setSourceName(e.target.value)}
+              placeholder={isGeneralNews ? 'Source name (e.g. "Daily Telegraph")' : "Source name (optional)"}
+              className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
+            />
+            <input
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder={isGeneralNews ? "Source URL (Read more link)" : "Source URL (optional)"}
+              className="bg-black border border-white/20 px-3 py-2 text-white focus:outline-none focus:border-brand-violet focus:ring-1 focus:ring-brand-violet/50 transition-colors duration-150"
+            />
+          </div>
+        )}
 
         <button
           disabled={status === "saving"}

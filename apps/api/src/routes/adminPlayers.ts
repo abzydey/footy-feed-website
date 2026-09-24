@@ -3,16 +3,10 @@ import { z } from "zod";
 
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middleware/adminAuth";
+import { slugify } from "../lib/slugify";
 
 const router = Router();
 router.use(requireAdmin);
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 const createPlayerSchema = z.object({
   teamId: z.string().min(1),

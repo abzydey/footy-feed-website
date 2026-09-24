@@ -31,6 +31,7 @@ import finalsInjuriesRouter from "./routes/finalsInjuries";
 import adminFinalsInjuriesRouter from "./routes/adminFinalsInjuries";
 import sitemapRouter from "./routes/sitemap";
 import injuriesRouter from "./routes/injuries";
+import articlesRouter from "./routes/articles";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
@@ -75,6 +76,7 @@ app.use("/api/ladder", ladderRouter);
 app.use("/api/judiciary", judiciaryRouter);
 app.use("/api/finals-injuries", finalsInjuriesRouter);
 app.use("/api/injuries", injuriesRouter);
+app.use("/api/articles", articlesRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)
 app.use("/api/admin/auth", adminAuthRouter);

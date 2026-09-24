@@ -8,6 +8,7 @@ import { api } from "./lib/api";
 import HomePage from "./pages/HomePage";
 import FeedPage from "./pages/FeedPage";
 import GeneralNewsPage from "./pages/GeneralNewsPage";
+import NewsArticlePage from "./pages/NewsArticlePage";
 import TeamsPage from "./pages/TeamsPage";
 import TeamPage from "./pages/TeamPage";
 import GamesPage from "./pages/GamesPage";
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/feed/:view" element={<FeedPage />} />
           <Route path="/news" element={<GeneralNewsPage />} />
+          <Route path="/news/:slug" element={<NewsArticlePage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/:slug" element={<TeamPage />} />
           <Route path="/games" element={<GamesPage />} />

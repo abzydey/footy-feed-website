@@ -26,6 +26,7 @@ import fs from "fs";
 
 import { prisma } from "../src/lib/prisma";
 import { notifyFollowersOfEvent } from "../src/lib/notify";
+import { slugify } from "../src/lib/slugify";
 
 interface NewsInput {
   headline: string;
@@ -35,6 +36,26 @@ interface NewsInput {
   link?: string;
   team?: string;
   type?: "GENERAL_NEWS" | "TRANSFER";
+  // A Full Set-authored article (see schema.prisma's isOriginalArticle
+  // design note) instead of the usual link-out story. When set, `summary`
+  // still feeds the feed-card blurb, `articleBody` is the full markdown
+  // rendered at /news/:slug, and `link`/`source`/`author` are normally
+  // omitted — there's no external outlet to credit, this IS the source.
+  articleBody?: string;
+}
+
+// Same collision-suffix approach as adminPlayers.ts's player-slug loop and
+// routes/events.ts's uniqueArticleSlug — kept as its own small copy here
+// since this script runs standalone (tsx, not the Express app), same
+// reasoning as this file's other already-duplicated logic.
+async function uniqueArticleSlug(headline: string): Promise<string> {
+  const base = slugify(headline) || "article";
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.event.findUnique({ where: { slug } })) {
+    slug = `${base}-${suffix++}`;
+  }
+  return slug;
 }
 
 async function main() {
@@ -67,6 +88,9 @@ async function main() {
     process.exit(1);
   }
 
+  const isOriginalArticle = Boolean(input.articleBody);
+  const slug = isOriginalArticle ? await uniqueArticleSlug(input.headline) : undefined;
+
   const event = await prisma.event.create({
     data: {
       type,
@@ -76,11 +100,15 @@ async function main() {
       sourceName: input.source || undefined,
       sourceAuthor: input.author || undefined,
       sourceUrl: input.link || undefined,
+      isOriginalArticle,
+      slug,
+      articleBody: input.articleBody || undefined,
       createdBy: "claude-chat-import",
     },
   });
 
   console.log(`Created ${type} event ${event.id}: "${event.headline}"`);
+  if (slug) console.log(`Article live at /news/${slug}`);
 
   await notifyFollowersOfEvent(event.id);
   console.log("Followers notified.");

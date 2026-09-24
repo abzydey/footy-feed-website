@@ -34,6 +34,14 @@ export interface EventItem {
   sourceAuthor: string | null;
   embedHtml: string | null;
   createdAt: string;
+  // A Full Set-authored article — renders at /news/:slug inside the app
+  // instead of linking out via sourceUrl (see schema.prisma design note).
+  isOriginalArticle: boolean;
+  slug: string | null;
+  // Only present on the single-article response (api.getArticle), not on
+  // any feed/list response — see routes/articles.ts and routes/feed.ts's
+  // deliberately lean include list.
+  articleBody?: string | null;
   player?: { id: string; name: string; slug: string } | null;
   team?: { id: string; name: string; slug: string } | null;
   game?: {
@@ -255,6 +263,7 @@ export const api = {
     }>(`/teams/${slug}`),
   getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
+  getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
   listGames: (round?: string) => request<Game[]>(`/games${round ? `?round=${encodeURIComponent(round)}` : ""}`),
   listRounds: () => request<string[]>("/games/rounds"),
   getGame: (id: string) => request<GameDetail>(`/games/${id}`),
@@ -285,6 +294,8 @@ export const api = {
       sourceUrl?: string;
       sourceName?: string;
       sourceAuthor?: string;
+      isOriginalArticle?: boolean;
+      articleBody?: string;
     }
   ) =>
     request(`/admin/events`, {

@@ -57,3 +57,34 @@ it, and that's normal, not a wrong link. A mismatch is worth flagging when
 the *content* pasted genuinely isn't found on that page at all, not just
 because the URL's slug/title describes a different item in the same
 column.
+
+## Original articles
+
+Everything above is the link-out workflow: a summary of someone else's
+reporting, with a "Read more" pointing back to their site. A Full Set
+original article is different — a full piece we've written ourselves,
+published in-app at `/news/[slug]` instead of linking anywhere.
+
+Use this when the user pastes a full headline + body (not just a summary of
+an external article) and says it's an original/Full Set piece, rather than
+a pasted news article to summarize.
+
+1. Category is still **General NRL News** (or **Signings** if it's reporting
+   a confirmed signing) — an original article isn't its own category, it's
+   the same GENERAL_NEWS content with `isOriginalArticle: true` set (see
+   schema.prisma's design note on the `Event` model).
+2. There's still a short feed-card summary (equivalent to "App summary"
+   above) — that's what shows on Home/News before someone taps in. It's
+   separate from the article body, which is the full markdown piece.
+3. Byline is always **Full Set** — there's no external outlet to credit,
+   since this is a piece we wrote. No source name/URL/author fields.
+4. The slug is derived from the headline automatically (see
+   `uniqueArticleSlug` in `apps/api/src/routes/events.ts` /
+   `apps/api/scripts/addNews.ts`) — a collision just appends `-2`, `-3`, etc.
+5. Publish via `scripts/addNews.ts` with an `articleBody` field set (markdown:
+   `## heading`s and paragraphs, `*italic*`/`**bold**` inline) — its presence
+   is what marks the Event as an original article; everything else
+   (headline/summary/team tag) works exactly like a normal News item.
+6. Verify facts against real sources before publishing (as normal for any
+   News item) — note this explicitly in the source material handed over,
+   even though it won't appear as a visible citation on the published page.
