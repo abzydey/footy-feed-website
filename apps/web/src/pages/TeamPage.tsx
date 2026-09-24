@@ -305,11 +305,18 @@ export default function TeamPage() {
               <p className="text-slate-500 text-sm mb-[26px]">Season record not available yet.</p>
             )}
 
-            <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mb-2.5">
+            <h2 className="font-display font-bold text-[19px] tracking-[.06em] text-white uppercase mb-1">
               Top Try Scorers
             </h2>
+            {/* Full Set only started tracking individual tries from Round 26
+                onward (see routes/teams.ts's topTryScorers query — it's a
+                straight count over the Try table, which simply has no rows
+                before that point) — a real season can run 27+ rounds, so
+                this is a recent-form list, not a season leaderboard, and
+                saying so here beats it quietly reading as one. */}
+            <p className="text-[11px] font-semibold text-white/42 mb-2.5">Since Round 26 — not a full-season total</p>
             {topTryScorers.length === 0 ? (
-              <p className="text-slate-500 text-sm">No tries recorded yet this season.</p>
+              <p className="text-slate-500 text-sm">No tries recorded since Round 26.</p>
             ) : (
               <div className="bg-surface border border-white/[.07] rounded-2xl overflow-hidden">
                 {topTryScorers.map((s, i) => (
