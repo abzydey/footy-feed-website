@@ -22,20 +22,32 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 // GET /news/ lists recent articles, including whichever late-mail article
-// is current — its slug carries the round number and changes each round,
+// is current — its slug carries the round name and changes each round,
 // but there's no predictable URL pattern to construct directly (no RSS
 // feed either — /news/rss, /rss, /news/feed all 404). Scanning the index
 // for the first matching link is simpler and more reliable than guessing.
 //
-// Finals rounds use a different slug entirely: "nrl-team-lists-finals-
-// week-N" instead of "nrl-late-mail-round-N" (confirmed against the real
-// Finals Week 1 article, 2026-09-08 — same live-updated-through-the-week
-// page and same team-list markup, just not called "late mail").
+// The round-name suffix is NOT a stable "-round-N"/"-finals-week-N"
+// pattern — confirmed broken against the real Preliminary Finals round
+// (2026-09-24): NRL.com used "nrl-late-mail-preliminary-finals" and
+// "nrl-team-lists-preliminary-finals", neither of which the old
+// digit-anchored alternation (`late-mail-round-\d+` / `team-lists-finals-
+// week-\d+`) could ever match — every finals-round poll silently fell back
+// to a stale hardcoded URL from a prior round instead (see lastKnownUrl in
+// lateMailPoller.ts), missing that round's 24hr update entirely. Matching
+// on just the "nrl-late-mail-" / "nrl-team-lists-" prefix and letting the
+// suffix be anything is what actually generalizes across "round-27",
+// "finals-week-2", "preliminary-finals", and whatever the Grand Final
+// round is called.
 export async function findLatestLateMailUrl(): Promise<string | null> {
   const html = await fetchHtml("https://www.nrl.com/news/");
-  const match = html.match(
-    /href="(\/news\/\d{4}\/\d{2}\/\d{2}\/nrl-(?:late-mail-round-\d+|team-lists-finals-week-\d+)[^"]*)"/
-  );
+  // [^"]+ rather than [a-z0-9-]+ — NRL.com's real hrefs end in a trailing
+  // slash before the closing quote (".../for-return/"), which a
+  // letters/digits/hyphens-only class doesn't include, so that first,
+  // narrower version of this fix still matched nothing against the real
+  // page even after broadening the round-name suffix (confirmed by testing
+  // it against the actual fetched HTML, not just reasoning about it).
+  const match = html.match(/href="(\/news\/\d{4}\/\d{2}\/\d{2}\/nrl-(?:late-mail|team-lists)-[^"]+)"/);
   return match ? `https://www.nrl.com${match[1]}` : null;
 }
 
@@ -163,14 +175,21 @@ function parseMatchChunk(chunkHtml: string, matchLabel: string): ParsedMatch {
 export async function fetchLateMail(url: string): Promise<ParsedLateMail> {
   const html = await fetchHtml(url);
 
-  // Finals articles carry a differently-worded heading ("NRL Team Lists:
-  // Finals Week N" rather than "NRL Late Mail: Round N") but the captured
-  // group still comes out as "Finals Week N" — matching Game.round exactly
-  // (see finalsBracket.ts), same as "Round N" does for regular-season games.
-  const roundMatch =
-    html.match(/<h2>NRL Late Mail: (Round \d+)<\/h2>/) ??
-    html.match(/<h2>NRL Team Lists: (Finals Week \d+)<\/h2>/);
-  const round = roundMatch ? roundMatch[1] : null;
+  // Finals articles carry a differently-worded heading ("NRL Team Lists: ..."
+  // rather than "NRL Late Mail: Round N"), and the text after the colon
+  // isn't always "Finals Week N" either — NRL.com titled the Preliminary
+  // Finals round's heading literally "NRL Late Mail: Preliminary Finals"
+  // (2026-09-24), which the old digit-only capture (`Round \d+` / `Finals
+  // Week \d+`) couldn't match, so `round` came back null and
+  // lateMailPoller.ts's `if (!lateMail.round) return` silently dropped the
+  // entire round — no Grand Final round is guaranteed to say "Round N" or
+  // "Finals Week N" either, so this captures whatever text is actually
+  // there instead of guessing at the next label NRL.com will use. This is
+  // only ever used for cosmetic headline text (see buildHeadline in
+  // lateMailPoller.ts) — matching against a Game row happens by team
+  // pairing, not by this string (see analyzeLateMail).
+  const roundMatch = html.match(/<h2>NRL (?:Late Mail|Team Lists): ([^<]+)<\/h2>/);
+  const round = roundMatch ? roundMatch[1].trim() : null;
 
   // Free-text narrative: everything inside the article's own content block,
   // stripped of tags — kept as reference context for the admin, not parsed

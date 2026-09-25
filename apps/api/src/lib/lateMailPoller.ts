@@ -153,13 +153,19 @@ function isQuietHours(): boolean {
 // Final check this caused — "Can't see the eels dragons team list
 // updated").
 // Seeded with this round's actual article as a one-time bootstrap: the
-// in-memory cache resets on every deploy, and nrl.com/news/ had already
-// dropped this round's article by the time of the deploy that's live right
-// now, so a fresh process would otherwise start with nothing to fall back
-// to. Harmless once stale — `discovered` always wins over this the moment
-// next round's article shows up in the index again, so this only ever
-// matters on a cold start during a gap like the current one.
-let lastKnownUrl: string | null = "https://www.nrl.com/news/2026/09/15/nrl-team-lists-finals-week-2/";
+// in-memory cache resets on every deploy, so a fresh process would
+// otherwise start with nothing to fall back to during a genuine
+// listing-rotation gap. Harmless once stale — `discovered` always wins
+// over this the moment the current round's article is findable again.
+//
+// 2026-09-25: re-seeded after finding this had been silently stuck on the
+// PRIOR round's URL (Finals Week 2) through the entirety of the
+// Preliminary Finals round — not because nrl.com/news/ ever stopped
+// listing the current article (it didn't), but because
+// findLatestLateMailUrl()'s own regex couldn't match "preliminary-finals"
+// slugs at all (see lateMailParser.ts's fix). Every scheduled 24hr check
+// this round fetched and analyzed the wrong round's article as a result.
+let lastKnownUrl: string | null = "https://www.nrl.com/news/2026/09/24/nrl-late-mail-preliminary-finals---walker-100-per-cent-for-return/";
 
 export async function pollLateMail(): Promise<void> {
   if (isQuietHours()) return;
