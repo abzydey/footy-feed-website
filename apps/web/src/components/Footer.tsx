@@ -48,7 +48,18 @@ const PARTNERS = [
   },
 ];
 
+// An installed Home Screen web app has no address bar, so /admin (unlisted
+// on purpose — see Nav.tsx) is unreachable there by typing the URL. Admin
+// push alerts need that installed app on iPhone, so in standalone mode only
+// the plain "© Full Set" text quietly becomes the way in — no visible
+// link styling, and the page is auth-gated regardless.
+const isStandalone =
+  typeof window !== "undefined" &&
+  (window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true);
+
 export default function Footer() {
+  const copyright = `© ${new Date().getFullYear()} Full Set`;
   return (
     <footer className="border-t border-white/10 mt-10">
       <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -56,7 +67,7 @@ export default function Footer() {
           <Link to="/about" className="hover:text-white transition-colors duration-150">
             About
           </Link>
-          <span>© {new Date().getFullYear()} Full Set</span>
+          {isStandalone ? <Link to="/admin">{copyright}</Link> : <span>{copyright}</span>}
         </div>
 
         <div className="flex items-center gap-3">
