@@ -55,6 +55,15 @@ function logIfChanged(key: string, signature: string, message: string): void {
   if (message) console.log(message);
 }
 
+// Error-level twin of logIfChanged, for the "poller is silently doing
+// nothing" failures — logged once per distinct problem, cleared by passing
+// signature "ok" with an empty message once things are healthy again.
+function warnOnce(key: string, signature: string, message: string): void {
+  if (lastWarningSignature.get(key) === signature) return;
+  lastWarningSignature.set(key, signature);
+  if (message) console.error(message);
+}
+
 function buildHeadline(shortName: string, round: string, stage: Stage): string {
   if (stage === "FINAL") return `${shortName} Final Team List: ${round}`;
   if (stage === "TWENTY_FOUR_HOUR") return `24-hour team update: ${shortName}`;
@@ -152,49 +161,90 @@ function isQuietHours(): boolean {
 // through that gap instead of going silent (see the missed Dragons v Eels
 // Final check this caused — "Can't see the eels dragons team list
 // updated").
-// Seeded with this round's actual article as a one-time bootstrap: the
-// in-memory cache resets on every deploy, so a fresh process would
-// otherwise start with nothing to fall back to during a genuine
-// listing-rotation gap. Harmless once stale — `discovered` always wins
-// over this the moment the current round's article is findable again.
-//
-// 2026-09-25: re-seeded after finding this had been silently stuck on the
-// PRIOR round's URL (Finals Week 2) through the entirety of the
-// Preliminary Finals round — not because nrl.com/news/ ever stopped
-// listing the current article (it didn't), but because
-// findLatestLateMailUrl()'s own regex couldn't match "preliminary-finals"
-// slugs at all (see lateMailParser.ts's fix). Every scheduled 24hr check
-// this round fetched and analyzed the wrong round's article as a result.
-let lastKnownUrl: string | null = "https://www.nrl.com/news/2026/09/24/nrl-late-mail-preliminary-finals---walker-100-per-cent-for-return/";
+// In-memory only (resets on deploy) — the durable source is the pinned URL
+// in AppSetting. This used to be a hardcoded per-round seed, which went
+// stale and silently pointed the poller at last week's article for the
+// whole Preliminary Finals round; the DB pin replaced it.
+let lastKnownUrl: string | null = null;
 
-export async function pollLateMail(): Promise<void> {
-  if (isQuietHours()) return;
+export const PINNED_URL_KEY = "lateMail.pinnedUrl";
 
-  const discovered = await findLatestLateMailUrl().catch((err) => {
-    console.warn("[lateMailPoller] failed to check nrl.com/news/ for the current Late Mail article:", err);
-    return null;
-  });
-
-  const url = discovered ?? lastKnownUrl;
-  if (!url) {
-    console.warn("[lateMailPoller] no current Late Mail article found on nrl.com/news/, and no previously-known URL to fall back to");
-    return;
-  }
-  if (!discovered) {
-    console.log(`[lateMailPoller] nrl.com/news/ no longer lists this round's article — falling back to the last known URL: ${url}`);
-  }
-
+// Fetches + analyzes one candidate URL; returns null (with a reason) if it
+// can't be used for the games actually coming up. Reading the wrong week's
+// article isn't an error on its own — it just matches finished games and
+// finds nothing to do, which is how the Preliminary Finals miss went
+// unnoticed for days — so "covers at least one upcoming game" is the real
+// test of a usable article, not just "fetched and parsed."
+async function tryCandidate(url: string, upcomingCount: number) {
   let lateMail;
   try {
     lateMail = await fetchLateMail(url);
   } catch (err) {
-    console.warn(`[lateMailPoller] failed to fetch/parse ${url}:`, err);
-    return;
+    return { ok: false as const, reason: `fetch/parse failed (${err instanceof Error ? err.message : err})` };
   }
-  lastKnownUrl = url;
-  if (!lateMail.round) return; // can't tell which round this is — nothing safe to key events to
+  if (!lateMail.round) return { ok: false as const, reason: "no round heading found" };
 
   const matches = await analyzeLateMail(lateMail);
+  if (upcomingCount > 0) {
+    const matchedIds = [...new Set(matches.flatMap((m) => [m.home.matchedGameId, m.away.matchedGameId]))].filter(
+      (id): id is string => !!id
+    );
+    const covered = matchedIds.length
+      ? await prisma.game.count({ where: { id: { in: matchedIds }, status: "SCHEDULED", kickoffAt: { gt: new Date() } } })
+      : 0;
+    if (covered === 0) return { ok: false as const, reason: `"${lateMail.round}" covers none of the upcoming games` };
+  }
+  return { ok: true as const, round: lateMail.round, matches };
+}
+
+export async function pollLateMail(): Promise<void> {
+  if (isQuietHours()) return;
+
+  // Priority order: the link the user sends each Tuesday (stored in the DB
+  // via scripts/setLateMailUrl.ts, so it survives redeploys — NRL.com
+  // live-updates that one page Initial → 24hr → Final, and a fresh one is
+  // used every week), then nrl.com/news/ discovery, then whatever last
+  // worked in this process. First candidate that actually covers an
+  // upcoming game wins.
+  const pinned = (await prisma.appSetting.findUnique({ where: { key: PINNED_URL_KEY } }))?.value ?? null;
+  const discovered = await findLatestLateMailUrl().catch((err) => {
+    console.warn("[lateMailPoller] failed to check nrl.com/news/ for the current Late Mail article:", err);
+    return null;
+  });
+  const candidates = [...new Set([pinned, discovered, lastKnownUrl].filter((u): u is string => !!u))];
+
+  const now = new Date();
+  const upcomingCount = await prisma.game.count({
+    where: { status: "SCHEDULED", kickoffAt: { gt: now, lte: new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000) } },
+  });
+
+  let chosen: { url: string; round: string; matches: Awaited<ReturnType<typeof analyzeLateMail>> } | null = null;
+  const rejected: string[] = [];
+  for (const url of candidates) {
+    const result = await tryCandidate(url, upcomingCount);
+    if (result.ok) {
+      chosen = { url, round: result.round, matches: result.matches };
+      break;
+    }
+    rejected.push(`${url} — ${result.reason}`);
+  }
+
+  if (!chosen) {
+    warnOnce(
+      "stale-article",
+      rejected.join(" | ") || "none",
+      `[lateMailPoller] STALE: no usable team-list article for the ${upcomingCount} upcoming game(s) — team lists are NOT being updated. ` +
+        `Send this week's NRL.com team-list link (pin it with scripts/setLateMailUrl.ts). Tried: ${rejected.join(" | ") || "nothing (no candidate URLs)"}`
+    );
+    return;
+  }
+  warnOnce("stale-article", "ok", "");
+  if (pinned && chosen.url !== pinned) {
+    logIfChanged("pin-skipped", chosen.url, `[lateMailPoller] pinned URL doesn't cover upcoming games — using ${chosen.url} instead`);
+  }
+  lastKnownUrl = chosen.url;
+  const { matches } = chosen;
+  const lateMail = { round: chosen.round };
 
   for (const match of matches) {
     for (const [side, opponent] of [

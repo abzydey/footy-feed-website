@@ -699,3 +699,16 @@ model FinalsInjuryEntry {
   @@index([teamId])
   @@map("finals_injury_entries")
 }
+
+// Small key/value store for operational settings that must survive a
+// redeploy (in-memory variables reset every time Railway restarts the
+// process). First use: "lateMail.pinnedUrl" — the team-list article URL the
+// user sends each Tuesday, which lateMailPoller.ts prefers over its own
+// nrl.com/news/ discovery (see scripts/setLateMailUrl.ts).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
