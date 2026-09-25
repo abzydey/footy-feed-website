@@ -308,6 +308,14 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ url }),
     }),
+  adminRegisterAlerts: (token: string, fcmToken: string) =>
+    request<{ ok: boolean; devices: number }>(`/admin/alerts/register`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ fcmToken }),
+    }),
+  adminTestAlert: (token: string) =>
+    request<{ sent: number; failed: number }>(`/admin/alerts/test`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
   adminUpdateEvent: (token: string, id: string, data: { headline?: string; body?: string; teamId?: string }) =>
     request<EventItem>(`/admin/events/${id}`, {
       method: "PATCH",

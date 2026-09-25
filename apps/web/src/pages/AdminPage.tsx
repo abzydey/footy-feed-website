@@ -10,6 +10,7 @@ import JudiciaryForm from "../components/admin/JudiciaryForm";
 import LateMailForm from "../components/admin/LateMailForm";
 import TrackedShowsForm from "../components/admin/TrackedShowsForm";
 import PlayerForm from "../components/admin/PlayerForm";
+import AdminAlertsCard from "../components/admin/AdminAlertsCard";
 
 const TOKEN_KEY = "footy-feed:adminToken";
 const TABS = ["Update", "Game", "Late Mail", "Ladder", "Judiciary", "Player", "Episode", "Shows", "Stats"] as const;
@@ -75,6 +76,8 @@ function AdminTabs({ token, onLogout }: { token: string; onLogout: () => void })
           Log out
         </button>
       </div>
+
+      <AdminAlertsCard token={token} />
 
       <div className="flex gap-4 border-b border-white/10">
         {TABS.map((t) => (

@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { fetchLateMail, findLatestLateMailUrl } from "./lateMailParser";
 import { analyzeLateMail, generateTwentyFourHourBody, AnalyzedSide, Stage } from "./lateMailAnalysis";
 import { notifyFollowersOfEvent } from "./notify";
+import { sendAdminAlert } from "./adminAlert";
 
 // Automatic version of the chat/admin-panel-triggered Late Mail flow (see
 // routes/adminLateMail.ts) — same fetch + analyze pipeline (lib/lateMailAnalysis.ts),
@@ -58,10 +59,11 @@ function logIfChanged(key: string, signature: string, message: string): void {
 // Error-level twin of logIfChanged, for the "poller is silently doing
 // nothing" failures — logged once per distinct problem, cleared by passing
 // signature "ok" with an empty message once things are healthy again.
-function warnOnce(key: string, signature: string, message: string): void {
-  if (lastWarningSignature.get(key) === signature) return;
+function warnOnce(key: string, signature: string, message: string): boolean {
+  if (lastWarningSignature.get(key) === signature) return false;
   lastWarningSignature.set(key, signature);
   if (message) console.error(message);
+  return !!message;
 }
 
 function buildHeadline(shortName: string, round: string, stage: Stage): string {
@@ -230,12 +232,18 @@ export async function pollLateMail(): Promise<void> {
   }
 
   if (!chosen) {
-    warnOnce(
+    const isNew = warnOnce(
       "stale-article",
       rejected.join(" | ") || "none",
       `[lateMailPoller] STALE: no usable team-list article for the ${upcomingCount} upcoming game(s) — team lists are NOT being updated. ` +
         `Send this week's NRL.com team-list link (pin it with scripts/setLateMailUrl.ts). Tried: ${rejected.join(" | ") || "nothing (no candidate URLs)"}`
     );
+    if (isNew) {
+      await sendAdminAlert(
+        "⚠️ Team lists aren't updating",
+        `Full Set can't find this week's NRL.com team-list page for ${upcomingCount} upcoming game(s). Send Claude this week's team-list link.`
+      );
+    }
     return;
   }
   warnOnce("stale-article", "ok", "");

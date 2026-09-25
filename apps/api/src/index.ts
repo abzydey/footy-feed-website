@@ -32,6 +32,7 @@ import adminFinalsInjuriesRouter from "./routes/adminFinalsInjuries";
 import sitemapRouter from "./routes/sitemap";
 import injuriesRouter from "./routes/injuries";
 import articlesRouter from "./routes/articles";
+import adminAlertsRouter from "./routes/adminAlerts";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
@@ -90,6 +91,7 @@ app.use("/api/admin/late-mail", adminLateMailRouter);
 app.use("/api/admin/tracked-shows", adminTrackedShowsRouter);
 app.use("/api/admin/players", adminPlayersRouter);
 app.use("/api/admin/finals-injuries", adminFinalsInjuriesRouter);
+app.use("/api/admin/alerts", adminAlertsRouter);
 
 // Railway sets PORT itself and its edge proxy expects the app bound to all
 // interfaces, which app.listen(port, cb) already does by default (no host
