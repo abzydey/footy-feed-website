@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
+import BrandLogo from "./BrandLogo";
+
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `shrink-0 px-1 pb-1 text-sm font-bold tracking-tight border-b-2 transition-colors duration-150 ${
     isActive ? "text-white border-brand-violet" : "text-slate-400 border-transparent hover:text-white"
@@ -120,7 +122,7 @@ export default function Nav() {
             separately, which is what made that text redundant. */}
         <div className="max-w-5xl mx-auto flex items-center justify-center px-3 pt-2.5 pb-2">
           <NavLink to="/">
-            <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="h-12 sm:h-14 w-auto" />
+            <BrandLogo className="h-12 sm:h-14 w-auto" />
           </NavLink>
         </div>
         <div className="max-w-5xl mx-auto flex items-center gap-3 px-3 pb-2.5">

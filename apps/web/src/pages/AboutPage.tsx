@@ -1,4 +1,5 @@
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import BrandLogo from "../components/BrandLogo";
 
 export default function AboutPage() {
   useDocumentMeta({
@@ -10,7 +11,7 @@ export default function AboutPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 py-10">
-      <img src="/logo-primary.png" alt="Full Set — Your team. The full set." className="w-full max-w-sm mb-6" />
+      <div className="max-w-sm mb-6"><BrandLogo className="w-full h-auto" /></div>
       <h1 className="font-display italic font-black text-3xl tracking-tight text-white uppercase mb-4">About Full Set</h1>
       <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
         <p>
