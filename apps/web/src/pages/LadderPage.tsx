@@ -95,12 +95,8 @@ export default function LadderPage() {
                   <div key={row.team.id}>
                     <Link
                       to={`/teams/${row.team.slug}`}
-                      className="grid items-center px-4 py-2.5 border-b border-white/5"
-                      style={{
-                        gridTemplateColumns: GRID_COLS,
-                        background: top8 ? "rgba(139,77,255,.07)" : "transparent",
-                        boxShadow: top8 ? "inset 3px 0 0 #A855F7" : "none",
-                      }}
+                      className={`grid items-center px-4 py-2.5 border-b border-white/5 ${top8 ? "bg-brand-violet/[.07] shadow-[inset_3px_0_0_theme(colors.brand.violet)]" : ""}`}
+                      style={{ gridTemplateColumns: GRID_COLS }}
                     >
                       <span className="flex items-center gap-[3px]">
                         <span className={`font-display font-bold text-sm ${top8 ? "text-brand-violet" : "text-white/38"}`}>

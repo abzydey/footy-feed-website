@@ -81,7 +81,7 @@ export default function FinalsPage() {
       <button
         type="button"
         onClick={() => document.getElementById("predictor")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-        className="w-full flex items-center justify-between gap-3 rounded-xl bg-surface border border-brand-violet/30 shadow-[0_0_28px_-6px_rgba(139,77,255,0.45)] px-4 py-3 text-left hover:border-brand-violet/50 active:scale-[0.99] transition-all duration-150"
+        className="w-full flex items-center justify-between gap-3 rounded-xl bg-surface border border-brand-violet/30 shadow-[0_0_28px_-6px_theme(colors.brand.violet/45%)] px-4 py-3 text-left hover:border-brand-violet/50 active:scale-[0.99] transition-all duration-150"
       >
         <div className="min-w-0">
           <div className="text-[13.5px] font-extrabold text-white">🎯 Make your Finals predictions</div>
