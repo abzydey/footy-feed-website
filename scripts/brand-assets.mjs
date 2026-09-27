@@ -167,7 +167,105 @@ async function main() {
     );
   }
 
+  await buildSplashes();
+  await buildOgImage();
+  await buildSocialAvatars();
+
   console.log("Brand assets rendered.");
+}
+
+// Launch (splash) screens: the lockup centred on navy at 18% of the
+// shorter side — the same proportion the previous splash used. Every
+// existing splash file in the iOS asset catalog and Android drawable
+// folders is re-rendered at its own size and orientation, plus the
+// 2732×2732 Capacitor source in resources/.
+async function splashPng(width, height) {
+  const logoW = Math.round(Math.min(width, height) * 0.18);
+  const logo = await render(SVG.lockup, logoW);
+  const { height: logoH } = await sharp(logo).metadata();
+  return sharp({ create: { width, height, channels: 3, background: NAVY } })
+    .composite([{ input: logo, left: Math.round((width - logoW) / 2), top: Math.round((height - logoH) / 2) }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+async function buildSplashes() {
+  const { readdir } = await import("node:fs/promises");
+  const targets = [path.join(WEB, "resources/splash.png")];
+  const iosSplash = path.join(WEB, "ios/App/App/Assets.xcassets/Splash.imageset");
+  for (const f of await readdir(iosSplash)) if (f.endsWith(".png")) targets.push(path.join(iosSplash, f));
+  for (const d of await readdir(ANDROID_RES)) {
+    if (!d.startsWith("drawable")) continue;
+    const f = path.join(ANDROID_RES, d, "splash.png");
+    try {
+      await sharp(f).metadata();
+      targets.push(f);
+    } catch {
+      /* folder has no splash.png */
+    }
+  }
+  for (const f of targets) {
+    const { width, height } = await sharp(f).metadata();
+    await write(f, await splashPng(width, height));
+  }
+  await write(path.join(OUT, "splash/splash-2732.png"), await splashPng(2732, 2732));
+}
+
+// Profile pictures for X (400×400) and Instagram (1080×1080), from
+// fullset-appicon.svg. Both platforms crop avatars to a circle, so instead
+// of trusting the icon's built-in clear space, this measures the logo's
+// furthest point from the centre and scales the artwork so that point sits
+// at 72% of the circle's radius, leaving a clear ring inside any crop.
+async function buildSocialAvatars() {
+  const probe = 1024;
+  const { data } = await sharp(await render(SVG.appicon, probe, { opaque: true })).raw().toBuffer({ resolveWithObject: true });
+  const bg = [4, 9, 27];
+  let maxR = 0;
+  for (let y = 0; y < probe; y++) {
+    for (let x = 0; x < probe; x++) {
+      const i = (y * probe + x) * 3;
+      if (Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]) > 30) {
+        maxR = Math.max(maxR, Math.hypot(x + 0.5 - probe / 2, y + 0.5 - probe / 2));
+      }
+    }
+  }
+  const scale = Math.min(1, (0.72 * (probe / 2)) / maxR);
+  for (const [name, size] of [["x-400", 400], ["instagram-1080", 1080]]) {
+    const inner = Math.round(size * scale);
+    const art = await render(SVG.appicon, inner, { opaque: true });
+    const off = Math.round((size - inner) / 2);
+    const avatar = await sharp({ create: { width: size, height: size, channels: 3, background: NAVY } })
+      .composite([{ input: art, left: off, top: off }])
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    await write(path.join(OUT, `social/avatar-${name}.png`), avatar);
+  }
+  console.log(`Social avatars: logo reaches ${Math.round((maxR / (probe / 2)) * 100)}% of the radius unscaled, scaled by ${scale.toFixed(3)}`);
+}
+
+// Link-preview image (og:image / twitter:image, 1200×630): the same
+// composition as the site header — header base art plus the SVG mark in
+// its square (see BrandLogo.tsx for the percentages) — centred on navy at
+// the width the previous share image used.
+async function buildOgImage() {
+  const W = 1200;
+  const H = 630;
+  const lockupW = 920;
+  const base = await sharp(path.join(PUBLIC, "brand/logo-header-base.png")).resize({ width: lockupW }).toBuffer();
+  const { height: baseH } = await sharp(base).metadata();
+  const markW = Math.round(lockupW * 0.1629);
+  const mark = await render(SVG.lockup, markW);
+  const left = Math.round((W - lockupW) / 2);
+  const top = Math.round((H - baseH) / 2);
+  const og = await sharp({ create: { width: W, height: H, channels: 3, background: NAVY } })
+    .composite([
+      { input: base, left, top },
+      { input: mark, left: left + Math.round(lockupW * 0.0769), top: top + Math.round(baseH * 0.2796) },
+    ])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  await write(path.join(PUBLIC, "og-default.png"), og);
+  await write(path.join(OUT, "og/og-default.png"), og);
 }
 
 // The header logo (square + divider + FULLSET wordmark + tagline) exists
@@ -191,7 +289,11 @@ async function buildHeaderBase() {
 
   for (let i = 0, j = 0; i < data.length; i += 3, j += 4) {
     const p = [data[i], data[i + 1], data[i + 2]];
-    if (Math.max(...p.map((v, c) => Math.abs(v - BG[c]))) <= 6) {
+    // Background noise, plus the artwork's dark drop shadows (pixels no
+    // lighter than the background): the shadows were near-invisible on the
+    // navy header but showed as grey smudges on any lighter background once
+    // the logo was exported transparent, so they're dropped entirely.
+    if (Math.max(...p.map((v, c) => Math.abs(v - BG[c]))) <= 6 || p.every((v, c) => v <= BG[c] + 6)) {
       out[j + 3] = 0;
       continue;
     }

@@ -164,6 +164,23 @@ workflows:
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
+      # Temporary, alongside the plist check above (2026-09-27): build 4's
+      # launch-crash fix registers GoogleService-Info.plist in
+      # project.pbxproj so Xcode bundles it — restoring the file to disk was
+      # never the problem, Xcode only bundles files the project lists. This
+      # checks the finished .ipa actually contains it, and fails the build
+      # (so a known-broken build never reaches TestFlight) if it doesn't.
+      # Remove both temporary steps once build 4 is confirmed opening.
+      - name: Confirm GoogleService-Info.plist is inside the built app
+        script: |
+          IPA=$(ls build/ios/ipa/*.ipa | head -1)
+          echo "Checking $IPA"
+          if unzip -l "$IPA" | grep -E 'Payload/[^/]+\.app/GoogleService-Info\.plist'; then
+            echo "OK: GoogleService-Info.plist is bundled in the app"
+          else
+            echo "MISSING: GoogleService-Info.plist is not in the app bundle — Firebase will crash on launch"
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
