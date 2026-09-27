@@ -29,6 +29,8 @@ const SVG = {
   appicon: path.join(BRAND, "fullset-appicon.svg"),
   appiconSeam: path.join(BRAND, "fullset-appicon-seam.svg"),
   favicon: path.join(BRAND, "favicon.svg"),
+  // The approved vector header lockup — the one and only wordmark source.
+  headerLockup: path.join(BRAND, "fullset-header-lockup.svg"),
 };
 
 // Rasterise at (at least) the target size so downscaling never upsamples.
@@ -107,11 +109,14 @@ async function main() {
   await write(path.join(PUBLIC, "icon-512.png"), await render(SVG.appicon, 512, { opaque: true }));
   // Nav drawer icon — shown at 28px, so the seam version
   await write(path.join(PUBLIC, "nav-icon.png"), await render(SVG.appiconSeam, 120, { opaque: true }));
-  await copyFile(SVG.lockup, path.join(PUBLIC, "brand/fullset-lockup.svg")).catch(async () => {
-    await mkdir(path.join(PUBLIC, "brand"), { recursive: true });
-    await copyFile(SVG.lockup, path.join(PUBLIC, "brand/fullset-lockup.svg"));
-  });
-  await buildHeaderBase();
+  // Header logo (BrandLogo.tsx) — the vector header lockup, served as-is
+  await mkdir(path.join(PUBLIC, "brand"), { recursive: true });
+  await copyFile(SVG.headerLockup, path.join(PUBLIC, "brand/fullset-header-lockup.svg"));
+  // Large renders for banners / brand pack, from the same vector
+  for (const w of [1500, 3000]) {
+    await write(path.join(OUT, `header/header-lockup-transparent-${w}.png`), await render(SVG.headerLockup, w));
+    await write(path.join(OUT, `header/header-lockup-navy-${w}.png`), await render(SVG.headerLockup, w, { opaque: true }));
+  }
 
   // --- Capacitor source icon (what `capacitor-assets` would read) ---
   await write(path.join(WEB, "resources/icon.png"), await render(SVG.appicon, 1024, { opaque: true }));
@@ -243,95 +248,20 @@ async function buildSocialAvatars() {
   console.log(`Social avatars: logo reaches ${Math.round((maxR / (probe / 2)) * 100)}% of the radius unscaled, scaled by ${scale.toFixed(3)}`);
 }
 
-// Link-preview image (og:image / twitter:image, 1200×630): the same
-// composition as the site header — header base art plus the SVG mark in
-// its square (see BrandLogo.tsx for the percentages) — centred on navy at
-// the width the previous share image used.
+// Link-preview image (og:image / twitter:image, 1200×630): the vector
+// header lockup centred on navy, its visible logo ~880px wide (the same
+// size the previous share image used).
 async function buildOgImage() {
   const W = 1200;
   const H = 630;
-  const lockupW = 920;
-  const base = await sharp(path.join(PUBLIC, "brand/logo-header-base.png")).resize({ width: lockupW }).toBuffer();
-  const { height: baseH } = await sharp(base).metadata();
-  const markW = Math.round(lockupW * 0.1629);
-  const mark = await render(SVG.lockup, markW);
-  const left = Math.round((W - lockupW) / 2);
-  const top = Math.round((H - baseH) / 2);
+  const lockup = await render(SVG.headerLockup, 906);
+  const { width: lw, height: lh } = await sharp(lockup).metadata();
   const og = await sharp({ create: { width: W, height: H, channels: 3, background: NAVY } })
-    .composite([
-      { input: base, left, top },
-      { input: mark, left: left + Math.round(lockupW * 0.0769), top: top + Math.round(baseH * 0.2796) },
-    ])
+    .composite([{ input: lockup, left: Math.round((W - lw) / 2), top: Math.round((H - lh) / 2) }])
     .png({ compressionLevel: 9 })
     .toBuffer();
   await write(path.join(PUBLIC, "og-default.png"), og);
   await write(path.join(OUT, "og/og-default.png"), og);
-}
-
-// The header logo (square + divider + FULLSET wordmark + tagline) exists
-// only as one flat PNG, public/logo-primary.png, with the old FS icon and a
-// lighter navy background baked in. This keeps every pixel of the square,
-// divider, wordmark and tagline, but (a) turns the background transparent
-// ("colour to alpha" against the measured background colour, so
-// anti-aliased edges stay clean) and (b) clears the inside of the square so
-// the new fullset-lockup.svg can sit there as a real SVG (see BrandLogo.tsx).
-async function buildHeaderBase() {
-  const src = path.join(PUBLIC, "logo-primary.png");
-  const { data, info } = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const W = info.width;
-  const H = info.height;
-  const out = Buffer.alloc(W * H * 4);
-  const BG = [9, 13, 31]; // measured from the image's corners/margins
-  const px = (x, y) => {
-    const i = (y * W + x) * 3;
-    return [data[i], data[i + 1], data[i + 2]];
-  };
-
-  for (let i = 0, j = 0; i < data.length; i += 3, j += 4) {
-    const p = [data[i], data[i + 1], data[i + 2]];
-    // Background noise, plus the artwork's dark drop shadows (pixels no
-    // lighter than the background): the shadows were near-invisible on the
-    // navy header but showed as grey smudges on any lighter background once
-    // the logo was exported transparent, so they're dropped entirely.
-    if (Math.max(...p.map((v, c) => Math.abs(v - BG[c]))) <= 6 || p.every((v, c) => v <= BG[c] + 6)) {
-      out[j + 3] = 0;
-      continue;
-    }
-    let a = 0;
-    for (let c = 0; c < 3; c++) {
-      const t = p[c] > BG[c] ? (p[c] - BG[c]) / (255 - BG[c]) : (BG[c] - p[c]) / BG[c];
-      a = Math.max(a, t);
-    }
-    a = Math.min(1, a);
-    for (let c = 0; c < 3; c++) out[j + c] = Math.round(Math.min(255, Math.max(0, BG[c] + (p[c] - BG[c]) / a)));
-    out[j + 3] = Math.round(a * 255);
-  }
-
-  // Clear the square's interior. The outline is found by scanning inward
-  // from its outer edge and skipping the purple run, so the old purple ball
-  // inside (separated from the outline by navy) is not mistaken for it.
-  const SQ = { x0: 55, x1: 362, y0: 41, y1: 350 };
-  const isPurple = ([r, g, b]) => b - g > 40 && r - g > 15;
-  const innerRange = (get, from, to, step) => {
-    let k = from;
-    while (k !== to && !isPurple(get(k))) k += step; // reach the outline
-    while (k !== to && isPurple(get(k))) k += step; // cross it
-    return k;
-  };
-  for (let y = SQ.y0; y <= SQ.y1; y++) {
-    const L = innerRange((x) => px(x, y), SQ.x0 - 4, SQ.x1, 1);
-    const R = innerRange((x) => px(x, y), SQ.x1 + 4, SQ.x0, -1);
-    for (let x = L; x <= R; x++) {
-      const T = innerRange((yy) => px(x, yy), SQ.y0 - 4, SQ.y1, 1);
-      const B = innerRange((yy) => px(x, yy), SQ.y1 + 4, SQ.y0, -1);
-      if (y >= T && y <= B) out[(y * W + x) * 4 + 3] = 0;
-    }
-  }
-
-  await write(
-    path.join(PUBLIC, "brand/logo-header-base.png"),
-    await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer()
-  );
 }
 
 main().catch((err) => {

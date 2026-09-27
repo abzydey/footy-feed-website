@@ -122,7 +122,7 @@ export default function Nav() {
             separately, which is what made that text redundant. */}
         <div className="max-w-5xl mx-auto flex items-center justify-center px-3 pt-2.5 pb-2">
           <NavLink to="/">
-            <BrandLogo className="h-12 sm:h-14 w-auto" />
+            <BrandLogo className="h-[39px] sm:h-[45px] w-auto" />
           </NavLink>
         </div>
         <div className="max-w-5xl mx-auto flex items-center gap-3 px-3 pb-2.5">

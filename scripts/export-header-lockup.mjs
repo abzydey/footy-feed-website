@@ -14,12 +14,12 @@ import { chromium } from "playwright";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "brand/generated/header");
 const URL = process.argv[2] ?? "http://localhost:4173/";
-const LOGO = 'header a[href="/"] > span'; // BrandLogo's wrapper
+const LOGO = 'header a[href="/"] > img'; // BrandLogo
 
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch();
 for (const scale of [2, 4]) {
-  // Desktop width so the header uses its larger sm:h-14 logo size.
+  // Desktop width so the header uses its larger (sm:) logo size.
   const page = await browser.newPage({ viewport: { width: 1280, height: 400 }, deviceScaleFactor: scale });
   await page.goto(URL, { waitUntil: "load" });
   await page.waitForFunction(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
