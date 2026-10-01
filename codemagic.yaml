@@ -147,6 +147,31 @@ workflows:
         # a real failed build: "unrecognized arguments: --create") and isn't
         # needed now that a matching profile actually exists to find.
         script: xcode-project use-profiles
+      # Apple rejects an upload whose build number isn't higher than every
+      # one before it, so this sets it automatically: latest TestFlight
+      # build + 1 (looked up via the App Store Connect integration above),
+      # never lower than what project.pbxproj already says. If the lookup
+      # fails it falls back to Codemagic's own per-workflow counter, which
+      # only ever goes up.
+      - name: Set the build number (one above the latest on TestFlight)
+        script: |
+          PBXPROJ=apps/web/ios/App/App.xcodeproj/project.pbxproj
+          CURRENT=$(grep -m1 -o 'CURRENT_PROJECT_VERSION = [0-9]*' "$PBXPROJ" | grep -o '[0-9]*$')
+          APP_ID=$(app-store-connect apps list --bundle-id-identifier au.fullset.app --strict-match-identifier --json 2>/dev/null | jq -r '.[0].id // empty')
+          LATEST=""
+          if [ -n "$APP_ID" ]; then
+            LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null | tail -1 | grep -o '^[0-9]*$')
+          fi
+          if [ -n "$LATEST" ]; then
+            NEXT=$((LATEST + 1))
+            echo "Latest TestFlight build: $LATEST"
+          else
+            NEXT=${BUILD_NUMBER:-$CURRENT}
+            echo "WARNING: couldn't look up the latest TestFlight build; using Codemagic's build counter"
+          fi
+          if [ "$NEXT" -lt "$CURRENT" ]; then NEXT=$CURRENT; fi
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NEXT;/" "$PBXPROJ"
+          echo "Build number set to $NEXT"
       - name: Build the archive and export an IPA
         script: |
           xcode-project build-ipa \
