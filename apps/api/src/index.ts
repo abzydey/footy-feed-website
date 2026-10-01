@@ -47,9 +47,15 @@ const app = express();
 // note: a stray second project with a service of the same name exists, and
 // is not what fullset.au talks to. Always confirm the project ID before
 // changing this value in the Railway dashboard/CLI.
+// The native apps are always allowed on top of that: Capacitor serves the
+// bundled web build from capacitor://localhost on iOS and
+// https://localhost on Android, so every API call from the app comes from
+// one of those origins regardless of environment.
+const NATIVE_APP_ORIGINS = ["capacitor://localhost", "https://localhost"];
 const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .split(",")
-  .map((o) => o.trim());
+  .map((o) => o.trim())
+  .concat(NATIVE_APP_ORIGINS);
 
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());

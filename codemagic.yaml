@@ -4,7 +4,10 @@ definitions:
     script: npm ci
   build_web: &build_web
     name: Build the web bundle (apps/web/dist — what Capacitor wraps)
-    script: npm run build --workspace apps/web
+    # VITE_API_URL is baked in at build time, and apps/web/.env* is
+    # gitignored — without it here the app falls back to
+    # http://localhost:4000 and every request fails ("Load failed").
+    script: VITE_API_URL=https://footy-feedapi-production.up.railway.app/api npm run build --workspace apps/web
 
   # Shared by both Android workflows below — everything up to the final
   # Gradle command is identical whether the output is an .aab (for Play
@@ -131,21 +134,6 @@ workflows:
           if [ -n "${GOOGLE_SERVICE_INFO_PLIST:-}" ]; then
             echo "$GOOGLE_SERVICE_INFO_PLIST" > apps/web/ios/App/App/GoogleService-Info.plist
           fi
-      # Temporary diagnostic step (2026-09-18) — the app crashes on launch
-      # even with the variable restored above, and TestFlight's own crash
-      # feedback doesn't surface a real symbolicated stack trace without a
-      # Mac + Xcode Organizer. plutil -lint gives a definitive valid/invalid
-      # verdict on the actual restored file, rather than inferring it
-      # indirectly from exit codes. Remove once the crash is diagnosed.
-      - name: Verify GoogleService-Info.plist is valid
-        script: |
-          FILE=apps/web/ios/App/App/GoogleService-Info.plist
-          echo "--- file size (bytes) ---"
-          wc -c "$FILE"
-          echo "--- file content ---"
-          cat "$FILE"
-          echo "--- plutil validation ---"
-          plutil -lint "$FILE"
       - name: Sync the web build into the iOS shell
         script: cd apps/web && npx cap sync ios
       - name: Fetch signing files matching the bundle ID above
@@ -164,13 +152,11 @@ workflows:
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
-      # Temporary, alongside the plist check above (2026-09-27): build 4's
-      # launch-crash fix registers GoogleService-Info.plist in
-      # project.pbxproj so Xcode bundles it — restoring the file to disk was
-      # never the problem, Xcode only bundles files the project lists. This
-      # checks the finished .ipa actually contains it, and fails the build
-      # (so a known-broken build never reaches TestFlight) if it doesn't.
-      # Remove both temporary steps once build 4 is confirmed opening.
+      # Guard kept from the launch-crash fix (2026-09-27; confirmed fixed
+      # 2026-10-01): Xcode only bundles files project.pbxproj lists, so
+      # restoring GoogleService-Info.plist to disk isn't enough on its own.
+      # Fails the build if the .ipa is missing it, so a build that would
+      # crash on launch never reaches TestFlight.
       - name: Confirm GoogleService-Info.plist is inside the built app
         script: |
           IPA=$(ls build/ios/ipa/*.ipa | head -1)

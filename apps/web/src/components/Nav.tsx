@@ -69,7 +69,7 @@ function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
           luminance to the dimmed backdrop for the panel to read as a
           distinct layer on top of the page. */}
       <div
-        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs bg-surface-hover border-r border-brand-violet/25 shadow-[12px_0_40px_-8px_rgba(0,0,0,0.65)] transition-transform duration-200 flex flex-col ${
+        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-surface-hover border-r border-brand-violet/25 shadow-[12px_0_40px_-8px_rgba(0,0,0,0.65)] transition-transform duration-200 flex flex-col ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -116,7 +116,10 @@ export default function Nav() {
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/10">
+      {/* pt-[env(safe-area-inset-top)]: in the iOS app the page runs edge to
+          edge (viewport-fit=cover in index.html), so without this the logo
+          row sits under the status bar. Resolves to 0 in a normal browser. */}
+      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/10 pt-[env(safe-area-inset-top)]">
         {/* Logo gets its own row — the full lockup (icon + FULLSET + tagline)
             already says everything Home's old intro text block used to say
             separately, which is what made that text redundant. */}
