@@ -1,26 +1,25 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { api, RoundLineups } from "../lib/api";
+import { useRefreshTick } from "../lib/refresh";
 
 function hasAnyStage(stages: RoundLineups["games"][number]["homeTeamLineup"]) {
   return stages.INITIAL != null || stages.TWENTY_FOUR_HOUR != null || stages.FINAL != null;
 }
 
-// A standalone summary card linking into the Team Lists page — deliberately
-// its own element rather than folded into the news feed below, since "have
-// team lists dropped for my game yet" is a different kind of check than
-// reading news. With the old hero banner gone, this is the first bordered
-// card on Home, doing the "grab attention immediately" job the banner used
-// to do — so it carries a violet glow + a live-pulse kicker dot that no
-// other Home card gets, rather than everything reading as same-weight.
+// A one-line summary row linking into the Team Lists page — "have team
+// lists dropped for my game yet" is its own kind of check, separate from
+// the news below. The whole row is the tap target; the title gets the full
+// width (it used to be cut off beside a big VIEW ALL button), and the
+// pulsing dot only shows once at least one game's lists are in.
 export default function TeamListsCard() {
-  const navigate = useNavigate();
   const [data, setData] = useState<RoundLineups | null>(null);
+  const refreshTick = useRefreshTick();
 
   useEffect(() => {
-    api.getCurrentRoundLineups().then(setData).catch(() => setData(null));
-  }, []);
+    api.getCurrentRoundLineups().then(setData).catch(() => {});
+  }, [refreshTick]);
 
   if (!data || data.games.length === 0) return null;
 
@@ -29,33 +28,40 @@ export default function TeamListsCard() {
   ).length;
 
   return (
-    <div
-      onClick={() => navigate("/team-lists")}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && navigate("/team-lists")}
-      className="cursor-pointer rounded-[18px] p-[1.5px] bg-gradient-to-br from-brand-violet via-brand-heliotrope to-white/[.06] shadow-[0_0_28px_-6px_theme(colors.brand.violet/55%)]"
+    <Link
+      to="/team-lists"
+      className="flex items-center gap-3 rounded-[18px] px-4 py-3.5 bg-surface border border-brand-violet/30 shadow-[0_0_24px_-10px_theme(colors.brand.violet/60%)] hover:border-brand-violet/55 transition-colors duration-150"
     >
-      <div className="flex items-center justify-between gap-3 rounded-[16.5px] bg-[linear-gradient(160deg,#141B33_0%,#0A1024_100%)] px-4 py-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-[7px] mb-1.5">
+      <span className="shrink-0 w-10 h-10 rounded-xl bg-brand-violet/15 text-brand-violet flex items-center justify-center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 6h11M9 12h11M9 18h11" />
+          <circle cx="4.5" cy="6" r="1" />
+          <circle cx="4.5" cy="12" r="1" />
+          <circle cx="4.5" cy="18" r="1" />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1 flex flex-col gap-[3px]">
+        <span className="flex items-center gap-[7px]">
+          {updatedCount > 0 && (
             <span className="relative flex h-[7px] w-[7px] shrink-0">
               <span className="absolute inset-0 rounded-full bg-brand-violet animate-ping opacity-75" />
               <span className="relative rounded-full h-[7px] w-[7px] bg-brand-violet" />
             </span>
-            <span className="font-display font-bold text-[12.5px] tracking-[.16em] text-brand-heliotrope uppercase">
-              Team lists
-            </span>
-          </div>
-          <div className="font-display font-extrabold text-xl text-white truncate">
-            {data.round ? `${data.round} team lists` : "Team lists"} — {updatedCount} of {data.games.length} games
-            updated
-          </div>
-        </div>
-        <span className="shrink-0 flex items-center gap-1.5 text-[12.5px] font-extrabold tracking-[.03em] uppercase rounded-full px-4 py-2.5 bg-white text-app">
-          View all
+          )}
+          <span className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase">
+            Team lists{updatedCount > 0 ? " · Updated" : ""}
+          </span>
         </span>
-      </div>
-    </div>
+        <span className="font-extrabold text-[15.5px] leading-tight text-white">
+          {data.round ? `${data.round} team lists` : "Team lists"}
+        </span>
+        <span className="text-[12.5px] text-slate-400">
+          {updatedCount} of {data.games.length} {data.games.length === 1 ? "game" : "games"} updated
+        </span>
+      </span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-slate-500" aria-hidden="true">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+    </Link>
   );
 }

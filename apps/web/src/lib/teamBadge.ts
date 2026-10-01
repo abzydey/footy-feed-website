@@ -254,3 +254,11 @@ export function teamBadgeBackground(team: { slug: string; primaryColor: string |
   const style = TEAM_BADGE_STYLE[team.slug] ?? { pattern: "solid" as const, secondary: "#FFFFFF" };
   return patternBackground(style, team.primaryColor);
 }
+
+// A club's colours in order (primary, then its badge's secondary/tertiary)
+// — for flat colour accents like the colour stripe on Home's next-game
+// card, where the full badge pattern would be too busy.
+export function teamColors(team: { slug: string; primaryColor: string | null }): string[] {
+  const style = TEAM_BADGE_STYLE[team.slug];
+  return [team.primaryColor, style?.secondary, style?.tertiary].filter((c): c is string => Boolean(c));
+}

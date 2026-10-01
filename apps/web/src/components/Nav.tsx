@@ -1,172 +1,334 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 
 import BrandLogo from "./BrandLogo";
+import { FooterContent } from "./Footer";
+import { isNativeApp, tapHaptic } from "../lib/platform";
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `shrink-0 px-1 pb-1 text-sm font-bold tracking-tight border-b-2 transition-colors duration-150 ${
-    isActive ? "text-white border-brand-violet" : "text-slate-400 border-transparent hover:text-white"
-  }`;
+// Navigation, two layouts from one list of pages:
+// - Phones/tablets (below lg): a slim top bar (logo, search) plus a bottom
+//   tab bar — Home, Finals, News, Teams, More — the standard app pattern.
+//   "More" opens a sheet with every other page. Same in the app and on the
+//   phone website, on purpose: someone arriving from a shared link already
+//   knows their way around the app.
+// - Computers (lg and up): a normal top menu bar with a More dropdown.
+// Admin is deliberately in neither — it's an unlisted route reached by
+// typing /admin (or the © link in installed/native apps, see Footer.tsx).
 
-// Every public section, in the drawer. Admin is deliberately not in this
-// list — it's an unlisted route (see App.tsx: "Routes not listed here
-// (search, admin) are handled separately below"), reached only by typing
-// /admin directly, not surfaced in any nav a tester/fan would see, even
-// though the page itself is already auth-gated regardless. Ladder is last:
-// with the regular season over and finals underway, the ladder is frozen
-// and no longer the thing anyone's checking day to day.
-const DRAWER_LINKS: { to: string; label: string }[] = [
-  { to: "/", label: "Home" },
+type NavItem = { to: string; label: string; end?: boolean };
+
+// Bottom tabs on phones.
+const TABS: (NavItem & { icon: () => JSX.Element })[] = [
+  { to: "/", label: "Home", end: true, icon: HomeIcon },
+  { to: "/finals", label: "Finals", icon: TrophyIcon },
+  { to: "/news", label: "News", icon: NewsIcon },
+  { to: "/teams", label: "Teams", icon: ShieldIcon },
+];
+
+// Shown inline in the computer menu bar, before "More".
+const DESKTOP_LINKS: NavItem[] = [
+  { to: "/", label: "Home", end: true },
   { to: "/finals", label: "Finals" },
   { to: "/news", label: "News" },
   { to: "/teams", label: "Teams" },
   { to: "/games", label: "Games" },
   { to: "/team-lists", label: "Team Lists" },
-  { to: "/judiciary", label: "Judiciary" },
   { to: "/injuries", label: "Injuries" },
+];
+
+// Everything else. The phone More sheet lists all of these; the computer
+// dropdown skips the ones already in its menu bar. My Teams / Signing News /
+// Top Stories used to be the pills on Home — this is their home now.
+const MORE_LINKS: NavItem[] = [
+  { to: "/games", label: "Games" },
+  { to: "/team-lists", label: "Team Lists" },
+  { to: "/injuries", label: "Injuries" },
+  { to: "/judiciary", label: "Judiciary" },
+  { to: "/feed/my-teams", label: "My Teams" },
+  { to: "/feed/signings", label: "Signing News" },
+  { to: "/feed/top", label: "Top Stories" },
   { to: "/social", label: "Social" },
   { to: "/podcasts", label: "Podcasts" },
   { to: "/highlights", label: "Highlights" },
   { to: "/search", label: "What's Been Said" },
   { to: "/ladder", label: "Ladder" },
 ];
+const DESKTOP_MORE = MORE_LINKS.filter((m) => !DESKTOP_LINKS.some((d) => d.to === m.to));
 
-// The quick-access row under the logo — every public page, same order as
-// the drawer above ("the menu bar still needs to have every page"). The
-// drawer duplicates all of these too, same as Bleacher Report's own row +
-// hamburger both existing at once — this row is the one-tap default, the
-// drawer's just an alternate way in.
-const QUICK_LINKS: { to: string; label: string; end?: boolean }[] = DRAWER_LINKS.map((l) =>
-  l.to === "/" ? { ...l, end: true } : l
-);
+function matches(pathname: string, item: NavItem) {
+  return item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
 
-const HamburgerIcon = () => (
-  <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
-    <path d="M0 1h22M0 8h22M0 15h22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
+export default function Nav() {
+  const { pathname } = useLocation();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-const CloseIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-    <path d="M1 1l16 16M17 1L1 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
+  // Picking a page anywhere closes the sheet.
+  useEffect(() => setSheetOpen(false), [pathname]);
 
-// Slide-in drawer, same shape as Bleacher Report's hamburger menu: a
-// backdrop, a fixed-width panel from the left edge, a plain vertical list of
-// every section. Closes on backdrop click or picking a link. No trailing
-// chevrons — every item here navigates directly, none open a submenu, so an
-// arrow implying "more inside" would misrepresent what tapping it does.
-function Drawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const moreActive = !TABS.some((t) => matches(pathname, t)) && MORE_LINKS.some((m) => matches(pathname, m));
+
   return (
-    <div className={`fixed inset-0 z-30 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+    <>
+      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/[.07] pt-[env(safe-area-inset-top)]">
+        {/* Phones: logo centred, search on the right. The empty box on the
+            left balances the search button so the logo sits truly centred. */}
+        <div className="lg:hidden flex items-center justify-between px-2 h-[52px]">
+          <span className="w-11 h-11" aria-hidden="true" />
+          <Link to="/" aria-label="Full Set home">
+            <BrandLogo className="h-[30px] w-auto" />
+          </Link>
+          <Link
+            to="/search"
+            aria-label="Search"
+            onClick={tapHaptic}
+            className="w-11 h-11 flex items-center justify-center text-slate-300 hover:text-white"
+          >
+            <SearchIcon />
+          </Link>
+        </div>
+
+        {/* Computers: logo left, menu, search pill right. */}
+        <div className="hidden lg:flex max-w-6xl mx-auto items-center gap-9 px-5 h-[68px]">
+          <Link to="/" aria-label="Full Set home" className="shrink-0">
+            <BrandLogo className="h-[32px] w-auto" />
+          </Link>
+          <nav aria-label="Main" className="flex-1 flex items-center gap-6 h-full">
+            {DESKTOP_LINKS.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.end}
+                className={({ isActive }) =>
+                  `h-full flex items-center border-b-2 text-[14.5px] transition-colors duration-150 ${
+                    isActive
+                      ? "border-brand-violet text-white font-bold"
+                      : "border-transparent text-slate-400 font-semibold hover:text-white"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+            <DesktopMore active={DESKTOP_MORE.some((m) => matches(pathname, m))} />
+          </nav>
+          <Link
+            to="/search"
+            className="shrink-0 h-10 flex items-center gap-2 rounded-full border border-white/10 bg-surface pl-3 pr-4 text-[13.5px] text-slate-400 hover:text-white hover:border-white/20 transition-colors duration-150"
+          >
+            <SearchIcon size={18} />
+            Search
+          </Link>
+        </div>
+      </header>
+
+      {/* Siblings of <header>, not inside it: the header's backdrop-blur
+          makes it the containing block for position:fixed children, which
+          would size these against the header instead of the screen. */}
+      <nav
+        aria-label="Main"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#060B1E]/95 backdrop-blur-md border-t border-white/[.08] pb-[env(safe-area-inset-bottom)]"
+      >
+        <div className="grid grid-cols-5 h-14">
+          {TABS.map((tab) => (
+            <NavLink
+              key={tab.to}
+              to={tab.to}
+              end={tab.end}
+              onClick={tapHaptic}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center gap-[3px] text-[10.5px] transition-colors duration-150 ${
+                  isActive && !sheetOpen ? "text-brand-violet font-bold" : "text-slate-400 font-semibold"
+                }`
+              }
+            >
+              <tab.icon />
+              {tab.label}
+            </NavLink>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              tapHaptic();
+              setSheetOpen((o) => !o);
+            }}
+            aria-expanded={sheetOpen}
+            className={`flex flex-col items-center justify-center gap-[3px] text-[10.5px] transition-colors duration-150 ${
+              sheetOpen || moreActive ? "text-brand-violet font-bold" : "text-slate-400 font-semibold"
+            }`}
+          >
+            <DotsIcon />
+            More
+          </button>
+        </div>
+      </nav>
+
+      <MoreSheet open={sheetOpen} onClose={() => setSheetOpen(false)} pathname={pathname} />
+    </>
+  );
+}
+
+// Slides up from above the tab bar. Every other page as a two-column grid
+// of big tap targets; in the app, About/partners/© sit at the bottom too,
+// since the app hides the site footer (see App.tsx).
+function MoreSheet({ open, onClose, pathname }: { open: boolean; onClose: () => void; pathname: string }) {
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  return (
+    <div className={`lg:hidden fixed inset-0 z-20 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
       <div
         onClick={onClose}
         className={`absolute inset-0 bg-black/60 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
       />
-      {/* surface-hover (not the plain surface card colour) plus its own
-          shadow on the right edge — surface alone sits too close in
-          luminance to the dimmed backdrop for the panel to read as a
-          distinct layer on top of the page. */}
       <div
-        className={`absolute inset-y-0 left-0 w-[78%] max-w-xs pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] bg-surface-hover border-r border-brand-violet/25 shadow-[12px_0_40px_-8px_rgba(0,0,0,0.65)] transition-transform duration-200 flex flex-col ${
-          open ? "translate-x-0" : "-translate-x-full"
+        role="dialog"
+        aria-label="More pages"
+        className={`absolute inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] max-h-[75vh] overflow-y-auto rounded-t-[22px] bg-surface-hover border-t border-white/10 px-4 pt-3 pb-5 transition-transform duration-200 ease-out ${
+          open ? "translate-y-0" : "translate-y-[110%]"
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-4 border-b border-brand-violet/20">
-          <div className="flex items-center gap-2">
-            <img src="/nav-icon.png" alt="" className="h-7 w-7 rounded-md" />
-            <span className="font-display font-black text-white tracking-tight">FULL SET</span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close menu"
-            className="text-slate-400 hover:text-white p-1"
-          >
-            <CloseIcon />
-          </button>
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
+        <div className="grid grid-cols-2 gap-2">
+          {MORE_LINKS.map((link) => {
+            const active = matches(pathname, link);
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={tapHaptic}
+                className={`rounded-xl px-4 py-3.5 text-[14.5px] font-bold border transition-colors duration-150 ${
+                  active
+                    ? "border-brand-violet/60 bg-brand-violet/15 text-white"
+                    : "border-white/[.07] bg-surface text-slate-200 active:bg-white/[.06]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
-        <nav className="flex-1 overflow-y-auto py-2">
-          {DRAWER_LINKS.map((link) => (
+        {isNativeApp && (
+          <div className="mt-5 pt-4 border-t border-white/10">
+            <FooterContent stacked />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DesktopMore({ active }: { active: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
+
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative h-full flex items-center">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`h-full flex items-center gap-1 border-b-2 text-[14.5px] transition-colors duration-150 ${
+          active ? "border-brand-violet text-white font-bold" : "border-transparent text-slate-400 font-semibold hover:text-white"
+        }`}
+      >
+        More
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={open ? "rotate-180" : ""}>
+          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-[calc(100%-6px)] w-56 rounded-xl border border-white/10 bg-surface-hover p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.8)]">
+          {DESKTOP_MORE.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
-              end={link.to === "/"}
-              onClick={onClose}
               className={({ isActive }) =>
-                `block border-l-2 px-4 py-3 text-[15px] font-bold tracking-tight transition-colors duration-150 ${
-                  isActive
-                    ? "border-brand-violet bg-brand-violet/10 text-white"
-                    : "border-transparent text-slate-300 hover:text-white hover:bg-white/[.04]"
+                `block rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors duration-150 ${
+                  isActive ? "bg-brand-violet/15 text-white" : "text-slate-300 hover:bg-white/[.05] hover:text-white"
                 }`
               }
             >
               {link.label}
             </NavLink>
           ))}
-        </nav>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function Nav() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
+function SearchIcon({ size = 22 }: { size?: number }) {
   return (
-    <>
-      {/* pt-[env(safe-area-inset-top)]: in the iOS app the page runs edge to
-          edge (viewport-fit=cover in index.html), so without this the logo
-          row sits under the status bar. Resolves to 0 in a normal browser. */}
-      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/10 pt-[env(safe-area-inset-top)]">
-        {/* Logo gets its own row — the full lockup (icon + FULLSET + tagline)
-            already says everything Home's old intro text block used to say
-            separately, which is what made that text redundant. */}
-        <div className="max-w-5xl mx-auto flex items-center justify-center px-3 pt-2.5 pb-2">
-          <NavLink to="/">
-            <BrandLogo className="h-[39px] sm:h-[45px] w-auto" />
-          </NavLink>
-        </div>
-        <div className="max-w-5xl mx-auto flex items-center gap-3 px-3 pb-2.5">
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            className="shrink-0 text-white/80 hover:text-white p-1 -ml-1"
-          >
-            <HamburgerIcon />
-          </button>
-          {/* relative wrapper + an absolutely-positioned fade purely as a
-              "there's more this way" cue — scrollbar-hide below removes the
-              one native signal (the scrollbar itself) that this row
-              scrolls at all, and most of the 13 links here don't fit a
-              phone width, so without this the row reads as a complete,
-              static set of tabs rather than a scrollable one.
-              pointer-events-none so the fade never blocks taps on a link
-              underneath it. */}
-          <div className="relative min-w-0 flex-1">
-            <nav className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-              {QUICK_LINKS.map((link) => (
-                <NavLink key={link.to} to={link.to} end={link.end} className={linkClass}>
-                  {link.label}
-                </NavLink>
-              ))}
-            </nav>
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-app/90 to-transparent" />
-          </div>
-        </div>
-      </header>
-      {/* Rendered as a sibling of <header>, not inside it — the header has
-          backdrop-blur-sm (a backdrop-filter), and per the CSS spec any of
-          filter/backdrop-filter/transform/perspective/will-change on an
-          ancestor establishes a new containing block for position:fixed
-          descendants. With the drawer nested inside <header>, its "fixed
-          inset-0" was being sized against the header's own ~86px content
-          height instead of the viewport — confirmed by measuring the actual
-          rendered rect before this fix (height: 86 instead of the full
-          viewport height). Moving it outside sidesteps the whole issue. */}
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-    </>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
+    </svg>
+  );
+}
+
+function TrophyIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" />
+      <path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" />
+    </svg>
+  );
+}
+
+function NewsIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 8h10M7 12h10M7 16h6" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+    </svg>
+  );
+}
+
+function DotsIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
   );
 }

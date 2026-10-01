@@ -4,6 +4,7 @@ import { api, EventItem, Team } from "../lib/api";
 import EventCard from "../components/EventCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { useRefreshTick } from "../lib/refresh";
 
 // Same pill style as Home's chip row (HomePage.tsx CHIPS) — "All" plus one
 // per team, filtering by the post's own tagged team (post.team.id). A
@@ -54,10 +55,11 @@ export default function SocialPage() {
     path: "/social",
   });
 
+  const refreshTick = useRefreshTick();
   useEffect(() => {
     api.listSocialPosts().then(setPosts).catch((err) => setError(err.message));
-    api.listTeams().then(setTeams).catch(() => setTeams([]));
-  }, []);
+    api.listTeams().then(setTeams).catch(() => setTeams((prev) => prev ?? []));
+  }, [refreshTick]);
 
   const filtered = useMemo(
     () => (selectedTeamId ? posts?.filter((p) => p.team?.id === selectedTeamId) : posts),

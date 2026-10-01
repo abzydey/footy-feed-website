@@ -8,6 +8,7 @@ import FollowButton from "../components/FollowButton";
 import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { useRefreshTick } from "../lib/refresh";
 
 // Same pill style as Home's chip row (HomePage.tsx CHIPS) — "All" plus one
 // per team, filtering by the event's own tagged team (item.team.id), not a
@@ -67,13 +68,14 @@ export default function GeneralNewsPage() {
     path: "/news",
   });
 
+  const refreshTick = useRefreshTick();
   useEffect(() => {
     api
       .getFeed()
       .then((feed) => setItems(feed.filter((e) => e.type === "GENERAL_NEWS")))
       .catch((err) => setError(err.message));
-    api.listTeams().then(setTeams).catch(() => setTeams([]));
-  }, []);
+    api.listTeams().then(setTeams).catch(() => setTeams((prev) => prev ?? []));
+  }, [refreshTick]);
 
   // A story tagged to more than one club (see schema.prisma design notes —
   // an Event only carries one team each) is several rows sharing one

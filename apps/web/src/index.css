@@ -36,3 +36,51 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Pages fade up slightly as they open — the screen-change feel of an app
+   rather than a web page's instant swap. Kept short so navigating never
+   feels slower; skipped entirely for people who turn motion off. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-page-in {
+  animation: page-in 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in {
+    animation: none;
+  }
+}
+
+/* Tap feedback: links and buttons dim briefly while pressed, the way iOS
+   controls do. */
+a,
+button,
+[role="link"] {
+  transition-property: opacity, color, background-color, border-color, transform;
+}
+a:active,
+button:active,
+[role="link"]:active {
+  opacity: 0.75;
+}
+
+/* App only (html.native, set in main.tsx): long-pressing a link or button
+   shouldn't pop the browser's link preview or start selecting text — it
+   isn't a web page there. Article and news text stays selectable. */
+html.native a,
+html.native button,
+html.native nav,
+html.native header,
+html.native [role="link"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

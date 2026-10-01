@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, Episode } from "../lib/api";
+import { useRefreshTick } from "../lib/refresh";
 import { formatDate } from "./EpisodeCard";
 
 // Same exclusion PodcastsPage uses — Highlights clips have their own
@@ -31,12 +32,13 @@ const ChevronRight = () => (
 export default function LatestEpisodeTeaser() {
   const [episode, setEpisode] = useState<Episode | null | undefined>(undefined);
 
+  const refreshTick = useRefreshTick();
   useEffect(() => {
     api
       .listEpisodesBrowse()
       .then((eps) => setEpisode(eps.find((ep) => ep.podcast.slug !== EXCLUDED_PODCAST_SLUG) ?? null))
-      .catch(() => setEpisode(null));
-  }, []);
+      .catch(() => setEpisode((prev) => prev ?? null));
+  }, [refreshTick]);
 
   if (episode === null) return null;
 

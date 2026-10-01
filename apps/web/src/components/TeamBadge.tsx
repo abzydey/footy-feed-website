@@ -5,6 +5,7 @@ const SIZE_CLASSES = {
   sm: "w-8 h-8",
   md: "w-[46px] h-[46px]",
   lg: "w-14 h-14",
+  xl: "w-16 h-16 lg:w-20 lg:h-20", // Home's next-game hero
 } as const;
 
 interface TeamBadgeProps {

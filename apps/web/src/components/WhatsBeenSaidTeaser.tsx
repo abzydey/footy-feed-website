@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, SearchResult } from "../lib/api";
+import { useRefreshTick } from "../lib/refresh";
 
 // Tried in order when GET /api/search/trending has no clear signal (fewer
 // than 2 podcast mentions of any one player in the last 7 days) — each is
@@ -96,9 +97,10 @@ async function resolveQueryAndResult(): Promise<{ query: string; result: SearchR
 export default function WhatsBeenSaidTeaser() {
   const [state, setState] = useState<{ query: string; result: SearchResult } | null | undefined>(undefined);
 
+  const refreshTick = useRefreshTick();
   useEffect(() => {
     resolveQueryAndResult().then(setState);
-  }, []);
+  }, [refreshTick]);
 
   if (state === null) return null;
 

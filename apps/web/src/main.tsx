@@ -5,6 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/push";
+import { isNativeApp } from "./lib/platform";
+
+// Lets index.css apply app-only touches (no long-press link previews etc.).
+if (isNativeApp) document.documentElement.classList.add("native");
 
 // Fire-and-forget: a registration failure shouldn't block rendering, and
 // enablePushNotifications() re-checks/re-registers on its own if this

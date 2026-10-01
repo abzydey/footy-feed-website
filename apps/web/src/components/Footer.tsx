@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 
+import { isNativeApp, isStandalone } from "../lib/platform";
+
 // Site-wide footer — About link + a single equal-treatment partner row.
 // Earlier versions gave House Money its own larger "Presented by" lockup
 // with Arcane Accountants/Dream Drafting Sydney as smaller "supporting"
@@ -48,51 +50,58 @@ const PARTNERS = [
   },
 ];
 
-// An installed Home Screen web app has no address bar, so /admin (unlisted
-// on purpose — see Nav.tsx) is unreachable there by typing the URL. Admin
-// push alerts need that installed app on iPhone, so in standalone mode only
-// the plain "© Full Set" text quietly becomes the way in — no visible
-// link styling, and the page is auth-gated regardless.
-const isStandalone =
-  typeof window !== "undefined" &&
-  (window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone?: boolean }).standalone === true);
+// An installed Home Screen web app (or the native app) has no address bar,
+// so /admin (unlisted on purpose — see Nav.tsx) is unreachable there by
+// typing the URL. Admin push alerts need that installed app on iPhone, so
+// there only the plain "© Full Set" text quietly becomes the way in — no
+// visible link styling, and the page is auth-gated regardless.
+const adminViaCopyright = isStandalone || isNativeApp;
 
-export default function Footer() {
+// About + © + the partner row. Rendered by the site footer, and inside the
+// More sheet in the app (where the footer itself is hidden — see App.tsx).
+export function FooterContent({ stacked = false }: { stacked?: boolean }) {
   const copyright = `© ${new Date().getFullYear()} Full Set`;
   return (
-    <footer className="border-t border-white/10 mt-10">
-      <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4 text-xs text-slate-500">
-          <Link to="/about" className="hover:text-white transition-colors duration-150">
-            About
-          </Link>
-          {isStandalone ? <Link to="/admin">{copyright}</Link> : <span>{copyright}</span>}
-        </div>
+    <div className={`flex flex-col items-center justify-between gap-4 ${stacked ? "" : "sm:flex-row"}`}>
+      <div className="flex items-center gap-4 text-xs text-slate-500">
+        <Link to="/about" className="hover:text-white transition-colors duration-150">
+          About
+        </Link>
+        {adminViaCopyright ? <Link to="/admin">{copyright}</Link> : <span>{copyright}</span>}
+      </div>
 
-        <div className="flex items-center gap-3">
-          <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
-            Our partners
-          </span>
-          <div className="flex items-center gap-4">
-            {PARTNERS.map((p) => (
-              <a
-                key={p.name}
-                href={p.href}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center hover:opacity-80 transition-opacity duration-150"
-              >
-                <img
-                  src={p.logo}
-                  alt={p.name}
-                  style={{ height: p.height, filter: p.filter }}
-                  className="w-auto object-contain"
-                />
-              </a>
-            ))}
-          </div>
+      <div className="flex items-center gap-3">
+        <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
+          Our partners
+        </span>
+        <div className="flex items-center gap-4">
+          {PARTNERS.map((p) => (
+            <a
+              key={p.name}
+              href={p.href}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center hover:opacity-80 transition-opacity duration-150"
+            >
+              <img
+                src={p.logo}
+                alt={p.name}
+                style={{ height: p.height, filter: p.filter }}
+                className="w-auto object-contain"
+              />
+            </a>
+          ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Footer({ className = "" }: { className?: string }) {
+  return (
+    <footer className={`border-t border-white/10 mt-10 ${className}`}>
+      <div className="max-w-3xl lg:max-w-6xl mx-auto px-4 py-6">
+        <FooterContent />
       </div>
     </footer>
   );

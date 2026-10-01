@@ -4,6 +4,8 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import Nav from "./components/Nav";
 import Footer from "./components/Footer";
 import { onForegroundMessage } from "./lib/push";
+import { isNativeApp } from "./lib/platform";
+import { PullToRefresh, RefreshProvider } from "./lib/refresh";
 import { api } from "./lib/api";
 import HomePage from "./pages/HomePage";
 import FeedPage from "./pages/FeedPage";
@@ -67,6 +69,7 @@ function usePageViewTracking() {
 // TeamPage's squad section).
 export default function App() {
   usePageViewTracking();
+  const location = useLocation();
 
   // FCM only auto-shows a system notification when the tab isn't focused
   // (handled by the service worker) — a foreground/open tab has to be
@@ -81,32 +84,41 @@ export default function App() {
   }, []);
 
   return (
-    <>
-      <Nav />
-      <main>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/feed/:view" element={<FeedPage />} />
-          <Route path="/news" element={<GeneralNewsPage />} />
-          <Route path="/news/:slug" element={<NewsArticlePage />} />
-          <Route path="/teams" element={<TeamsPage />} />
-          <Route path="/teams/:slug" element={<TeamPage />} />
-          <Route path="/games" element={<GamesPage />} />
-          <Route path="/games/:id" element={<GamePage />} />
-          <Route path="/team-lists" element={<TeamListsPage />} />
-          <Route path="/ladder" element={<LadderPage />} />
-          <Route path="/finals" element={<FinalsPage />} />
-          <Route path="/social" element={<SocialPage />} />
-          <Route path="/podcasts" element={<PodcastsPage />} />
-          <Route path="/highlights" element={<HighlightsPage />} />
-          <Route path="/judiciary" element={<JudiciaryPage />} />
-          <Route path="/injuries" element={<InjuriesPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-        </Routes>
-      </main>
-      <Footer />
-    </>
+    <RefreshProvider>
+      {/* Bottom padding keeps the phone tab bar (Nav.tsx) from covering the
+          end of every page; computers have no tab bar. */}
+      <div className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <Nav />
+        <PullToRefresh />
+        {/* Keyed on the path so each page fades in, the way app screens do,
+            instead of swapping instantly like web pages. */}
+        <main key={location.pathname} className="animate-page-in">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/feed/:view" element={<FeedPage />} />
+            <Route path="/news" element={<GeneralNewsPage />} />
+            <Route path="/news/:slug" element={<NewsArticlePage />} />
+            <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/teams/:slug" element={<TeamPage />} />
+            <Route path="/games" element={<GamesPage />} />
+            <Route path="/games/:id" element={<GamePage />} />
+            <Route path="/team-lists" element={<TeamListsPage />} />
+            <Route path="/ladder" element={<LadderPage />} />
+            <Route path="/finals" element={<FinalsPage />} />
+            <Route path="/social" element={<SocialPage />} />
+            <Route path="/podcasts" element={<PodcastsPage />} />
+            <Route path="/highlights" element={<HighlightsPage />} />
+            <Route path="/judiciary" element={<JudiciaryPage />} />
+            <Route path="/injuries" element={<InjuriesPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
+        </main>
+        {/* In the app the footer's About/partners/© live in the More sheet
+            instead, on phone-sized screens (Nav.tsx). */}
+        <Footer className={isNativeApp ? "hidden lg:block" : ""} />
+      </div>
+    </RefreshProvider>
   );
 }
