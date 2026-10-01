@@ -5,7 +5,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // Content-Type only when there's a body: on a cross-origin GET (the site
     // and the app both call the API on another domain) that header alone
     // makes the browser send a CORS preflight first — an extra round trip
-    // to us-east before every read.
+    // to the API before every read.
     headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...(init?.headers ?? {}) },
     ...init,
   });

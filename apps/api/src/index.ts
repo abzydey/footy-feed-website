@@ -4,9 +4,10 @@ import compression from "compression";
 import cors from "cors";
 import express from "express";
 
-// Deployed in us-east (Railway) alongside Neon's us-east-2 database — moved
-// from eu-west (Amsterdam) to cut the transatlantic round trip on every DB
-// query. See README's Railway deploy notes for the project ID to target.
+// Deployed in Singapore (Railway asia-southeast1) alongside the Neon
+// database in AWS ap-southeast-1 (project "fullset-sg") — moved there from
+// us-east on 2026-10-01, since nearly every user is in Australia. Keep the
+// two in the same region: the API makes several DB queries per request.
 
 import adminAuthRouter from "./routes/adminAuth";
 import teamsRouter from "./routes/teams";
@@ -60,7 +61,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
 
 // maxAge lets browsers reuse a preflight answer instead of asking again
 // before every request (Safari caps it at 10 minutes, Chrome at 2 hours) —
-// each preflight is a full round trip to us-east, which from Australia is
+// each preflight is a full round trip to the API, which from Australia is
 // most of a request's cost. compression gzips JSON (the feed is ~50KB raw).
 app.use(cors({ origin: allowedOrigins, maxAge: 86400 }));
 app.use(compression());

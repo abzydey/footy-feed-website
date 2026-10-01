@@ -64,7 +64,10 @@ dashboard too, or the build fails with `No workspaces found`.
 `@footy-feed/api` — a leftover from troubleshooting the workspace-rename
 issue above. Only `grand-quietude`'s `@footy-feed/api` is real: it's the one
 with a custom domain proxied from `fullset.au`/`www.fullset.au` (via Vercel)
-and it's the one whose `DATABASE_URL` points at the shared Neon database.
+and it's the one whose `DATABASE_URL` points at the shared Neon database
+(Neon project `fullset-sg`, AWS ap-southeast-1 Singapore — the API service
+runs in Railway's Singapore region next to it; both moved from us-east on
+2026-10-01).
 `selfless-respect` is a stray duplicate with no domain wired to anything
 public — don't apply fixes there by mistake; always confirm the project ID
 (`1fa8c9ca-2ad8-484c-b958-c9e1ca91b8d8` for `grand-quietude`) before changing
