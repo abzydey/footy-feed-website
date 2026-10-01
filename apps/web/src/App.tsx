@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import { onForegroundMessage } from "./lib/push";
 import { isNativeApp } from "./lib/platform";
 import { PullToRefresh, RefreshProvider } from "./lib/refresh";
+import { useScrollRestoration } from "./lib/scrollRestoration";
 import { api } from "./lib/api";
 import HomePage from "./pages/HomePage";
 import FeedPage from "./pages/FeedPage";
@@ -69,6 +70,7 @@ function usePageViewTracking() {
 // TeamPage's squad section).
 export default function App() {
   usePageViewTracking();
+  useScrollRestoration();
   const location = useLocation();
 
   // FCM only auto-shows a system notification when the tab isn't focused

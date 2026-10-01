@@ -25,3 +25,27 @@ export function dedupeStories(items: EventItem[]): EventItem[] {
     return true;
   });
 }
+
+// The last full feed (GET /feed) this device loaded, so Home and News can
+// show stories straight away on the next open — and be their full height
+// immediately when you come back to them (see scrollRestoration.ts) —
+// while the fresh copy loads. Storage can be unavailable (private mode,
+// cleared site data), so both helpers quietly do nothing then.
+const FEED_CACHE_KEY = "fullset.homeFeed";
+
+export function readCachedFeed(): EventItem[] | null {
+  try {
+    const raw = localStorage.getItem(FEED_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as EventItem[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedFeed(feed: EventItem[]): void {
+  try {
+    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(feed));
+  } catch {
+    // storage full or blocked — the cache is only a convenience
+  }
+}

@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api, EventItem, Game, LadderRow, Player, Team, TeamListStages } from "../lib/api";
 import { ordinal } from "../lib/format";
+import { tapHaptic } from "../lib/platform";
+import { teamColors } from "../lib/teamBadge";
 import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import TeamBadge from "../components/TeamBadge";
@@ -173,7 +175,19 @@ export default function TeamPage() {
 
   return (
     <div>
-      <div className="bg-[linear-gradient(165deg,#241A52_0%,#141B33_45%,#04091B_100%)] px-5 pt-[50px] pb-4">
+      {/* Tinted in the club's own colour, with its colour stripe on top —
+          the same stripe as the club's tile on Teams and its match cards. */}
+      <div className="flex h-1" aria-hidden="true">
+        {teamColors(team).map((c, i) => (
+          <div key={i} className="flex-1" style={{ background: c }} />
+        ))}
+      </div>
+      <div
+        className="px-5 pt-5 pb-4"
+        style={{
+          background: `linear-gradient(165deg, ${team.primaryColor ?? "#241A52"}66 0%, #141B33 50%, #04091B 100%)`,
+        }}
+      >
         <div className="max-w-3xl mx-auto flex items-center justify-between mb-4">
           <button type="button" onClick={() => navigate(-1)} aria-label="Back" className="text-white/70 hover:text-white transition-colors duration-150">
             <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
@@ -248,22 +262,30 @@ export default function TeamPage() {
         )}
       </div>
 
-      <div className="max-w-3xl mx-auto flex gap-2 px-4 py-3 border-b border-white/[.07]">
-        {TEAM_TABS.map((t) => {
-          const active = teamTab === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTeamTab(t)}
-              className={`flex-1 text-[12.5px] font-bold rounded-[10px] py-2.5 border transition-colors duration-150 ${
-                active ? "bg-white/10 text-white border-transparent" : "bg-transparent text-white/50 border-white/10"
-              }`}
-            >
-              {t}
-            </button>
-          );
-        })}
+      {/* An iOS-style segmented control rather than three boxed buttons. */}
+      <div className="max-w-3xl mx-auto px-4 pt-3 pb-1">
+        <div role="tablist" className="flex rounded-xl bg-white/[.05] border border-white/[.06] p-1">
+          {TEAM_TABS.map((t) => {
+            const active = teamTab === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  tapHaptic();
+                  setTeamTab(t);
+                }}
+                className={`flex-1 text-[13px] font-bold rounded-[9px] py-2 transition-colors duration-150 ${
+                  active ? "bg-surface-hover text-white shadow-[0_1px_4px_rgba(0,0,0,0.4)]" : "text-white/50 hover:text-white"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="max-w-3xl mx-auto p-4">

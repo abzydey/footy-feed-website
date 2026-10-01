@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api, EventItem, Team } from "../lib/api";
 import { GENERAL_NEWS_TARGET_ID } from "../lib/constants";
-import { dedupeStories } from "../lib/feed";
+import { dedupeStories, readCachedFeed, writeCachedFeed } from "../lib/feed";
 import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import PageHero from "../components/ui/PageHero";
@@ -57,7 +57,7 @@ function TeamChips({
  * "not tied to one team."
  */
 export default function GeneralNewsPage() {
-  const [items, setItems] = useState<EventItem[] | null>(null);
+  const [items, setItems] = useState<EventItem[] | null>(() => readCachedFeed()?.filter((e) => e.type === "GENERAL_NEWS") ?? null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +72,10 @@ export default function GeneralNewsPage() {
   useEffect(() => {
     api
       .getFeed()
-      .then((feed) => setItems(feed.filter((e) => e.type === "GENERAL_NEWS")))
+      .then((feed) => {
+        setItems(feed.filter((e) => e.type === "GENERAL_NEWS"));
+        writeCachedFeed(feed);
+      })
       .catch((err) => setError(err.message));
     api.listTeams().then(setTeams).catch(() => setTeams((prev) => prev ?? []));
   }, [refreshTick]);

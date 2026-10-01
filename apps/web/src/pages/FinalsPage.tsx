@@ -6,6 +6,7 @@ import { buildFinalsBracket, FINALS_ROUNDS, teamsAliveInFinals } from "../lib/fi
 import FinalsBracketView from "../components/FinalsBracketView";
 import FinalsInjuryWatch from "../components/FinalsInjuryWatch";
 import FinalsPredictor from "../components/FinalsPredictor";
+import MatchHero from "../components/MatchHero";
 import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
@@ -56,6 +57,20 @@ export default function FinalsPage() {
 
   const loading = !top8 || !games || !bracket;
 
+  // The finals game to lead with: the one being played now, else the next
+  // one, else — once it's all over — the Grand Final result.
+  const featured = useMemo(() => {
+    if (!games || games.length === 0) return null;
+    const live = games.find((g) => g.status === "LIVE");
+    if (live) return live;
+    const now = Date.now();
+    const upcoming = games
+      .filter((g) => g.status === "SCHEDULED" && new Date(g.kickoffAt).getTime() > now)
+      .sort((a, b) => new Date(a.kickoffAt).getTime() - new Date(b.kickoffAt).getTime());
+    if (upcoming[0]) return upcoming[0];
+    return games.find((g) => g.round === "Grand Final" && g.status === "FULL_TIME") ?? null;
+  }, [games]);
+
   // The Home widget deep-links to /finals#injury-watch, at the bottom of the
   // page — this is an SPA route change (no full page load), so there's no
   // browser-native hash-scroll to rely on; this effect does it manually.
@@ -77,7 +92,7 @@ export default function FinalsPage() {
   }, [location.hash, injuries, loading]);
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-8">
+    <div className="max-w-3xl mx-auto p-4 space-y-6">
       <PageHero
         eyebrow="Finals 2026"
         title="Finals Hub"
@@ -89,6 +104,8 @@ export default function FinalsPage() {
       />
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
+
+      {featured && <MatchHero game={featured} linkTo={`/games/${featured.id}`} />}
 
       {SHOW_PREDICTOR && (
       <button

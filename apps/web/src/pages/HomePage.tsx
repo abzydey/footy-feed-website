@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { api, EventItem } from "../lib/api";
-import { dedupeStories } from "../lib/feed";
+import { dedupeStories, readCachedFeed, writeCachedFeed } from "../lib/feed";
 import EventCard from "../components/EventCard";
 import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
@@ -16,20 +16,6 @@ import { useDocumentMeta } from "../lib/useDocumentMeta";
 // How many stories Home previews before "All news" — the full list lives
 // on the News page.
 const LATEST_COUNT = 12;
-
-// The last feed this device loaded, shown straight away on the next open
-// while the fresh one loads — so opening the app shows stories immediately
-// instead of a skeleton for the length of a round trip to the API. Wrapped
-// in try/catch since storage can be unavailable (private mode, cleared).
-const FEED_CACHE_KEY = "fullset.homeFeed";
-function readCachedFeed(): EventItem[] | null {
-  try {
-    const raw = localStorage.getItem(FEED_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as EventItem[]) : null;
-  } catch {
-    return null;
-  }
-}
 
 export default function HomePage() {
   const [feed, setFeed] = useState<EventItem[] | null>(readCachedFeed);
@@ -49,11 +35,7 @@ export default function HomePage() {
       .then((fresh) => {
         setFeed(fresh);
         setError(null);
-        try {
-          localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(fresh));
-        } catch {
-          // storage full or blocked — the cache is only a convenience
-        }
+        writeCachedFeed(fresh);
       })
       .catch((err) => setError(err.message));
   }, [refreshTick]);

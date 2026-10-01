@@ -1,10 +1,10 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api, GameDetail, Team, TryScorer } from "../lib/api";
 import EventCard from "../components/EventCard";
 import TeamListCard from "../components/TeamListCard";
-import PageHero from "../components/ui/PageHero";
+import MatchHero from "../components/MatchHero";
 import SectionLabel from "../components/ui/SectionLabel";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
@@ -30,97 +30,6 @@ function TryList({ team, tries }: { team: Team; tries: TryScorer[] }) {
       )}
     </div>
   );
-}
-
-// Shared by both the FULL_TIME and LIVE heroes — same layout, both now show
-// a try list (see LiveScoreHero below), just the eyebrow label/color
-// differs. See schema.prisma design note on GameStatus for why "finished"
-// can no longer be inferred from the scores being non-null (a LIVE score
-// is non-null too) — status is the source of truth now.
-function ScoreHero({ game, eyebrow, eyebrowClass, children }: { game: GameDetail["game"]; eyebrow: string; eyebrowClass: string; children?: ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-surface border border-white/10 shadow-card p-5">
-      <div className={`text-center text-[11px] font-bold uppercase tracking-wider mb-3 ${eyebrowClass}`}>
-        {eyebrow}
-        {game.weatherFlag && (
-          <span className="ml-1.5 font-normal normal-case tracking-normal" title={game.weatherNote ?? "Weather-affected fixture"}>
-            ☔{game.weatherNote ? ` ${game.weatherNote}` : ""}
-          </span>
-        )}
-      </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div className="text-center min-w-0">
-          <Link
-            to={`/teams/${game.homeTeam.slug}`}
-            className="font-display font-bold text-lg text-white hover:text-brand-hover transition-colors duration-150 truncate block"
-          >
-            {game.homeTeam.shortName}
-          </Link>
-        </div>
-        <div className="font-display font-extrabold text-3xl text-white tabular-nums whitespace-nowrap">
-          {game.homeScore}&ndash;{game.awayScore}
-        </div>
-        <div className="text-center min-w-0">
-          <Link
-            to={`/teams/${game.awayTeam.slug}`}
-            className="font-display font-bold text-lg text-white hover:text-brand-hover transition-colors duration-150 truncate block"
-          >
-            {game.awayTeam.shortName}
-          </Link>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-// Final scoreline + try list — shown once the admin has logged the real
-// result (see components/admin/GameForm.tsx ResultForm), replacing the
-// upcoming-fixture hero. Team lists stay visible below either way, since
-// they're historically accurate either way and were explicitly kept in
-// scope. Highlight clips/player/team stats are deliberately out of scope.
-function FinalScoreHero({ data }: { data: GameDetail }) {
-  const { game, homeTries, awayTries } = data;
-  return (
-    <ScoreHero game={game} eyebrow="Full time" eyebrowClass="text-brand-heliotrope">
-      <div className="flex gap-4 mt-5 pt-4 border-t border-white/10">
-        <TryList team={game.homeTeam} tries={homeTries} />
-        <TryList team={game.awayTeam} tries={awayTries} />
-      </div>
-    </ScoreHero>
-  );
-}
-
-// Live in-play score. Try list included here too — the live-score poller
-// (lib/liveScorePoller.ts on the API side) now syncs scorer + minute from
-// NRL.com's match-centre as tries actually happen, not just once a human
-// logs the final result, so there's real data to show well before full
-// time. Siren red/pulsing dot to read as "happening now", same visual
-// language as the FINAL-stage team-list badge.
-function LiveScoreHero({ data }: { data: GameDetail }) {
-  const { liveClock } = data.game;
-  return (
-    <ScoreHero
-      game={data.game}
-      eyebrow={liveClock ? `● Live · ${liveClock}` : "● Live"}
-      eyebrowClass="text-brand-siren animate-pulse"
-    >
-      <div className="flex gap-4 mt-5 pt-4 border-t border-white/10">
-        <TryList team={data.game.homeTeam} tries={data.homeTries} />
-        <TryList team={data.game.awayTeam} tries={data.awayTries} />
-      </div>
-    </ScoreHero>
-  );
-}
-
-function formatKickoff(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 export default function GamePage() {
@@ -201,32 +110,15 @@ export default function GamePage() {
   const live = game.status === "LIVE";
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
-      {finished ? (
-        <FinalScoreHero data={data} />
-      ) : live ? (
-        <LiveScoreHero data={data} />
-      ) : (
-        <PageHero
-          eyebrow={game.round}
-          subtitle={
-            [formatKickoff(game.kickoffAt), game.venue, game.weatherFlag ? `☔ ${game.weatherNote ?? "Weather-affected"}` : null]
-              .filter(Boolean)
-              .join(" · ")
-          }
-          title={
-            <>
-              <Link to={`/teams/${game.homeTeam.slug}`} className="hover:text-brand-hover transition-colors duration-150">
-                {game.homeTeam.shortName}
-              </Link>{" "}
-              <span className="text-slate-500">vs</span>{" "}
-              <Link to={`/teams/${game.awayTeam.slug}`} className="hover:text-brand-hover transition-colors duration-150">
-                {game.awayTeam.shortName}
-              </Link>
-            </>
-          }
-        />
-      )}
+    <div className="max-w-3xl lg:max-w-5xl mx-auto p-4 lg:px-5 lg:pt-7 space-y-6">
+      <MatchHero game={game}>
+        {(live || finished) && (data.homeTries.length > 0 || data.awayTries.length > 0) && (
+          <div className="flex gap-4 pt-4 border-t border-white/[.07]">
+            <TryList team={game.homeTeam} tries={data.homeTries} />
+            <TryList team={game.awayTeam} tries={data.awayTries} />
+          </div>
+        )}
+      </MatchHero>
 
       <section>
         <SectionLabel>Team lists</SectionLabel>
