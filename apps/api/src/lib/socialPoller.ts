@@ -1,9 +1,12 @@
 import { TwitterApi } from "twitter-api-v2";
 
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "./prisma";
 import { isTwitterConfigured, getTwitterClient } from "./twitter";
 import { notifyFollowersOfEvent } from "./notify";
 import { fetchTweetAuthorName } from "./twitterEmbed";
+import { extractTweetMedia, stripMediaLinks, TWEET_MEDIA_PARAMS } from "./tweetMedia";
 import { HANDLE_TO_TEAM_SLUG } from "./teamTwitterHandles";
 
 // Comma-separated X usernames to poll, no leading "@". Starts with just the
@@ -78,8 +81,16 @@ export async function pollTwitterSources(): Promise<void> {
       const timeline = await client.v2.userTimeline(userId, {
         max_results: 10,
         exclude: ["replies"],
-        expansions: ["referenced_tweets.id", "referenced_tweets.id.author_id"],
-        "tweet.fields": ["referenced_tweets", "created_at"],
+        // ...plus the media expansions, for both the tweet itself and a
+        // repost's original, so photos/videos show on the card.
+        expansions: [
+          "referenced_tweets.id",
+          "referenced_tweets.id.author_id",
+          "attachments.media_keys",
+          "referenced_tweets.id.attachments.media_keys",
+        ],
+        "tweet.fields": ["referenced_tweets", "created_at", "attachments", "entities"],
+        ...TWEET_MEDIA_PARAMS,
       });
 
       for (const tweet of timeline.tweets) {
@@ -92,6 +103,9 @@ export async function pollTwitterSources(): Promise<void> {
         let authorName: string | null = null;
         let tweetId = tweet.id;
         let postedAt = tweet.created_at;
+        // Whichever tweet actually holds the content — a repost's media
+        // and media links belong to the original, not the RT stub.
+        let contentTweet = tweet;
 
         if (retweetRef) {
           const original = timeline.includes.tweets?.find((t) => t.id === retweetRef.id);
@@ -104,6 +118,7 @@ export async function pollTwitterSources(): Promise<void> {
           authorName = originalAuthor.name;
           tweetId = original.id;
           postedAt = original.created_at ?? postedAt;
+          contentTweet = original;
         }
 
         // Attributed to whoever actually wrote it (not @centralNRL) so a
@@ -135,6 +150,9 @@ export async function pollTwitterSources(): Promise<void> {
         // "about" one specific club just from who tweeted it.
         const teamId = await resolveTeamIdForHandle(authorUsername);
 
+        const media = extractTweetMedia(contentTweet, timeline.includes.media);
+        if (media.length) text = stripMediaLinks(text, contentTweet);
+
         const event = await prisma.event.create({
           data: {
             type: "SOCIAL_POST",
@@ -144,6 +162,7 @@ export async function pollTwitterSources(): Promise<void> {
             sourceUrl,
             sourceName: `@${authorUsername}`,
             sourceAuthor: authorName ?? undefined,
+            media: media.length ? (media as unknown as Prisma.InputJsonValue) : undefined,
             createdBy: "twitter-poller",
             // Defaults to insertion time if omitted — fine when polling
             // trickles in a couple of new posts at a time, but wrong the

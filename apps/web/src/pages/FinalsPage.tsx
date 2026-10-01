@@ -10,6 +10,12 @@ import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
+// The predictor (picks for every finals matchup) is switched off once the
+// grand final week arrives — there's nothing left to predict. Flip back to
+// true for next season's finals; FinalsPredictor.tsx and the predictor
+// helpers in lib/finalsBracket.ts are untouched and ready to go.
+const SHOW_PREDICTOR = false;
+
 export default function FinalsPage() {
   const location = useLocation();
   const [ladderRows, setLadderRows] = useState<LadderRow[] | null>(null);
@@ -19,7 +25,9 @@ export default function FinalsPage() {
 
   useDocumentMeta({
     title: "NRL Finals Hub",
-    description: "The NRL finals bracket, a live predictor, and a finals-only injury watch — all in one place.",
+    description: SHOW_PREDICTOR
+      ? "The NRL finals bracket, a live predictor, and a finals-only injury watch — all in one place."
+      : "The NRL finals bracket and a finals-only injury watch — all in one place.",
     path: "/finals",
   });
 
@@ -73,11 +81,16 @@ export default function FinalsPage() {
       <PageHero
         eyebrow="Finals 2026"
         title="Finals Hub"
-        subtitle="The bracket, your predictions, and who's fit for finals — all in one place."
+        subtitle={
+          SHOW_PREDICTOR
+            ? "The bracket, your predictions, and who's fit for finals — all in one place."
+            : "The bracket and who's fit for finals — all in one place."
+        }
       />
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
+      {SHOW_PREDICTOR && (
       <button
         type="button"
         onClick={() => document.getElementById("predictor")?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -89,12 +102,14 @@ export default function FinalsPage() {
         </div>
         <span className="shrink-0 text-[11px] font-bold text-brand-heliotrope uppercase tracking-wider">Jump in →</span>
       </button>
+      )}
 
       <section>
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-3">Bracket</h2>
         {loading ? <FeedSkeleton count={4} /> : <FinalsBracketView bracket={bracket} top8Ranks={top8Ranks} />}
       </section>
 
+      {SHOW_PREDICTOR && (
       <section id="predictor">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-1">Predictor</h2>
         <p className="text-[12.5px] text-slate-500 mb-3">
@@ -102,6 +117,7 @@ export default function FinalsPage() {
         </p>
         {loading ? <FeedSkeleton count={4} /> : <FinalsPredictor top8={top8} realBracket={bracket} />}
       </section>
+      )}
 
       <section id="injury-watch">
         <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase mb-3">Injury Watch</h2>

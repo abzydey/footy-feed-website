@@ -382,6 +382,12 @@ model Event {
   // the plain headline/body card (fetch failed, or sourceUrl isn't a tweet).
   embedHtml String?
 
+  // SOCIAL_POST only: the tweet's photos/videos from the X API's media
+  // expansion (see lib/tweetMedia.ts) — [{ type, url, previewUrl, width,
+  // height }]. url is the image for a photo, or the best MP4 for a
+  // video/GIF; previewUrl is a video's poster frame. null = no media.
+  media Json?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

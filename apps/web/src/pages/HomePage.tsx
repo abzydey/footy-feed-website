@@ -39,8 +39,22 @@ const pillClass = ({ isActive }: { isActive: boolean }) =>
       : "bg-white/[.04] text-white/60 border-white/[.14] hover:text-white"
   }`;
 
+// The last feed this device loaded, shown straight away on the next open
+// while the fresh one loads — so opening the app shows stories immediately
+// instead of a skeleton for the length of a round trip to the API. Wrapped
+// in try/catch since storage can be unavailable (private mode, cleared).
+const FEED_CACHE_KEY = "fullset.homeFeed";
+function readCachedFeed(): EventItem[] | null {
+  try {
+    const raw = localStorage.getItem(FEED_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as EventItem[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function HomePage() {
-  const [feed, setFeed] = useState<EventItem[] | null>(null);
+  const [feed, setFeed] = useState<EventItem[] | null>(readCachedFeed);
   const [error, setError] = useState<string | null>(null);
 
   useDocumentMeta({
@@ -51,7 +65,18 @@ export default function HomePage() {
   });
 
   useEffect(() => {
-    api.getFeed().then(setFeed).catch((err) => setError(err.message));
+    api
+      .getFeed()
+      .then((fresh) => {
+        setFeed(fresh);
+        setError(null);
+        try {
+          localStorage.setItem(FEED_CACHE_KEY, JSON.stringify(fresh));
+        } catch {
+          // storage full or blocked — the cache is only a convenience
+        }
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
   // A fixed top-stories preview, not chip-driven anymore — the pills above
@@ -101,7 +126,7 @@ export default function HomePage() {
         {articles && <span className="text-[11.5px] font-semibold text-white/40">{articles.length} stories</span>}
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && !feed && <p className="text-red-400 text-sm">{error}</p>}
       {!feed && !error && <FeedSkeleton count={5} />}
       {articles && articles.length === 0 && (
         <p className="text-[13.5px] font-semibold text-white/50 text-center mt-6">No stories yet.</p>

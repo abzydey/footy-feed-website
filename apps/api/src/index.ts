@@ -1,5 +1,6 @@
 import "./lib/nodePolyfills";
 import "dotenv/config";
+import compression from "compression";
 import cors from "cors";
 import express from "express";
 
@@ -57,7 +58,12 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
   .map((o) => o.trim())
   .concat(NATIVE_APP_ORIGINS);
 
-app.use(cors({ origin: allowedOrigins }));
+// maxAge lets browsers reuse a preflight answer instead of asking again
+// before every request (Safari caps it at 10 minutes, Chrome at 2 hours) —
+// each preflight is a full round trip to us-east, which from Australia is
+// most of a request's cost. compression gzips JSON (the feed is ~50KB raw).
+app.use(cors({ origin: allowedOrigins, maxAge: 86400 }));
+app.use(compression());
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {

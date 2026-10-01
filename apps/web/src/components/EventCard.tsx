@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { EventItem } from "../lib/api";
 import { STAGE_BADGE_CLASS, STAGE_LABEL } from "../lib/teamListStage";
+import TweetMediaView from "./TweetMediaView";
 
 const TYPE_LABEL: Record<string, string> = {
   INJURY: "Injury update",
@@ -103,7 +104,8 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
                 {timeAgo(event.createdAt)}
               </time>
             </div>
-            <p className="text-slate-200 text-[13.5px] leading-relaxed mt-1">{event.body}</p>
+            {event.body && <p className="text-slate-200 text-[13.5px] leading-relaxed mt-1">{event.body}</p>}
+            {event.media && event.media.length > 0 && <TweetMediaView media={event.media} />}
             {gameLink}
             {event.sourceUrl && (
               <a

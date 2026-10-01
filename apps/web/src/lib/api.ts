@@ -2,7 +2,11 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    // Content-Type only when there's a body: on a cross-origin GET (the site
+    // and the app both call the API on another domain) that header alone
+    // makes the browser send a CORS preflight first — an extra round trip
+    // to us-east before every read.
+    headers: { ...(init?.body ? { "Content-Type": "application/json" } : {}), ...(init?.headers ?? {}) },
     ...init,
   });
   if (!res.ok) {
@@ -11,6 +15,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+export interface TweetMedia {
+  type: "photo" | "video" | "animated_gif";
+  url: string;
+  previewUrl: string | null;
+  width: number | null;
+  height: number | null;
 }
 
 export interface Team {
@@ -33,6 +45,9 @@ export interface EventItem {
   sourceName: string | null;
   sourceAuthor: string | null;
   embedHtml: string | null;
+  // SOCIAL_POST only — the tweet's photos/videos (see the API's
+  // lib/tweetMedia.ts). Absent/null when the post has none.
+  media?: TweetMedia[] | null;
   createdAt: string;
   // A Full Set-authored article — renders at /news/:slug inside the app
   // instead of linking out via sourceUrl (see schema.prisma design note).
