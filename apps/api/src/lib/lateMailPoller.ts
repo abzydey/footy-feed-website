@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { fetchLateMail, findLatestLateMailUrl } from "./lateMailParser";
 import { analyzeLateMail, generateTwentyFourHourBody, AnalyzedSide, Stage } from "./lateMailAnalysis";
 import { notifyFollowersOfEvent } from "./notify";
+import { sameTimeDayBefore } from "./sydneyTime";
 import { sendAdminAlert } from "./adminAlert";
 
 // Automatic version of the chat/admin-panel-triggered Late Mail flow (see
@@ -40,7 +41,6 @@ const POLL_INTERVAL_MS = 60 * 60 * 1000;
 // (90min - 5min = 85min before kickoff), not 6:05pm. Widened from an
 // initial 2min buffer, still on top of the generic interval as a
 // safety net.
-const TWENTY_FOUR_HOUR_OFFSET_MS = 24 * 60 * 60 * 1000;
 const FINAL_OFFSET_MS = 90 * 60 * 1000;
 const CHECK_BUFFER_MS = 5 * 60 * 1000;
 
@@ -301,14 +301,17 @@ async function scheduleUpcomingChecks(): Promise<void> {
 
   for (const game of games) {
     const kickoff = game.kickoffAt.getTime();
-    for (const [stage, offset] of [
-      ["24hr", TWENTY_FOUR_HOUR_OFFSET_MS],
-      ["Final", FINAL_OFFSET_MS],
+    // The 24-hour list is due at kickoff's Sydney clock time the day
+    // before — not always exactly 24h earlier when daylight saving starts
+    // or ends in between (see sydneyTime.ts).
+    for (const [stage, expectedAt] of [
+      ["24hr", sameTimeDayBefore(kickoff)],
+      ["Final", kickoff - FINAL_OFFSET_MS],
     ] as const) {
       const key = `${game.id}|${stage}`;
       if (scheduledChecks.has(key)) continue;
 
-      const delay = kickoff - offset + CHECK_BUFFER_MS - now;
+      const delay = expectedAt + CHECK_BUFFER_MS - now;
       if (delay <= 0 || delay > 2 ** 31 - 1) continue; // already past (interval will still catch it), or too far out to schedule yet — a later scheduling pass picks it up
 
       scheduledChecks.add(key);

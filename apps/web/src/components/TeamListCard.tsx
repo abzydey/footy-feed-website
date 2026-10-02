@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { EventItem, Team, TeamListStages } from "../lib/api";
 import { STAGE_BADGE_CLASS, STAGE_LABEL, TeamListStage } from "../lib/teamListStage";
+import { sameTimeDayBefore } from "../lib/sydneyTime";
 import TeamBadge from "./TeamBadge";
 
 function timeAgo(iso: string) {
@@ -130,9 +131,11 @@ function computeChangedNames(initialBody: string | undefined, finalBody: string 
 // guessing a date — but it still reserves the row (see StageRow) so the
 // card always shows all three checkpoints instead of silently skipping
 // straight to "24hr Update" for a fixture nothing's been logged for yet.
-const PLACEHOLDER_OFFSET_MS: Partial<Record<TeamListStage, number>> = {
-  TWENTY_FOUR_HOUR: 24 * 60 * 60 * 1000,
-  FINAL: 90 * 60 * 1000,
+// 24hr: kickoff's Sydney clock time the day before (not always exactly
+// 24h earlier — daylight saving, see sydneyTime.ts). Final: 90 minutes out.
+const EXPECTED_AT: Partial<Record<TeamListStage, (kickoff: number) => number>> = {
+  TWENTY_FOUR_HOUR: sameTimeDayBefore,
+  FINAL: (kickoff) => kickoff - 90 * 60 * 1000,
 };
 
 function StageRow({
@@ -149,8 +152,8 @@ function StageRow({
   changedNames: Set<string>;
 }) {
   if (!event) {
-    const offsetMs = PLACEHOLDER_OFFSET_MS[stage];
-    const expectedAt = offsetMs !== undefined ? new Date(new Date(kickoffAt).getTime() - offsetMs).toISOString() : null;
+    const expectedFn = EXPECTED_AT[stage];
+    const expectedAt = expectedFn ? new Date(expectedFn(new Date(kickoffAt).getTime())).toISOString() : null;
     return (
       <div className="rounded-lg border border-dashed border-white/15 px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
