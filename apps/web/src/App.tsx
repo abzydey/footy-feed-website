@@ -25,6 +25,7 @@ import SocialPage from "./pages/SocialPage";
 import PodcastsPage from "./pages/PodcastsPage";
 import HighlightsPage from "./pages/HighlightsPage";
 import SearchPage from "./pages/SearchPage";
+import SigningsPage from "./pages/SigningsPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 
@@ -113,6 +114,7 @@ export default function App() {
             <Route path="/judiciary" element={<JudiciaryPage />} />
             <Route path="/injuries" element={<InjuriesPage />} />
             <Route path="/search" element={<SearchPage />} />
+          <Route path="/signings" element={<SigningsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>

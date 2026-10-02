@@ -44,6 +44,7 @@ const MORE_LINKS: NavItem[] = [
   { to: "/team-lists", label: "Team Lists" },
   { to: "/injuries", label: "Injuries" },
   { to: "/judiciary", label: "Judiciary" },
+  { to: "/signings", label: "Signings Tracker" },
   { to: "/feed/my-teams", label: "My Teams" },
   { to: "/feed/signings", label: "Signing News" },
   { to: "/feed/top", label: "Top Stories" },

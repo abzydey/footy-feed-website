@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { api, Game } from "../lib/api";
 import { needsLivePolling, usePolling } from "../lib/liveGamePolling";
@@ -9,6 +9,35 @@ import MatchHero from "./MatchHero";
 import TeamBadge from "./TeamBadge";
 
 const LIVE_POLL_MS = 20_000;
+const GF_RESULT_DAYS = 21; // how long Home leads with the Grand Final result
+
+// Next season once September arrives (the off-season moves are for it).
+function upcomingSeason(): number {
+  const now = new Date();
+  return now.getFullYear() + (now.getMonth() >= 8 ? 1 : 0);
+}
+
+// Home's lead card between seasons — no fixtures to show, so it points at
+// the off-season's main story: who's signing where.
+function OffSeasonCard() {
+  return (
+    <Link
+      to="/signings"
+      className="block rounded-[22px] border border-brand-violet/35 bg-surface px-[18px] py-5 lg:px-7 lg:py-6 hover:border-brand-violet/60 transition-colors duration-150"
+    >
+      <span className="font-display italic font-black text-[13px] lg:text-[15px] tracking-[.14em] text-brand-violet uppercase">
+        Off-season
+      </span>
+      <h2 className="font-display italic font-black text-[30px] lg:text-[40px] leading-tight text-white mt-1">
+        {upcomingSeason()} season
+      </h2>
+      <p className="text-[13.5px] lg:text-[14.5px] text-slate-400 mt-1">
+        The draw's on its way. Until then, follow every club's signings, re-signings and departures.
+      </p>
+      <span className="inline-block mt-4 text-[13px] lg:text-[14px] font-bold text-brand-violet">Signings tracker →</span>
+    </Link>
+  );
+}
 
 // Just the time (e.g. "7:50 PM") — previously derived by splitting a
 // combined weekday+time string on ", ", which silently rendered nothing
@@ -137,7 +166,18 @@ export default function NextGameCard() {
   }
 
   if (fixtures === null) return null; // still loading — no layout shift for a null result
-  if (fixtures.length === 0) return null; // no upcoming fixtures this round
+  if (fixtures.length === 0) {
+    // Off-season: the Grand Final result for a few weeks, then a card
+    // pointing at the signings tracker until next season's draw is loaded
+    // (at which point Round 1 shows up here as the next game by itself).
+    const gf = (allGames ?? [])
+      .filter((g) => g.round === "Grand Final" && g.status === "FULL_TIME")
+      .sort((a, b) => new Date(b.kickoffAt).getTime() - new Date(a.kickoffAt).getTime())[0];
+    if (gf && Date.now() - new Date(gf.kickoffAt).getTime() < GF_RESULT_DAYS * 86_400_000) {
+      return <MatchHero game={gf} linkTo={`/games/${gf.id}`} />;
+    }
+    return <OffSeasonCard />;
+  }
 
   return (
     <div className="space-y-3">

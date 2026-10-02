@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { api, RoundLineups } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
 
+const STALE_AFTER_DAYS = 3;
+
 function hasAnyStage(stages: RoundLineups["games"][number]["homeTeamLineup"]) {
   return stages.INITIAL != null || stages.TWENTY_FOUR_HOUR != null || stages.FINAL != null;
 }
@@ -22,6 +24,13 @@ export default function TeamListsCard() {
   }, [refreshTick]);
 
   if (!data || data.games.length === 0) return null;
+
+  // After the last round of the season (the Grand Final) there's no next
+  // round to point at, so the API keeps returning the finished one — hide
+  // the card a few days after every game in it is done.
+  const lastKickoff = Math.max(...data.games.map((g) => new Date(g.game.kickoffAt).getTime()));
+  const roundOver = data.games.every((g) => g.game.status === "FULL_TIME");
+  if (roundOver && Date.now() - lastKickoff > STALE_AFTER_DAYS * 86_400_000) return null;
 
   const updatedCount = data.games.filter(
     (g) => hasAnyStage(g.homeTeamLineup) || hasAnyStage(g.awayTeamLineup)

@@ -25,6 +25,29 @@ export interface TweetMedia {
   height: number | null;
 }
 
+// One move in the signings tracker (see the API's Transfer model).
+export type TransferKind = "SIGNED" | "RE_SIGNED" | "RELEASED" | "RETIRED";
+export type TransferTeam = Pick<Team, "id" | "name" | "shortName" | "slug" | "primaryColor">;
+export interface Transfer {
+  id: string;
+  player: string;
+  kind: TransferKind;
+  fromTeam: TransferTeam | null;
+  toTeam: TransferTeam | null;
+  fromLabel: string | null;
+  toLabel: string | null;
+  contractUntil: number | null;
+  announcedAt: string;
+  event: {
+    id: string;
+    headline: string;
+    sourceUrl: string | null;
+    sourceName: string | null;
+    slug: string | null;
+    isOriginalArticle: boolean;
+  } | null;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -278,6 +301,13 @@ export const api = {
   getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
+  listTransfers: (opts: { team?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (opts.team) q.set("team", opts.team);
+    if (opts.limit) q.set("limit", String(opts.limit));
+    const qs = q.toString();
+    return request<Transfer[]>(`/transfers${qs ? `?${qs}` : ""}`);
+  },
   listGames: (round?: string) => request<Game[]>(`/games${round ? `?round=${encodeURIComponent(round)}` : ""}`),
   listRounds: () => request<string[]>("/games/rounds"),
   getGame: (id: string) => request<GameDetail>(`/games/${id}`),

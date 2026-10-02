@@ -31,6 +31,13 @@ source — never fabricate names, stats, or details not present in it.
   copy (same headline/body/source, tagged to the same team(s)) so it also
   shows on the dedicated News page. Not vice versa — a plain General NRL
   News item never needs a Signings copy.
+- Every confirmed Signings item also goes into the **signings tracker**
+  (`/signings`): after publishing, run `apps/api/scripts/addTransfer.ts`
+  with one entry per player moving (a story naming five re-signings is five
+  entries), linked to the story by its exact headline. Record `until` (the
+  last season of the deal) only when the story states it — never work it
+  out from "a two-year deal" unless the start season is stated too. A
+  "set to"/"in talks" story stays news only and never goes in the tracker.
 
 ## Team tagging
 

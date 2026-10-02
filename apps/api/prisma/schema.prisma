@@ -110,6 +110,8 @@ model Team {
   tries           Try[]
   judiciaryCharges JudiciaryCharge[]
   finalsInjuries   FinalsInjuryEntry[]
+  transfersIn      Transfer[]        @relation("TransferTo")
+  transfersOut     Transfer[]        @relation("TransferFrom")
 
   @@map("teams")
 }
@@ -392,6 +394,7 @@ model Event {
   updatedAt DateTime @updatedAt
 
   notifications NotificationLog[]
+  transfers     Transfer[]
 
   // Brief pages query "events for this team/player, newest first" constantly.
   @@index([teamId, createdAt])
@@ -717,4 +720,48 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 
   @@map("app_settings")
+}
+
+// One player move, for the signings tracker (/signings): who went where,
+// and until when. A Signings news story (Event type TRANSFER) says it in
+// words; this says it as data, so each club can show its gains, losses and
+// re-signings. Only confirmed moves go in — "set to"/"in talks" stories
+// stay news only (same rule as the Signings category, CONTRIBUTING-news.md).
+//
+// SIGNED: toTeam is the new club; fromTeam the previous NRL club if any
+//   (else fromLabel, e.g. "St Helens" or "Rugby union").
+// RE_SIGNED: toTeam is the club they stayed at; no from.
+// RELEASED / RETIRED: fromTeam is the club they left; toLabel optional
+//   (e.g. "Super League" for a release to play overseas).
+model Transfer {
+  id            String       @id @default(cuid())
+  player        String
+  kind          TransferKind
+  fromTeamId    String?
+  fromTeam      Team?        @relation("TransferFrom", fields: [fromTeamId], references: [id], onDelete: SetNull)
+  toTeamId      String?
+  toTeam        Team?        @relation("TransferTo", fields: [toTeamId], references: [id], onDelete: SetNull)
+  fromLabel     String?
+  toLabel       String?
+  // Last season of the deal, e.g. 2028 for "until the end of 2028". Null
+  // when the story doesn't say.
+  contractUntil Int?
+  // The news story it came from, for the "read more" link.
+  eventId       String?
+  event         Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  announcedAt   DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([toTeamId, announcedAt])
+  @@index([fromTeamId, announcedAt])
+  @@index([announcedAt])
+  @@map("transfers")
+}
+
+enum TransferKind {
+  SIGNED
+  RE_SIGNED
+  RELEASED
+  RETIRED
 }

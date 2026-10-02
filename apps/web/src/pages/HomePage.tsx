@@ -7,6 +7,7 @@ import EventCard from "../components/EventCard";
 import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import NextGameCard from "../components/NextGameCard";
+import SigningsHomeCard from "../components/SigningsHomeCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
 import { FeedSkeleton } from "../components/ui/Skeleton";
@@ -60,6 +61,7 @@ export default function HomePage() {
         <TeamListsCard />
         {/* Finals-only — renders nothing outside the finals window. */}
         <FinalsInjuryHomeCard />
+        <SigningsHomeCard />
         <WhatsBeenSaidTeaser />
         <LatestEpisodeTeaser />
       </div>
