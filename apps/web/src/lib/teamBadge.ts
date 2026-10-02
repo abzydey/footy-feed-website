@@ -12,6 +12,7 @@ export const TEAM_ABBREVIATIONS: Record<string, string> = {
   cowboys: "NQL",
   eels: "PAR",
   panthers: "PEN",
+  "perth-bears": "PER",
   rabbitohs: "SOU",
   dragons: "STG",
   roosters: "SYD",
@@ -99,6 +100,8 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   // black field with a red/yellow/green diagonal band — the club dropped
   // teal for this scheme ahead of the 2017 season and has stayed on it
   // since, per both that image and the current official jersey listing.
+  // Black and red, per the club (confirmed directly, 2026-10-02).
+  "perth-bears": { pattern: "diagonal", secondary: "#E4002B" },
   panthers: { pattern: "diagonal-band", secondary: "#FFFFFF", band: ["#BB302F", "#E8D148", "#2C9C29"] }, // black, red/yellow/green band
   // Real jersey is horizontal red/green stripes, not a vertical halves
   // split — corrected per a direct reference to the official jersey, and
