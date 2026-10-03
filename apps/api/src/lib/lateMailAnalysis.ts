@@ -124,80 +124,124 @@ function parseStoredBody(body: string): StoredSheet | null {
 }
 
 export interface TwentyFourHourResult {
-  // null when the change is too novel to safely template (a genuine
-  // starting-side change, or a name appearing from nowhere) — see reason.
+  // null when the update can't be described safely — see reason.
   body: string | null;
   reason?: string;
 }
 
-// Auto-generates the hand-written-style 24hr prose sentence this app has
-// used all session ("Omitted from the NN — ...; X remains the one reserve
-// as the Team trim their squad ahead of Day's clash with Opponent") —
-// covering the two patterns that account for essentially every real 24hr
-// update seen this season: a plain reserve trim, and a reserve promoted
-// onto the bench (e.g. Isaah Yeo, Round 27 Panthers). Deliberately refuses
-// (returns body: null) rather than guess at anything involving an actual
-// starting-lineup change — that needs real football judgment (why: injury,
-// form, tactics) a template can't responsibly fabricate, and getting a
-// 24hr body wrong once already cost a correction this session (the
-// full-grid mistake). Those cases are left for a human/chat-triggered
-// write-up, same as a shape warning.
+// Starting positions by list order — NRL.com lists the 13 in position
+// order, and jersey numbers stay with the player when they move (a bench
+// player starting at hooker still wears 14), so the slot, not the number,
+// says which position someone is playing.
+const STARTING_POSITIONS = [
+  "fullback", "wing", "centre", "centre", "wing", "five-eighth", "halfback",
+  "prop", "hooker", "prop", "second row", "second row", "lock",
+];
+
+// "the suspended Phoenix Crossland", "Ryan Papenhuyzen (hamstring)", or just
+// the name when we have no reason on file — never a guessed one.
+function describeOut(name: string, reasons: Map<string, string>): string {
+  const reason = reasons.get(name.toLowerCase());
+  if (!reason) return name;
+  if (/^suspen/i.test(reason)) return `the suspended ${name}`;
+  return `${name} (${reason.charAt(0).toLowerCase()}${reason.slice(1)})`;
+}
+
+// Writes the 24-hour update the way they've been written all season:
+// "Omitted from the NN — ..." (drives the strikethrough on Tuesday's list),
+// what changed and why, then "X remains the one reserve as the Team trim
+// their squad ahead of Day's clash with Opponent".
+//
+// Handles every routine change — reserves trimmed, a reserve promoted onto
+// the bench, someone new in the starting 13, positional reshuffles, a
+// starter dropping to the bench, a player called in from outside the
+// original 22. When the starting side or bench changes, the full team grid
+// leads the body so the app highlights who moved. Reasons (suspended,
+// injured) come only from our own data — the `reasons` map, built from
+// Player statuses and the Finals Injury Watch — never invented; with no
+// reason on file the sentence just names who came in for whom.
+//
+// Still returns null (held back, with an admin alert) only when the lists
+// can't be compared at all: no INITIAL list on file, or one that isn't a
+// structured list.
 export function generateTwentyFourHourBody(
   side: Pick<AnalyzedSide, "starters" | "interchange" | "reserves" | "matchedTeamShortName" | "initialBody">,
   opponentShortName: string,
-  kickoffAt: Date
+  kickoffAt: Date,
+  reasons: Map<string, string> = new Map()
 ): TwentyFourHourResult {
   if (!side.initialBody) return { body: null, reason: "no INITIAL list on file to diff against" };
   const initial = parseStoredBody(side.initialBody);
   if (!initial) return { body: null, reason: "INITIAL body isn't a structured list" };
 
   const lower = (s: string) => s.toLowerCase();
-  const currentStarterNames = side.starters.map((p) => p.name);
+  const initialStarterIdx = new Map(initial.starters.map((n, i) => [lower(n), i]));
+  const initialBench = new Set(initial.interchange.map(lower));
+  const initialReserves = new Set(initial.reserves.map(lower));
+  const inInitial = (n: string) => initialStarterIdx.has(lower(n)) || initialBench.has(lower(n)) || initialReserves.has(lower(n));
 
-  for (let i = 0; i < Math.max(initial.starters.length, currentStarterNames.length); i++) {
-    const fromName = initial.starters[i];
-    const toName = currentStarterNames[i];
-    if (!toName) continue;
-    if (!fromName || lower(fromName) !== lower(toName)) {
-      return { body: null, reason: `starting side changed (slot ${i + 1}: ${fromName ?? "—"} -> ${toName})` };
+  const currentStarterIdx = new Map(side.starters.map((p, i) => [lower(p.name), i]));
+  const currentBench = new Set(side.interchange.map((p) => lower(p.name)));
+  const currentNames = new Set([...side.starters, ...side.interchange, ...side.reserves].map((p) => lower(p.name)));
+
+  const sentences: string[] = [];
+  let lineupChanged = false;
+
+  // Starting 13, slot by slot.
+  side.starters.forEach((p, i) => {
+    const before = initial.starters[i];
+    if (before && lower(before) === lower(p.name)) return;
+    lineupChanged = true;
+    const position = STARTING_POSITIONS[i] ?? "in the starting side";
+    const at = STARTING_POSITIONS[i] ? `at ${position}` : position;
+
+    if (initialStarterIdx.has(lower(p.name))) {
+      sentences.push(`${p.name} moves to ${position}.`);
+      return;
+    }
+    let sentence = `${p.name} ${inInitial(p.name) ? "starts" : "is called into the side and starts"} ${at}`;
+    if (before && !currentStarterIdx.has(lower(before))) {
+      if (!currentNames.has(lower(before))) sentence += ` in place of ${describeOut(before, reasons)}`;
+      else if (currentBench.has(lower(before))) sentence += `, with ${before} dropping to the bench`;
+      else sentence += `, with ${before} dropping to the reserves`;
+    }
+    sentences.push(`${sentence}.`);
+  });
+
+  // Bench arrivals not already explained above (a starter dropping to the
+  // bench is covered by its own sentence).
+  for (const p of side.interchange) {
+    const n = lower(p.name);
+    if (initialBench.has(n) || initialStarterIdx.has(n)) continue;
+    if (initialReserves.has(n)) {
+      // Routine — the usual prose-only update, no grid needed.
+      sentences.push(`${p.name} is promoted from the reserves onto the bench.`);
+    } else {
+      lineupChanged = true;
+      sentences.push(`${p.name} is called into the squad on the bench.`);
     }
   }
 
-  const initialInterchangeSet = new Set(initial.interchange.map(lower));
-  const initialReserveSet = new Set(initial.reserves.map(lower));
-  const currentInterchangeNames = side.interchange.map((p) => p.name);
-  const newBenchNames = currentInterchangeNames.filter((n) => !initialInterchangeSet.has(lower(n)));
-  const promotions = newBenchNames.filter((n) => initialReserveSet.has(lower(n)));
-  const unexplainedBenchJoins = newBenchNames.filter((n) => !initialReserveSet.has(lower(n)));
-  if (unexplainedBenchJoins.length > 0) {
-    return { body: null, reason: `unexpected bench addition (${unexplainedBenchJoins.join(", ")})` };
-  }
-
-  const combinedSheet = { starters: side.starters, interchange: side.interchange, reserves: side.reserves };
-  const omitted = computeOmitted(combinedSheet as ParsedTeamSheet, side.initialBody);
+  const omitted = computeOmitted({ starters: side.starters, interchange: side.interchange, reserves: side.reserves } as ParsedTeamSheet, side.initialBody);
 
   const dayLabel = kickoffAt.toLocaleDateString("en-AU", { weekday: "long", timeZone: "Australia/Sydney" });
-  const team = side.matchedTeamShortName;
-  const trimClause = `as the ${team} trim their squad ahead of ${dayLabel}'s clash with the ${opponentShortName}`;
+  const trimClause = `as the ${side.matchedTeamShortName} trim their squad ahead of ${dayLabel}'s clash with the ${opponentShortName}`;
+  const remaining = side.reserves.map((p) => p.name);
+  let reserveSentence: string;
+  if (remaining.length === 0) reserveSentence = `No reserves remain ${trimClause}.`;
+  else if (remaining.length === 1) reserveSentence = `${remaining[0]} remains the one reserve ${trimClause}.`;
+  else reserveSentence = `${remaining.join(" and ")} remain the ${remaining.length === 2 ? "two" : remaining.length} reserves ${trimClause}.`;
 
   const parts: string[] = [];
-  if (omitted.names.length > 0) {
-    parts.push(`Omitted from the ${omitted.initialSquadSize} — ${omitted.names.join(", ")}.`);
+  // A starting-side change (or a call-up from outside the 22) gets the full
+  // grid first, so the app can highlight who moved.
+  if (lineupChanged) {
+    let grid = `${playersToText(side.starters)}. Bench: ${playersToText(side.interchange)}.`;
+    if (side.reserves.length > 0) grid += ` Reserves: ${playersToText(side.reserves)}.`;
+    parts.push(grid);
   }
-  for (const name of promotions) {
-    parts.push(`${name} is promoted from the reserves onto the bench.`);
-  }
-
-  const remaining = side.reserves.map((p) => p.name);
-  if (remaining.length === 0) {
-    parts.push(`No reserves remain ${trimClause}.`);
-  } else if (remaining.length === 1) {
-    parts.push(`${remaining[0]} remains the one reserve ${trimClause}.`);
-  } else {
-    const countWord = remaining.length === 2 ? "two" : String(remaining.length);
-    parts.push(`${remaining.join(" and ")} remain the ${countWord} reserves ${trimClause}.`);
-  }
-
+  if (omitted.names.length > 0) parts.push(`Omitted from the ${omitted.initialSquadSize} — ${omitted.names.join(", ")}.`);
+  parts.push(...sentences, reserveSentence);
   return { body: parts.join(" ") };
 }
 

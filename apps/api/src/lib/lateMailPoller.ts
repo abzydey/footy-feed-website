@@ -14,10 +14,9 @@ import { sendAdminAlert } from "./adminAlert";
 // updates i want automatic") once generateTwentyFourHourBody (see
 // lateMailAnalysis.ts) could template the common cases (a plain reserve
 // trim, a reserve promoted onto the bench) that account for nearly every
-// real 24hr update seen this season. It still refuses to guess at a genuine
-// starting-lineup change — that needs real football judgment a template
-// can't fabricate — and falls back to being flagged for manual/chat
-// write-up, same treatment as a shape warning.
+// real 24hr update seen this season — and, since 2026-10-03, starting-side
+// changes too (they happen most weeks). Anything it still can't publish is
+// held back with an admin push alert (holdBack below), never silently.
 // Widened from 20 to 60min (2026-09-18): this generic sweep is only a
 // safety net for INITIAL (no per-game anchor) and for anything that slips
 // past its own precise scheduled check below — the exact-timing case is
@@ -50,10 +49,45 @@ const CHECK_BUFFER_MS = 5 * 60 * 1000;
 // previously-broken one clears).
 const lastWarningSignature = new Map<string, string>();
 
-function logIfChanged(key: string, signature: string, message: string): void {
-  if (lastWarningSignature.get(key) === signature) return;
+function logIfChanged(key: string, signature: string, message: string): boolean {
+  if (lastWarningSignature.get(key) === signature) return false;
   lastWarningSignature.set(key, signature);
   if (message) console.log(message);
+  return !!message;
+}
+
+// A team list the poller found but won't publish on its own. Logged, and
+// pushed to the admin alert devices the first time each distinct problem
+// appears — a held-back Knights 24hr update once sat unnoticed in the logs
+// until someone asked why it hadn't appeared.
+function holdBack(key: string, signature: string, team: string | null, stage: string, problem: string): void {
+  const message = `[lateMailPoller] ${team} ${stage} not auto-published: ${problem}`;
+  if (logIfChanged(key, signature, message)) {
+    sendAdminAlert(`⚠️ ${team} ${stage} team list needs you`, `Found on NRL.com but not published automatically: ${problem}`).catch(() => {});
+  }
+}
+
+// Why a player is out, from our own records only — Finals Injury Watch
+// first (most current during finals), then the player's status. Used to
+// say "the suspended X" / "X (hamstring)" in a 24hr update; a player with
+// nothing on file is simply named, never given a guessed reason.
+async function outReasons(teamId: string): Promise<Map<string, string>> {
+  const reasons = new Map<string, string>();
+  const players = await prisma.player.findMany({
+    where: { teamId, currentStatus: { in: ["OUT", "INJURED", "SUSPENDED"] } },
+    select: { name: true, currentStatus: true, currentStatusNote: true },
+  });
+  for (const p of players) {
+    const note = p.currentStatusNote?.split(/s[(—-]/)[0]?.trim();
+    const reason = p.currentStatus === "SUSPENDED" ? "Suspension" : note || null;
+    if (reason) reasons.set(p.name.toLowerCase(), reason);
+  }
+  const fiw = await prisma.finalsInjuryEntry.findMany({ where: { teamId, status: "OUT" }, select: { player: true, injury: true } });
+  for (const e of fiw) {
+    const reason = e.injury.split(/s[(—-]/)[0]?.trim();
+    if (reason) reasons.set(e.player.toLowerCase(), reason);
+  }
+  return reasons;
 }
 
 // Error-level twin of logIfChanged, for the "poller is silently doing
@@ -104,11 +138,7 @@ async function publishInitialOrFinal(side: AnalyzedSide, round: string, stage: "
   const key = `${side.matchedGameId}|${side.matchedTeamId}|${stage}`;
 
   if (side.shapeWarnings.length > 0) {
-    logIfChanged(
-      key,
-      side.shapeWarnings.join("; "),
-      `[lateMailPoller] ${side.matchedTeamShortName} ${stage} needs review, not auto-publishing: ${side.shapeWarnings.join(", ")}`
-    );
+    holdBack(key, side.shapeWarnings.join("; "), side.matchedTeamShortName, stage, side.shapeWarnings.join(", "));
     return;
   }
   logIfChanged(key, "clean", ""); // clears any prior warning signature silently once the shape is fixed
@@ -119,21 +149,14 @@ async function publishTwentyFourHour(side: AnalyzedSide, opponentShortName: stri
   const key = `${side.matchedGameId}|${side.matchedTeamId}|TWENTY_FOUR_HOUR`;
 
   if (side.shapeWarnings.length > 0) {
-    logIfChanged(
-      key,
-      side.shapeWarnings.join("; "),
-      `[lateMailPoller] ${side.matchedTeamShortName} 24hr needs review, not auto-publishing: ${side.shapeWarnings.join(", ")}`
-    );
+    holdBack(key, side.shapeWarnings.join("; "), side.matchedTeamShortName, "24hr", side.shapeWarnings.join(", "));
     return;
   }
 
-  const result = generateTwentyFourHourBody(side, opponentShortName, kickoffAt);
+  const reasons = side.matchedTeamId ? await outReasons(side.matchedTeamId) : new Map<string, string>();
+  const result = generateTwentyFourHourBody(side, opponentShortName, kickoffAt, reasons);
   if (!result.body) {
-    logIfChanged(
-      key,
-      `needs-writeup:${result.reason}`,
-      `[lateMailPoller] ${side.matchedTeamShortName} 24hr needs a hand-written update, not auto-publishing: ${result.reason}`
-    );
+    holdBack(key, `needs-writeup:${result.reason}`, side.matchedTeamShortName, "24hr", result.reason ?? "unknown");
     return;
   }
   logIfChanged(key, "clean", "");
