@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api, LadderRow } from "../lib/api";
 import TeamBadge from "../components/TeamBadge";
+import { IN_SEASON } from "../lib/season";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // Must match exactly between the column header and every row — see the
@@ -37,7 +38,9 @@ export default function LadderPage() {
     <div>
       <div className="bg-gradient-to-b from-[#141B33] to-app px-5 pt-4 pb-3.5">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <h1 className="font-display italic font-black text-[28px] tracking-[.01em] text-white uppercase">LADDER</h1>
+          <h1 className="font-display italic font-black text-[28px] tracking-[.01em] text-white uppercase">
+            {IN_SEASON ? "Ladder" : "Final ladder"}
+          </h1>
           <span className="flex items-center gap-1.5 bg-white/[.06] border border-white/[.12] rounded-full px-3 py-1.5 text-[11.5px] font-bold text-white/72">
             {new Date().getFullYear()} NRL Premiership
           </span>

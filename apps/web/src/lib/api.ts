@@ -48,6 +48,25 @@ export interface Transfer {
   } | null;
 }
 
+// A men's Rugby League World Cup game (the API's WorldCupMatch).
+export interface WorldCupMatch {
+  id: string;
+  roundName: string;
+  pool: "A" | "B" | null;
+  kickoffAt: string;
+  venue: string;
+  city: string;
+  homeName: string;
+  homeAbbr: string;
+  awayName: string;
+  awayAbbr: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: "SCHEDULED" | "LIVE" | "FULL_TIME";
+  matchCentreUrl: string | null;
+  ticketUrl: string | null;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -71,6 +90,8 @@ export interface EventItem {
   // SOCIAL_POST only — the tweet's photos/videos (see the API's
   // lib/tweetMedia.ts). Absent/null when the post has none.
   media?: TweetMedia[] | null;
+  // A Rugby League World Cup story (also on /world-cup).
+  worldCup?: boolean;
   createdAt: string;
   // A Full Set-authored article — renders at /news/:slug inside the app
   // instead of linking out via sourceUrl (see schema.prisma design note).
@@ -301,6 +322,7 @@ export const api = {
   getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
+  listWorldCupMatches: () => request<WorldCupMatch[]>("/world-cup/matches"),
   listTransfers: (opts: { team?: string; limit?: number } = {}) => {
     const q = new URLSearchParams();
     if (opts.team) q.set("team", opts.team);

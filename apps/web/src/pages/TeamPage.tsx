@@ -9,6 +9,7 @@ import EventCard from "../components/EventCard";
 import FollowButton from "../components/FollowButton";
 import TeamBadge from "../components/TeamBadge";
 import TeamListCard from "../components/TeamListCard";
+import TeamMovesCard from "../components/TeamMovesCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
@@ -360,6 +361,9 @@ export default function TeamPage() {
 
         {teamTab === "Overview" && (
           <>
+            {/* No games left this season: lead with the club's off-season
+                moves instead (the team list section below hides itself). */}
+            {!nextFixture && <TeamMovesCard teamId={team.id} teamSlug={team.slug} teamName={team.shortName} />}
             {/* A team with no next fixture at all is eliminated — season
                 over for them. Per direct request, that case drops the team
                 list section entirely (no banner, no heading, no stale

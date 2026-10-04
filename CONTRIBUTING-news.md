@@ -39,6 +39,15 @@ source — never fabricate names, stats, or details not present in it.
   out from "a two-year deal" unless the start season is stated too. A
   "set to"/"in talks" story stays news only and never goes in the tracker.
 
+## World Cup stories
+
+A story about the Rugby League World Cup (squads, selections, eligibility,
+injuries ruling a player out of the tournament, fixtures, results) gets
+`"worldCup": true` in the `addNews.ts` input, as well as its usual club tag(s).
+It then also shows on `/world-cup` and under the News page's World Cup
+filter. A story that only mentions the World Cup in passing (e.g. a contract
+decision "after the World Cup") doesn't get the tag.
+
 ## Team tagging
 
 Tag every team genuinely relevant to the story. A player leaving one club

@@ -353,6 +353,9 @@ model Event {
   // (notify.ts never branches on this), etc. — only EventCard's "Read
   // more" link and the article page itself care about it.
   isOriginalArticle Boolean @default(false)
+  // A Rugby League World Cup story — shown on /world-cup and under the
+  // News page's World Cup filter, alongside its normal club tag(s).
+  worldCup          Boolean @default(false)
   // Required (and unique) when isOriginalArticle is true; null otherwise.
   // URL-safe, derived from the headline at creation time — see
   // slugify() in lib/slugify.ts, shared by the admin form and this route
@@ -764,4 +767,31 @@ enum TransferKind {
   RE_SIGNED
   RELEASED
   RETIRED
+}
+
+// Men's Rugby League World Cup fixtures and results, synced from the
+// official draw (rlwc2026.com — see lib/worldCupPoller.ts). Its own table,
+// not Game: the teams are nations, not clubs, and must stay out of Teams,
+// the ladder, follows and everything else keyed on Team.
+model WorldCupMatch {
+  id             String   @id // the official gameId, e.g. "20261310110"
+  roundName      String // "Round 1" … "Semi Final", "Final"
+  pool           String? // "A" / "B" for pool games
+  kickoffAt      DateTime
+  venue          String
+  city           String
+  homeName       String // "TBA" until the knockout teams are known
+  homeAbbr       String
+  awayName       String
+  awayAbbr       String
+  homeScore      Int?
+  awayScore      Int?
+  status         GameStatus @default(SCHEDULED)
+  matchCentreUrl String?
+  ticketUrl      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([kickoffAt])
+  @@map("world_cup_matches")
 }

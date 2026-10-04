@@ -26,6 +26,7 @@ import PodcastsPage from "./pages/PodcastsPage";
 import HighlightsPage from "./pages/HighlightsPage";
 import SearchPage from "./pages/SearchPage";
 import SigningsPage from "./pages/SigningsPage";
+import WorldCupPage from "./pages/WorldCupPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/injuries" element={<InjuriesPage />} />
             <Route path="/search" element={<SearchPage />} />
           <Route path="/signings" element={<SigningsPage />} />
+          <Route path="/world-cup" element={<WorldCupPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>

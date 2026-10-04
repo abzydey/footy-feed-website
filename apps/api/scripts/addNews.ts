@@ -42,6 +42,9 @@ interface NewsInput {
   // rendered at /news/:slug, and `link`/`source`/`author` are normally
   // omitted — there's no external outlet to credit, this IS the source.
   articleBody?: string;
+  // A Rugby League World Cup story — also shows on /world-cup and under
+  // the News page's World Cup filter.
+  worldCup?: boolean;
 }
 
 // Same collision-suffix approach as adminPlayers.ts's player-slug loop and
@@ -101,6 +104,7 @@ async function main() {
       sourceAuthor: input.author || undefined,
       sourceUrl: input.link || undefined,
       isOriginalArticle,
+      worldCup: Boolean(input.worldCup),
       slug,
       articleBody: input.articleBody || undefined,
       createdBy: "claude-chat-import",

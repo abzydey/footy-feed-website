@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { api, EventItem, Team } from "../lib/api";
 import { GENERAL_NEWS_TARGET_ID } from "../lib/constants";
@@ -15,6 +16,10 @@ import { useRefreshTick } from "../lib/refresh";
 // text/headline match. A GENERAL_NEWS story can carry a real teamId (see
 // schema.prisma design notes — a signing tagged to two clubs is two Event
 // rows, each with its own teamId), so this is a precise filter, not a guess.
+// Not a team — the World Cup chip, which filters on the story's World Cup
+// tag instead (and can be opened directly as /news?filter=world-cup).
+const WORLD_CUP = "__world-cup";
+
 function TeamChips({
   teams,
   selectedId,
@@ -26,7 +31,7 @@ function TeamChips({
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-      {[{ id: null, shortName: "All" }, ...teams].map((t) => {
+      {[{ id: null, shortName: "All" }, { id: WORLD_CUP, shortName: "🌏 World Cup" }, ...teams].map((t) => {
         const active = selectedId === t.id;
         return (
           <button
@@ -59,7 +64,8 @@ function TeamChips({
 export default function GeneralNewsPage() {
   const [items, setItems] = useState<EventItem[] | null>(() => readCachedFeed()?.filter((e) => e.type === "GENERAL_NEWS") ?? null);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [params] = useSearchParams();
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(params.get("filter") === "world-cup" ? WORLD_CUP : null);
   const [error, setError] = useState<string | null>(null);
 
   useDocumentMeta({
@@ -88,7 +94,12 @@ export default function GeneralNewsPage() {
   // FeedPage/HomePage do, or a multi-team story shows once per team back to
   // back.
   const filtered = useMemo(
-    () => (selectedTeamId ? items?.filter((i) => i.team?.id === selectedTeamId) : items && dedupeStories(items)),
+    () =>
+      selectedTeamId === WORLD_CUP
+        ? items && dedupeStories(items.filter((i) => i.worldCup))
+        : selectedTeamId
+          ? items?.filter((i) => i.team?.id === selectedTeamId)
+          : items && dedupeStories(items),
     [items, selectedTeamId]
   );
 
@@ -124,7 +135,7 @@ export default function GeneralNewsPage() {
         {!items && !error && <FeedSkeleton count={4} />}
         {filtered && filtered.length === 0 && (
           <p className="text-slate-500 text-sm">
-            {selectedTeamId ? "No news for this team yet." : "No news yet."}
+            {selectedTeamId === WORLD_CUP ? "No World Cup news yet." : selectedTeamId ? "No news for this team yet." : "No news yet."}
           </p>
         )}
         <div>

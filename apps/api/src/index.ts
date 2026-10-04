@@ -35,12 +35,14 @@ import sitemapRouter from "./routes/sitemap";
 import injuriesRouter from "./routes/injuries";
 import articlesRouter from "./routes/articles";
 import transfersRouter from "./routes/transfers";
+import worldCupRouter from "./routes/worldCup";
 import adminAlertsRouter from "./routes/adminAlerts";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
 import { startEpisodeAutoPolling } from "./lib/episodeAutoPoller";
 import { startLateMailPolling } from "./lib/lateMailPoller";
+import { startWorldCupPolling } from "./lib/worldCupPoller";
 
 const app = express();
 
@@ -93,6 +95,7 @@ app.use("/api/finals-injuries", finalsInjuriesRouter);
 app.use("/api/injuries", injuriesRouter);
 app.use("/api/articles", articlesRouter);
 app.use("/api/transfers", transfersRouter);
+app.use("/api/world-cup", worldCupRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)
 app.use("/api/admin/auth", adminAuthRouter);
@@ -120,4 +123,5 @@ app.listen(port, () => {
   startLiveScorePolling();
   startEpisodeAutoPolling();
   startLateMailPolling();
+  startWorldCupPolling();
 });

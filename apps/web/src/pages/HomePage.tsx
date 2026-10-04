@@ -8,6 +8,7 @@ import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import NextGameCard from "../components/NextGameCard";
 import SigningsHomeCard from "../components/SigningsHomeCard";
+import WorldCupHomeCard from "../components/WorldCupHomeCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
 import { FeedSkeleton } from "../components/ui/Skeleton";
@@ -53,8 +54,10 @@ export default function HomePage() {
   // only, so nothing renders (or fetches) twice.
   return (
     <div className="max-w-3xl lg:max-w-6xl mx-auto p-4 lg:px-5 lg:pt-7 space-y-5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
-      <div className="lg:col-span-2 lg:row-start-1">
+      <div className="lg:col-span-2 lg:row-start-1 space-y-5">
         <NextGameCard />
+        {/* Only while the World Cup is on — renders nothing otherwise. */}
+        <WorldCupHomeCard />
       </div>
 
       <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-2">

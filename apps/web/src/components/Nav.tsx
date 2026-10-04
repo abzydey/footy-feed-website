@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import BrandLogo from "./BrandLogo";
 import { FooterContent } from "./Footer";
 import { isNativeApp, tapHaptic } from "../lib/platform";
+import { FINALS_IN_MENU, IN_SEASON } from "../lib/season";
 
 // Navigation, two layouts from one list of pages:
 // - Phones/tablets (below lg): a slim top bar (logo, search) plus a bottom
@@ -17,11 +18,6 @@ import { isNativeApp, tapHaptic } from "../lib/platform";
 
 type NavItem = { to: string; label: string; end?: boolean };
 
-// Flip to true when next season's finals start: puts Finals back in the
-// tab bar and menu bar (in place of Signings). The /finals page itself
-// always works by direct link.
-const FINALS_IN_MENU = false;
-
 // Bottom tabs on phones.
 const TABS: (NavItem & { icon: () => JSX.Element })[] = [
   { to: "/", label: "Home", end: true, icon: HomeIcon },
@@ -34,21 +30,33 @@ const TABS: (NavItem & { icon: () => JSX.Element })[] = [
   { to: "/teams", label: "Teams", icon: ShieldIcon },
 ];
 
-// Shown inline in the computer menu bar, before "More".
-const DESKTOP_LINKS: NavItem[] = [
-  { to: "/", label: "Home", end: true },
-  FINALS_IN_MENU ? { to: "/finals", label: "Finals" } : { to: "/signings", label: "Signings" },
-  { to: "/news", label: "News" },
-  { to: "/teams", label: "Teams" },
-  { to: "/games", label: "Games" },
-  { to: "/team-lists", label: "Team Lists" },
-  { to: "/injuries", label: "Injuries" },
-];
+// Shown inline in the computer menu bar, before "More". In season the bar carries the weekly pages (Games, Team Lists, Injuries);
+// in the off-season those have nothing new, so they move into More and the
+// bar gets what people follow over summer.
+const DESKTOP_LINKS: NavItem[] = IN_SEASON
+  ? [
+      { to: "/", label: "Home", end: true },
+      FINALS_IN_MENU ? { to: "/finals", label: "Finals" } : { to: "/ladder", label: "Ladder" },
+      { to: "/news", label: "News" },
+      { to: "/teams", label: "Teams" },
+      { to: "/games", label: "Games" },
+      { to: "/team-lists", label: "Team Lists" },
+      { to: "/injuries", label: "Injuries" },
+    ]
+  : [
+      { to: "/", label: "Home", end: true },
+      { to: "/signings", label: "Signings" },
+      { to: "/world-cup", label: "World Cup" },
+      { to: "/news", label: "News" },
+      { to: "/teams", label: "Teams" },
+      { to: "/ladder", label: "Ladder" },
+    ];
 
 // Everything else. The phone More sheet lists all of these; the computer
 // dropdown skips the ones already in its menu bar. My Teams / Signing News /
 // Top Stories used to be the pills on Home — this is their home now.
 const MORE_LINKS: NavItem[] = [
+  { to: "/world-cup", label: "World Cup" },
   { to: "/games", label: "Games" },
   { to: "/team-lists", label: "Team Lists" },
   { to: "/injuries", label: "Injuries" },
