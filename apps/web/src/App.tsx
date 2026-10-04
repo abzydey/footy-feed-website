@@ -27,6 +27,7 @@ import HighlightsPage from "./pages/HighlightsPage";
 import SearchPage from "./pages/SearchPage";
 import SigningsPage from "./pages/SigningsPage";
 import WorldCupPage from "./pages/WorldCupPage";
+import WorldCupMatchPage from "./pages/WorldCupMatchPage";
 import AboutPage from "./pages/AboutPage";
 import AdminPage from "./pages/AdminPage";
 
@@ -117,6 +118,7 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
           <Route path="/signings" element={<SigningsPage />} />
           <Route path="/world-cup" element={<WorldCupPage />} />
+          <Route path="/world-cup/:id" element={<WorldCupMatchPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>

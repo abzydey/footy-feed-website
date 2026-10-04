@@ -15,7 +15,7 @@ function playersToText(players: ParsedPlayer[]): string {
   return players.map((p) => `${p.number}. ${p.name}`).join(", ");
 }
 
-function buildBody(sheet: ParsedTeamSheet, omitted: { names: string[]; initialSquadSize: number }): string {
+export function buildBody(sheet: ParsedTeamSheet, omitted: { names: string[]; initialSquadSize: number }): string {
   let body = `${playersToText(sheet.starters)}. Bench: ${playersToText(sheet.interchange)}.`;
   if (sheet.reserves.length > 0) body += ` Reserves: ${playersToText(sheet.reserves)}.`;
   if (omitted.names.length > 0) {

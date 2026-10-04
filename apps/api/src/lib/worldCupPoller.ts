@@ -2,6 +2,7 @@ import { GameStatus } from "@prisma/client";
 
 import { prisma } from "./prisma";
 import { sendAdminAlert } from "./adminAlert";
+import { syncWorldCupTeamLists } from "./worldCupTeamLists";
 
 // Keeps the men's Rugby League World Cup fixtures and results in sync with
 // the official draw page. That page (a Next.js site) embeds every game —
@@ -18,8 +19,10 @@ const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129 Safari/537.36";
 
 const IDLE_INTERVAL_MS = 6 * 60 * 60 * 1000; // nothing on: four times a day
-const LIVE_INTERVAL_MS = 5 * 60 * 1000; // a game in its window: every 5 minutes
-const WINDOW_BEFORE_MS = 15 * 60 * 1000;
+const LIVE_INTERVAL_MS = 5 * 60 * 1000; // around a game: every 5 minutes
+const HOURLY_MS = 60 * 60 * 1000; // a week with games: team lists
+const FINAL_LIST_WINDOW_MS = 3.5 * 60 * 60 * 1000; // final lists, then kickoff
+const GAME_WEEK_MS = 8 * 86_400_000;
 const WINDOW_AFTER_MS = 3 * 60 * 60 * 1000;
 
 interface DrawTeam {
@@ -117,6 +120,7 @@ export async function syncWorldCup(): Promise<void> {
     return;
   }
 
+  const existing = new Map((await prisma.worldCupMatch.findMany()).map((m) => [m.id, m]));
   for (const g of games) {
     const home = g.teams.find((t) => t.isHomeTeam) ?? g.teams[0];
     const away = g.teams.find((t) => !t.isHomeTeam) ?? g.teams[1];
@@ -142,38 +146,42 @@ export async function syncWorldCup(): Promise<void> {
       matchCentreUrl: g.matchCentreUrl ? `${SITE}${g.matchCentreUrl}` : null,
       ticketUrl: g.ticketUrl,
     };
+    const prev = existing.get(g.gameId);
+    const same =
+      prev &&
+      (Object.keys(data) as (keyof typeof data)[]).every((k) =>
+        data[k] instanceof Date ? (prev[k] as Date).getTime() === (data[k] as Date).getTime() : prev[k] === data[k]
+      );
+    if (same) continue; // unchanged — no write
     await prisma.worldCupMatch.upsert({ where: { id: g.gameId }, create: { id: g.gameId, ...data }, update: data });
   }
   problem(""); // healthy again
 }
 
-async function inGameWindow(): Promise<boolean> {
+// How soon to check again: every 5 minutes from 3½ hours before a kickoff
+// until 3 hours after it (final team lists, then live scores), hourly in a
+// week with games (initial and 24-hour team lists), otherwise a few times
+// a day — and never later than the start of the next game week.
+async function nextCheckInMs(): Promise<number> {
   const now = Date.now();
-  const n = await prisma.worldCupMatch.count({
-    where: {
-      status: { not: "FULL_TIME" },
-      kickoffAt: { gte: new Date(now - WINDOW_AFTER_MS), lte: new Date(now + WINDOW_BEFORE_MS) },
-    },
+  const pending = await prisma.worldCupMatch.findMany({
+    where: { status: { not: "FULL_TIME" }, kickoffAt: { gte: new Date(now - WINDOW_AFTER_MS) } },
+    orderBy: { kickoffAt: "asc" },
+    select: { kickoffAt: true },
   });
-  return n > 0;
+  if (pending.length === 0) return IDLE_INTERVAL_MS;
+  const until = pending[0].kickoffAt.getTime() - now;
+  if (until <= FINAL_LIST_WINDOW_MS) return LIVE_INTERVAL_MS;
+  if (until <= GAME_WEEK_MS) return Math.min(HOURLY_MS, until - FINAL_LIST_WINDOW_MS);
+  return Math.min(IDLE_INTERVAL_MS, until - GAME_WEEK_MS);
 }
 
-// Self-scheduling: every 5 minutes while a game is on (for live scores),
-// otherwise a few times a day for draw changes and knockout teams.
 export function startWorldCupPolling(): void {
   const tick = async () => {
     await syncWorldCup().catch((err) => problem(`Sync failed: ${(err as Error).message}`));
-    const live = await inGameWindow().catch(() => false);
-    setTimeout(tick, live ? LIVE_INTERVAL_MS : Math.min(IDLE_INTERVAL_MS, await msUntilNextWindow()));
+    await syncWorldCupTeamLists().catch((err) => console.error("[worldCupTeamLists] sync failed:", err));
+    const wait = await nextCheckInMs().catch(() => HOURLY_MS);
+    setTimeout(tick, Math.max(60_000, wait));
   };
   tick();
-}
-
-// So the first live check lands at kickoff rather than up to 6 hours late.
-async function msUntilNextWindow(): Promise<number> {
-  const next = await prisma.worldCupMatch
-    .findFirst({ where: { status: "SCHEDULED", kickoffAt: { gt: new Date() } }, orderBy: { kickoffAt: "asc" } })
-    .catch(() => null);
-  if (!next) return IDLE_INTERVAL_MS;
-  return Math.max(60_000, next.kickoffAt.getTime() - WINDOW_BEFORE_MS - Date.now());
 }

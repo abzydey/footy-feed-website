@@ -74,14 +74,21 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, compact = false }: EventCardProps) {
-  const gameLink = event.game && (
+  const gameLink = event.game ? (
     <Link
       to={`/games/${event.game.id}`}
       className="text-xs text-slate-500 hover:text-white transition-colors duration-150 block mt-1"
     >
       Re: {event.game.homeTeam.shortName} vs {event.game.awayTeam.shortName} · {event.game.round}
     </Link>
-  );
+  ) : event.worldCupMatchId ? (
+    <Link
+      to={`/world-cup/${event.worldCupMatchId}`}
+      className="text-xs text-slate-500 hover:text-white transition-colors duration-150 block mt-1"
+    >
+      World Cup · see both team lists →
+    </Link>
+  ) : null;
 
   // Tweet-style card — same data, different shape, so a mixed feed visually
   // reads as "news" vs. "social chatter" the way a team news app does. Our

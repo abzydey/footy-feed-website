@@ -92,6 +92,8 @@ export interface EventItem {
   media?: TweetMedia[] | null;
   // A Rugby League World Cup story (also on /world-cup).
   worldCup?: boolean;
+  // A World Cup team list's game (see /world-cup/:id).
+  worldCupMatchId?: string | null;
   createdAt: string;
   // A Full Set-authored article — renders at /news/:slug inside the app
   // instead of linking out via sourceUrl (see schema.prisma design note).
@@ -323,6 +325,8 @@ export const api = {
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
   listWorldCupMatches: () => request<WorldCupMatch[]>("/world-cup/matches"),
+  getWorldCupMatch: (id: string) =>
+    request<{ match: WorldCupMatch; home: TeamListStages; away: TeamListStages }>(`/world-cup/matches/${id}`),
   listTransfers: (opts: { team?: string; limit?: number } = {}) => {
     const q = new URLSearchParams();
     if (opts.team) q.set("team", opts.team);

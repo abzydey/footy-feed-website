@@ -78,13 +78,10 @@ function MatchRow({ m }: { m: WorldCupMatch }) {
       </div>
     </>
   );
-  const cls = "block py-3 border-t border-white/[.05] first:border-t-0";
-  return m.matchCentreUrl ? (
-    <a href={m.matchCentreUrl} target="_blank" rel="noreferrer" className={`${cls} hover:opacity-80`}>
+  return (
+    <Link to={`/world-cup/${m.id}`} className="block py-3 border-t border-white/[.05] first:border-t-0 hover:opacity-80">
       {inner}
-    </a>
-  ) : (
-    <div className={cls}>{inner}</div>
+    </Link>
   );
 }
 
@@ -125,16 +122,12 @@ export default function WorldCupPage() {
       {!matches && !error && <FeedSkeleton count={3} />}
 
       {featured && (
-        <WorldCupMatchCard
-          match={featured}
-          footer={
-            featured.matchCentreUrl ? (
-              <a href={featured.matchCentreUrl} target="_blank" rel="noreferrer" className="shrink-0 text-[12.5px] lg:text-[14px] font-bold text-brand-violet">
-                Match centre →
-              </a>
-            ) : null
-          }
-        />
+        <Link to={`/world-cup/${featured.id}`} className="block hover:opacity-95">
+          <WorldCupMatchCard
+            match={featured}
+            footer={<span className="shrink-0 text-[12.5px] lg:text-[14px] font-bold text-brand-violet">Team lists →</span>}
+          />
+        </Link>
       )}
 
       {matches && matches.length > 0 && (

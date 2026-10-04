@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { EventItem, Team, TeamListStages } from "../lib/api";
@@ -147,13 +148,13 @@ function StageRow({
 }: {
   stage: TeamListStage;
   event: EventItem | null;
-  kickoffAt: string;
+  kickoffAt: string | null; // null = no expected times (World Cup — release times unknown)
   omittedNames: Set<string>;
   changedNames: Set<string>;
 }) {
   if (!event) {
     const expectedFn = EXPECTED_AT[stage];
-    const expectedAt = expectedFn ? new Date(expectedFn(new Date(kickoffAt).getTime())).toISOString() : null;
+    const expectedAt = expectedFn && kickoffAt ? new Date(expectedFn(new Date(kickoffAt).getTime())).toISOString() : null;
     return (
       <div className="rounded-lg border border-dashed border-white/15 px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
@@ -269,7 +270,19 @@ function TeamListBody({
  * (see PLACEHOLDER_OFFSET_MS) until the admin logs it. Applies to every game
  * automatically — nothing to configure per fixture.
  */
-export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; stages: TeamListStages; kickoffAt: string }) {
+// `header` replaces the club badge/link — the World Cup game page passes a
+// nation's flag and name (nations aren't clubs, so there's no team page).
+export default function TeamListCard({
+  team,
+  stages,
+  kickoffAt,
+  header,
+}: {
+  team?: Team;
+  stages: TeamListStages;
+  kickoffAt: string | null; // null = no expected times (World Cup — release times unknown)
+  header?: ReactNode;
+}) {
   const omittedNames = new Set(
     [...parseOmittedNames(stages.TWENTY_FOUR_HOUR?.body), ...parseOmittedNames(stages.FINAL?.body)].map((n) =>
       n.toLowerCase()
@@ -284,13 +297,16 @@ export default function TeamListCard({ team, stages, kickoffAt }: { team: Team; 
 
   return (
     <div className="rounded-xl bg-surface border border-white/10 p-4 shadow-card space-y-2.5">
-      <Link
-        to={`/teams/${team.slug}`}
-        className="flex items-center gap-2.5 font-display font-extrabold text-white hover:text-brand-hover transition-colors duration-150"
-      >
-        <TeamBadge team={team} size="sm" />
-        {team.shortName}
-      </Link>
+      {header ??
+        (team && (
+          <Link
+            to={`/teams/${team.slug}`}
+            className="flex items-center gap-2.5 font-display font-extrabold text-white hover:text-brand-hover transition-colors duration-150"
+          >
+            <TeamBadge team={team} size="sm" />
+            {team.shortName}
+          </Link>
+        ))}
       <div className="space-y-2">
         {/* omittedNames only ever applies to the INITIAL grid — it's the
             "who got cut from this original list" annotation. A 24hr/Final

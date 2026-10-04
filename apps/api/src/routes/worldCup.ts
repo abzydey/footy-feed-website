@@ -11,4 +11,22 @@ router.get("/matches", async (_req, res) => {
   res.json(matches);
 });
 
+
+
+// GET /api/world-cup/matches/:id — one game plus both sides' team lists,
+// each as { INITIAL, TWENTY_FOUR_HOUR, FINAL } (same shape the club game
+// page uses, so the web reuses its team-list card).
+router.get("/matches/:id", async (req, res) => {
+  const match = await prisma.worldCupMatch.findUnique({ where: { id: req.params.id } });
+  if (!match) return res.status(404).json({ error: "Match not found" });
+  const lists = await prisma.event.findMany({
+    where: { worldCupMatchId: match.id, type: "LINEUP_CHANGE" },
+    orderBy: { createdAt: "asc" },
+  });
+  const stagesFor = (side: string) => {
+    const pick = (stage: string) => lists.find((e) => e.worldCupSide === side && e.teamListStage === stage) ?? null;
+    return { INITIAL: pick("INITIAL"), TWENTY_FOUR_HOUR: pick("TWENTY_FOUR_HOUR"), FINAL: pick("FINAL") };
+  };
+  res.json({ match, home: stagesFor("HOME"), away: stagesFor("AWAY") });
+});
 export default router;

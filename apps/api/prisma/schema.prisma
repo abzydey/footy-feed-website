@@ -356,6 +356,11 @@ model Event {
   // A Rugby League World Cup story — shown on /world-cup and under the
   // News page's World Cup filter, alongside its normal club tag(s).
   worldCup          Boolean @default(false)
+  // A World Cup team list (type LINEUP_CHANGE, no team/game): which World
+  // Cup game, and which side ("HOME"/"AWAY"). See lib/worldCupTeamLists.ts.
+  worldCupMatchId   String?
+  worldCupMatch     WorldCupMatch? @relation(fields: [worldCupMatchId], references: [id], onDelete: Cascade)
+  worldCupSide      String?
   // Required (and unique) when isOriginalArticle is true; null otherwise.
   // URL-safe, derived from the headline at creation time — see
   // slugify() in lib/slugify.ts, shared by the admin form and this route
@@ -404,6 +409,7 @@ model Event {
   @@index([playerId, createdAt])
   @@index([gameId, createdAt])
   @@index([type, createdAt])
+  @@index([worldCupMatchId])
   @@map("events")
 }
 
@@ -791,6 +797,8 @@ model WorldCupMatch {
   ticketUrl      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  teamLists Event[]
 
   @@index([kickoffAt])
   @@map("world_cup_matches")
