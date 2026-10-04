@@ -25,7 +25,7 @@ export default function WorldCupHomeCard() {
     <Link to="/world-cup" className="block hover:opacity-95">
       <WorldCupMatchCard
         match={m}
-        kicker="Rugby League World Cup"
+        kicker="World Cup"
         footer={<span className="shrink-0 text-[12.5px] lg:text-[14px] font-bold text-brand-violet">World Cup →</span>}
       />
     </Link>

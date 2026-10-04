@@ -5,7 +5,8 @@ import { api, EventItem, WorldCupMatch } from "../lib/api";
 import { dedupeStories, readCachedFeed } from "../lib/feed";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { featuredMatch, flagFor, kickoffLabel, poolTable } from "../lib/worldCup";
+import { featuredMatch, kickoffLabel, poolTable } from "../lib/worldCup";
+import Flag from "../components/Flag";
 import EventCard from "../components/EventCard";
 import WorldCupMatchCard from "../components/WorldCupMatchCard";
 import PageHero from "../components/ui/PageHero";
@@ -34,7 +35,7 @@ function PoolCard({ matches, pool }: { matches: WorldCupMatch[]; pool: "A" | "B"
             <tr key={r.abbr} className="border-t border-white/[.05]">
               <td className="py-2 pr-2">
                 <span className="flex items-center gap-2 min-w-0">
-                  <span aria-hidden="true">{flagFor(r.abbr)}</span>
+                  <Flag abbr={r.abbr} className="w-5 h-[15px] shrink-0" />
                   <span className="font-bold text-white truncate">{r.name}</span>
                 </span>
               </td>
@@ -56,7 +57,7 @@ function MatchRow({ m }: { m: WorldCupMatch }) {
   const live = m.status === "LIVE";
   const side = (name: string, abbr: string, score: number | null, alignEnd: boolean) => (
     <span className={`flex items-center gap-2 min-w-0 ${alignEnd ? "flex-row-reverse text-right" : ""}`}>
-      <span aria-hidden="true">{abbr === "TBA" ? "" : flagFor(abbr)}</span>
+      {abbr !== "TBA" && <Flag abbr={abbr} className="w-5 h-[15px] shrink-0" />}
       <span className="font-bold text-[14px] text-white truncate">{abbr === "TBA" ? "TBA" : name}</span>
       {(done || live) && <span className="font-extrabold text-[14px] text-white tabular-nums">{score ?? 0}</span>}
     </span>

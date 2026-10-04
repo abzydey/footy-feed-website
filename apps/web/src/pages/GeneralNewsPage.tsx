@@ -31,7 +31,7 @@ function TeamChips({
 }) {
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-      {[{ id: null, shortName: "All" }, { id: WORLD_CUP, shortName: "🌏 World Cup" }, ...teams].map((t) => {
+      {[{ id: null, shortName: "All" }, { id: WORLD_CUP, shortName: "World Cup" }, ...teams].map((t) => {
         const active = selectedId === t.id;
         return (
           <button

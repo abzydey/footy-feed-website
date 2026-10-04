@@ -1,16 +1,15 @@
 import { ReactNode } from "react";
 
 import { WorldCupMatch } from "../lib/api";
-import { flagFor, kickoffLabel } from "../lib/worldCup";
+import { kickoffLabel } from "../lib/worldCup";
+import Flag from "./Flag";
 
 function Side({ name, abbr }: { name: string; abbr: string }) {
   const tba = abbr === "TBA";
   return (
     <div className="flex flex-col items-center gap-1.5 min-w-0">
-      <span className="text-[44px] lg:text-[54px] leading-none" aria-hidden="true">
-        {tba ? "🏉" : flagFor(abbr)}
-      </span>
-      <span className="font-extrabold text-[15px] lg:text-[17px] text-white truncate max-w-full">{tba ? "To be decided" : name}</span>
+      <Flag abbr={abbr} className="w-[60px] h-[45px] lg:w-[76px] lg:h-[57px]" />
+      <span className="font-extrabold text-[15px] lg:text-[17px] leading-tight text-white text-center">{tba ? "To be decided" : name}</span>
     </div>
   );
 }
@@ -32,9 +31,9 @@ export default function WorldCupMatchCard({ match: m, kicker, footer }: { match:
           {live ? "● Live" : done ? "Full time" : kickoffLabel(m.kickoffAt)}
         </span>
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-center">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-start">
         <Side name={m.homeName} abbr={m.homeAbbr} />
-        <div className="flex flex-col items-center gap-0.5">
+        <div className="flex flex-col items-center gap-0.5 self-center">
           <span className="font-display italic font-black text-[28px] lg:text-[40px] leading-none text-white tabular-nums whitespace-nowrap">
             {live || done ? `${m.homeScore ?? 0}–${m.awayScore ?? 0}` : "v"}
           </span>

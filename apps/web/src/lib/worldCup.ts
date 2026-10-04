@@ -1,20 +1,20 @@
 import { WorldCupMatch } from "./api";
 
-// Flag per nation code used by the official draw. Shown beside the name,
-// never instead of it (some desktop browsers draw flags as two letters).
-const FLAGS: Record<string, string> = {
-  AUS: "🇦🇺",
-  NZL: "🇳🇿",
-  FIJ: "🇫🇯",
-  COO: "🇨🇰",
-  SAM: "🇼🇸",
-  FRA: "🇫🇷",
-  PNG: "🇵🇬",
-  LEB: "🇱🇧",
-  ENG: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  TNG: "🇹🇴",
+// Flag image per nation code used by the official draw (public/flags —
+// images, not emoji, since Windows doesn't draw flag emoji).
+const FLAG_FILES: Record<string, string> = {
+  AUS: "au",
+  NZL: "nz",
+  FIJ: "fj",
+  COO: "ck",
+  SAM: "ws",
+  FRA: "fr",
+  PNG: "pg",
+  LEB: "lb",
+  ENG: "gb-eng",
+  TNG: "to",
 };
-export const flagFor = (abbr: string) => FLAGS[abbr] ?? "";
+export const flagSrc = (abbr: string): string | null => (FLAG_FILES[abbr] ? `/flags/${FLAG_FILES[abbr]}.svg` : null);
 
 // The tournament's on from a fortnight before the first game until a week
 // after the Final — when Home and the menus give it pride of place.
