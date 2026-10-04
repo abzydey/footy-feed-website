@@ -54,9 +54,8 @@ export function parseTrySummaries(summaries: string[]): ParsedTry[] {
 // for FIRST, since "Finals Week 1".match(/\d+/) would otherwise silently
 // match the "1" and build a wrong (not missing) round-1 URL, actively
 // fetching the wrong match's data rather than just failing to find one.
-// Anything else with no plain number (e.g. "Grand Final") still returns
-// null — a real gap, not a bug to paper over with a guess; the poller falls
-// back to tweets for those.
+// The Grand Final has its own fixed address (below). Anything else with no
+// plain number still returns null — the poller falls back to tweets.
 export function buildMatchCentreUrl(game: {
   round: string;
   kickoffAt: Date;
@@ -69,6 +68,14 @@ export function buildMatchCentreUrl(game: {
   const finalsMatch = game.round.match(/finals week (\d+)/i);
   if (finalsMatch) {
     return `https://www.nrl.com/draw/nrl-premiership/${year}/finals-week-${finalsMatch[1]}/${slugs}/`;
+  }
+
+  // The Grand Final is the one game NRL.com doesn't address by team names:
+  // its match centre lives at /grand-final/game-1/ (confirmed from NRL.com's
+  // own draw data, round 31 of 2026, after the 2026 decider's score never
+  // synced because this returned null).
+  if (/grand final/i.test(game.round)) {
+    return `https://www.nrl.com/draw/nrl-premiership/${year}/grand-final/game-1/`;
   }
 
   const roundMatch = game.round.match(/(\d+)/);

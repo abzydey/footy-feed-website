@@ -77,7 +77,14 @@ export default function MatchHero({ game, linkTo, children }: MatchHeroProps) {
   const status = live
     ? { text: `● Live${game.liveClock ? ` · ${game.liveClock}` : ""}`, cls: "text-brand-siren" }
     : finished
-      ? { text: "Full time", cls: "text-slate-300" }
+      ? {
+          // A finished Grand Final names the premiers instead of "Full time".
+          text:
+            /grand final/i.test(game.round) && game.homeScore != null && game.awayScore != null && game.homeScore !== game.awayScore
+              ? `🏆 ${(game.homeScore > game.awayScore ? game.homeTeam : game.awayTeam).shortName} · Premiers`
+              : "Full time",
+          cls: "text-slate-300",
+        }
       : { text: kickoffLabel(game.kickoffAt), cls: "text-slate-400" };
 
   const body = (

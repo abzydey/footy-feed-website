@@ -17,10 +17,19 @@ import { isNativeApp, tapHaptic } from "../lib/platform";
 
 type NavItem = { to: string; label: string; end?: boolean };
 
+// Flip to true when next season's finals start: puts Finals back in the
+// tab bar and menu bar (in place of Signings). The /finals page itself
+// always works by direct link.
+const FINALS_IN_MENU = false;
+
 // Bottom tabs on phones.
 const TABS: (NavItem & { icon: () => JSX.Element })[] = [
   { to: "/", label: "Home", end: true, icon: HomeIcon },
-  { to: "/finals", label: "Finals", icon: TrophyIcon },
+  // Finals is in the menu only while finals are on (back next September);
+  // in the off-season its slot goes to the signings tracker.
+  ...(FINALS_IN_MENU
+    ? [{ to: "/finals", label: "Finals", icon: TrophyIcon }]
+    : [{ to: "/signings", label: "Signings", icon: SwapIcon }]),
   { to: "/news", label: "News", icon: NewsIcon },
   { to: "/teams", label: "Teams", icon: ShieldIcon },
 ];
@@ -28,7 +37,7 @@ const TABS: (NavItem & { icon: () => JSX.Element })[] = [
 // Shown inline in the computer menu bar, before "More".
 const DESKTOP_LINKS: NavItem[] = [
   { to: "/", label: "Home", end: true },
-  { to: "/finals", label: "Finals" },
+  FINALS_IN_MENU ? { to: "/finals", label: "Finals" } : { to: "/signings", label: "Signings" },
   { to: "/news", label: "News" },
   { to: "/teams", label: "Teams" },
   { to: "/games", label: "Games" },
@@ -197,7 +206,7 @@ function MoreSheet({ open, onClose, pathname }: { open: boolean; onClose: () => 
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" aria-hidden="true" />
         <div className="grid grid-cols-2 gap-2">
-          {MORE_LINKS.map((link) => {
+          {MORE_LINKS.filter((link) => !TABS.some((t) => t.to === link.to)).map((link) => {
             const active = matches(pathname, link);
             return (
               <Link
@@ -320,6 +329,17 @@ function ShieldIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" />
+    </svg>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M7 4L3 8l4 4" />
+      <path d="M3 8h13" />
+      <path d="M17 20l4-4-4-4" />
+      <path d="M21 16H8" />
     </svg>
   );
 }
