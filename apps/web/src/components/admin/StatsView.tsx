@@ -26,6 +26,42 @@ export default function StatsView({ token }: { token: string }) {
 
   return (
     <div className="space-y-6">
+      {/* People, not page loads: each browser/app install has an anonymous id.
+          Counting started 5 Oct 2026; devices logged into admin aren't counted. */}
+      <section className="rounded-xl bg-surface border border-white/10 shadow-card p-4">
+        <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-3">Visitors</h2>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          {[
+            { label: "Today", value: stats.visitors.byDay[0]?.visitors ?? 0 },
+            { label: "Last 7 days", value: stats.visitors.last7Days },
+            { label: "Last 30 days", value: stats.visitors.last30Days },
+          ].map((s) => (
+            <div key={s.label}>
+              <p className="text-3xl font-display font-extrabold text-white">{s.value}</p>
+              <p className="text-xs text-slate-500">{s.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider py-1.5 border-b border-white/10">
+          <span>Day</span>
+          <span className="text-right">People</span>
+          <span className="text-right">Page views</span>
+        </div>
+        {stats.visitors.byDay.map((d) => (
+          <div key={d.day} className="grid grid-cols-3 gap-2 py-1.5 border-b border-white/10 last:border-0 text-sm">
+            <span className="text-slate-300">
+              {new Date(`${d.day}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
+            </span>
+            <span className="text-right font-bold text-white">{d.visitors}</span>
+            <span className="text-right text-slate-400">{d.views}</span>
+          </div>
+        ))}
+        <p className="text-xs text-slate-500 mt-2">
+          Each browser or app install counts once per day. Counting people started 5 Oct 2026 (earlier days show page
+          views only). This device isn&apos;t counted while you use admin on it.
+        </p>
+      </section>
+
       <section className="rounded-xl bg-surface border border-white/10 shadow-card p-4">
         <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-3">
           Notification opt-ins

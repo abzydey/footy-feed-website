@@ -29,6 +29,22 @@ router.get("/", async (_req, res) => {
       }),
     ]);
 
+  // People, not page loads: distinct anonymous visitor ids (recorded from
+  // 2026-10-05 on), by Sydney day for the last 14 days plus 7/30-day totals.
+  const [visitorDays, visitorTotals] = await Promise.all([
+    prisma.$queryRaw<{ day: string; visitors: number; views: number }[]>`
+      select to_char(("createdAt" at time zone 'Australia/Sydney')::date, 'YYYY-MM-DD') as day,
+             count(distinct "visitorId")::int as visitors,
+             count(*)::int as views
+      from page_views
+      where "createdAt" > now() - interval '14 days'
+      group by 1 order by 1 desc`,
+    prisma.$queryRaw<{ last7: number; last30: number }[]>`
+      select count(distinct "visitorId") filter (where "createdAt" > now() - interval '7 days')::int as last7,
+             count(distinct "visitorId") filter (where "createdAt" > now() - interval '30 days')::int as last30
+      from page_views`,
+  ]);
+
   const countByTeamId = new Map(teamFollowCounts.map((c) => [c.targetId, c._count]));
   const totalByPage = new Map(pageViewTotals.map((p) => [p.page, p._count]));
   const recentByPage = new Map(pageViewRecent.map((p) => [p.page, p._count]));
@@ -50,6 +66,11 @@ router.get("/", async (_req, res) => {
     // following it, there's no separate opt-in step.
     notificationOptIns: {
       total: totalSubscribers,
+    },
+    visitors: {
+      last7Days: visitorTotals[0]?.last7 ?? 0,
+      last30Days: visitorTotals[0]?.last30 ?? 0,
+      byDay: visitorDays,
     },
     pageViews: {
       byPage: PAGES.map((page) => ({

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { api } from "../lib/api";
 import EventForm from "../components/admin/EventForm";
@@ -10,6 +10,7 @@ import JudiciaryForm from "../components/admin/JudiciaryForm";
 import LateMailForm from "../components/admin/LateMailForm";
 import TrackedShowsForm from "../components/admin/TrackedShowsForm";
 import PlayerForm from "../components/admin/PlayerForm";
+import { markOwnDevice } from "../lib/visitor";
 import AdminAlertsCard from "../components/admin/AdminAlertsCard";
 
 const TOKEN_KEY = "footy-feed:adminToken";
@@ -17,6 +18,12 @@ const TABS = ["Update", "Game", "Late Mail", "Ladder", "Judiciary", "Player", "E
 
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+
+  // Logged in here = the owner's own device: stop counting it in visitor
+  // stats (stays off after logging out — it's still the owner's device).
+  useEffect(() => {
+    if (token) markOwnDevice();
+  }, [token]);
 
   if (!token) return <LoginForm onLogin={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
   return <AdminTabs token={token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null); }} />;

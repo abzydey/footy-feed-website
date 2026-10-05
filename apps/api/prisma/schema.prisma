@@ -84,8 +84,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Migrations go through the direct (non-pooler) Neon host: through the
+  // pgbouncer pooler, migrate's session advisory lock gets stranded on a
+  // pooled connection and every later migration times out (P1002) — hit
+  // twice on 2026-10-04/05.
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 // ---------------------------------------------------------------------------
@@ -485,9 +490,14 @@ model NotificationLog {
 model PageView {
   id        String   @id @default(cuid())
   page      String // one of a small fixed set of labels — see the PAGES list in routes/pageviews.ts and adminStats.ts
+  // Anonymous per-browser id (a random UUID kept in that browser's
+  // localStorage — no name, account or device details), so stats can count
+  // people, not just page loads. Null for views recorded before 2026-10-05.
+  visitorId String?
   createdAt DateTime @default(now())
 
   @@index([page, createdAt])
+  @@index([createdAt, visitorId])
   @@map("page_views")
 }
 

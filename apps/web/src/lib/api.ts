@@ -1,3 +1,5 @@
+import { getVisitorId, isOwnDevice } from "./visitor";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -312,6 +314,7 @@ export interface AdminStats {
     generalNewsFollowerCount: number;
   };
   notificationOptIns: { total: number };
+  visitors: { last7Days: number; last30Days: number; byDay: { day: string; visitors: number; views: number }[] };
   pageViews: { byPage: { page: string; total: number; last7Days: number }[] };
 }
 
@@ -492,10 +495,14 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify(data),
     }),
-  trackPageView: (
+  // Skipped entirely on the owner's own devices (see lib/visitor.ts).
+  trackPageView: async (
     page: "home" | "news" | "teams" | "games" | "team-lists" | "social" | "podcasts" | "ladder" | "highlights" | "judiciary"
-  ) =>
-    request(`/pageviews`, { method: "POST", body: JSON.stringify({ page }) }),
+  ) => {
+    if (isOwnDevice()) return;
+    const visitorId = getVisitorId();
+    await request(`/pageviews`, { method: "POST", body: JSON.stringify(visitorId ? { page, visitorId } : { page }) });
+  },
   adminGetStats: (token: string) =>
     request<AdminStats>(`/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
   getLadder: () => request<Ladder>(`/ladder`),
