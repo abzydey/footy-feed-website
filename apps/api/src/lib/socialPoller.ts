@@ -17,7 +17,15 @@ const SOURCE_USERNAMES = (process.env.TWITTER_SOURCE_USERNAMES ?? "centralNRL")
   .map((u) => u.trim())
   .filter(Boolean);
 
-const POLL_INTERVAL_MS = 20 * 60 * 1000;
+// Hourly (was every 20 min) — X API reads are pay-per-use, and the
+// credit ran out on 2026-10-03; Social doesn't need minute-level freshness.
+const POLL_INTERVAL_MS = 60 * 60 * 1000;
+
+// Newest tweet id seen per account, so each poll only asks X for tweets
+// newer than that (since_id) instead of re-reading the latest 10 every
+// time. Kept in memory: after a restart the first poll reads the latest 10
+// once, as before, and the "already saved?" check below skips duplicates.
+const newestSeen = new Map<string, string>();
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 
 // Deletes auto-polled posts once they age past RETENTION_MS. Scoped to
@@ -78,8 +86,10 @@ export async function pollTwitterSources(): Promise<void> {
       // carries a truncated "RT @handle: ..." stub of the original, so the
       // two expansions below resolve it to the real original tweet's full
       // text + author instead of posting that mangled stub.
+      const sinceId = newestSeen.get(username);
       const timeline = await client.v2.userTimeline(userId, {
         max_results: 10,
+        ...(sinceId ? { since_id: sinceId } : {}),
         exclude: ["replies"],
         // ...plus the media expansions, for both the tweet itself and a
         // repost's original, so photos/videos show on the card.
@@ -92,6 +102,9 @@ export async function pollTwitterSources(): Promise<void> {
         "tweet.fields": ["referenced_tweets", "created_at", "attachments", "entities"],
         ...TWEET_MEDIA_PARAMS,
       });
+
+      const newest = timeline.tweets[0]?.id ?? timeline.meta?.newest_id;
+      if (newest) newestSeen.set(username, newest);
 
       for (const tweet of timeline.tweets) {
         const retweetRef = tweet.referenced_tweets?.find((r) => r.type === "retweeted");
@@ -202,5 +215,5 @@ export function startTwitterPoller(): void {
     pollTwitterSources().catch((err) => console.error("[socialPoller] poll failed:", err));
   }, POLL_INTERVAL_MS);
 
-  console.log(`[socialPoller] polling ${SOURCE_USERNAMES.map((u) => `@${u}`).join(", ")} every 20 min`);
+  console.log(`[socialPoller] polling ${SOURCE_USERNAMES.map((u) => `@${u}`).join(", ")} every hour`);
 }
