@@ -11,7 +11,8 @@ import { syncWorldCupTeamLists } from "./worldCupTeamLists";
 // carries the official gameId, start time (UTC), venue, round, pool
 // ("group" 1 = Pool A, 2 = Pool B), both teams, and its state; semi-final
 // and final teams read "TBA" until they're decided, so re-syncing picks
-// them up as well as scores and kickoff changes.
+// them up as well as kickoff changes. Live scores come from NRL.com's
+// draw data instead (syncLiveScores) — the official site doesn't carry them.
 
 const DRAW_URL = "https://www.rlwc2026.com/draws-and-pools";
 const SITE = "https://www.rlwc2026.com";
@@ -124,12 +125,18 @@ export async function syncWorldCup(): Promise<void> {
   for (const g of games) {
     const home = g.teams.find((t) => t.isHomeTeam) ?? g.teams[0];
     const away = g.teams.find((t) => !t.isHomeTeam) ?? g.teams[1];
-    const status = statusOf(g.gameStateName);
+    const prev = existing.get(g.gameId);
     const homeScore = scoreOf(home);
     const awayScore = scoreOf(away);
-    if (status === "FULL_TIME" && (homeScore == null || awayScore == null)) {
-      problem(`${home?.teamName} v ${away?.teamName} is marked finished on the official site but no score was found in its data.`);
-    }
+    // Scores and status come from NRL.com (syncLiveScores below) — the
+    // official draw page doesn't carry scores. Only take them from here if
+    // it ever does, and never blank out a score NRL.com already set.
+    const scoreFields =
+      homeScore != null && awayScore != null
+        ? { homeScore, awayScore, status: statusOf(g.gameStateName) }
+        : prev
+          ? { homeScore: prev.homeScore, awayScore: prev.awayScore, status: prev.status }
+          : { homeScore: null, awayScore: null, status: "SCHEDULED" as GameStatus };
     const data = {
       roundName: g.roundName,
       pool: g.group === 1 ? "A" : g.group === 2 ? "B" : null,
@@ -140,13 +147,10 @@ export async function syncWorldCup(): Promise<void> {
       homeAbbr: home?.teamAbbr ?? "TBA",
       awayName: cleanName(away?.teamName ?? "TBA"),
       awayAbbr: away?.teamAbbr ?? "TBA",
-      homeScore,
-      awayScore,
-      status,
+      ...scoreFields,
       matchCentreUrl: g.matchCentreUrl ? `${SITE}${g.matchCentreUrl}` : null,
       ticketUrl: g.ticketUrl,
     };
-    const prev = existing.get(g.gameId);
     const same =
       prev &&
       (Object.keys(data) as (keyof typeof data)[]).every((k) =>
@@ -156,6 +160,65 @@ export async function syncWorldCup(): Promise<void> {
     await prisma.worldCupMatch.upsert({ where: { id: g.gameId }, create: { id: g.gameId, ...data }, update: data });
   }
   problem(""); // healthy again
+}
+
+// NRL.com runs the men's World Cup as competition 131, in exactly the same
+// draw format as NRL games: matchMode Pre / Live / Post, with each team's
+// score once it's started — the source the club live scores already use.
+// Rounds there are numbered 1–5 (Rounds 1–3, Semi Final, Final); fixtures
+// are matched to ours by kickoff time.
+const NRL_WC_COMPETITION = 131;
+const NRL_WC_ROUND: Record<string, number> = { "Round 1": 1, "Round 2": 2, "Round 3": 3, "Semi Final": 4, Final: 5 };
+
+interface NrlFixture {
+  matchMode: string;
+  matchState?: string;
+  clock?: { kickOffTimeLong?: string };
+  homeTeam?: { score?: number };
+  awayTeam?: { score?: number };
+}
+
+export async function syncLiveScores(): Promise<void> {
+  const now = Date.now();
+  const due = await prisma.worldCupMatch.findMany({
+    where: {
+      status: { not: "FULL_TIME" },
+      kickoffAt: { gte: new Date(now - WINDOW_AFTER_MS), lte: new Date(now + 15 * 60 * 1000) },
+    },
+  });
+  if (due.length === 0) return;
+
+  const rounds = [...new Set(due.map((m) => NRL_WC_ROUND[m.roundName]).filter(Boolean))];
+  const fixtures: NrlFixture[] = [];
+  for (const round of rounds) {
+    try {
+      const res = await fetch(
+        `https://www.nrl.com/draw/data?competition=${NRL_WC_COMPETITION}&season=${new Date(due[0].kickoffAt).getUTCFullYear()}&round=${round}`,
+        { headers: { "User-Agent": BROWSER_USER_AGENT } }
+      );
+      if (!res.ok) throw new Error(`NRL.com returned ${res.status}`);
+      fixtures.push(...(((await res.json()) as { fixtures?: NrlFixture[] }).fixtures ?? []));
+    } catch (err) {
+      problem(`Couldn't read World Cup live scores from NRL.com: ${(err as Error).message}`);
+      return;
+    }
+  }
+
+  for (const m of due) {
+    const f = fixtures.find((x) => x.clock?.kickOffTimeLong && new Date(x.clock.kickOffTimeLong).getTime() === m.kickoffAt.getTime());
+    if (!f) {
+      problem(`${m.homeName} v ${m.awayName} isn't in NRL.com's World Cup draw at its kickoff time — no live score for it.`);
+      continue;
+    }
+    if (/^pre/i.test(f.matchMode)) continue; // not started
+    const homeScore = f.homeTeam?.score ?? null;
+    const awayScore = f.awayTeam?.score ?? null;
+    if (homeScore == null || awayScore == null) continue;
+    const status: GameStatus = /^post/i.test(f.matchMode) ? "FULL_TIME" : "LIVE";
+    if (m.homeScore === homeScore && m.awayScore === awayScore && m.status === status) continue;
+    await prisma.worldCupMatch.update({ where: { id: m.id }, data: { homeScore, awayScore, status } });
+    console.log(`[worldCupPoller] ${status === "FULL_TIME" ? "FULL TIME" : "LIVE"}: ${m.homeName} ${homeScore}-${awayScore} ${m.awayName}`);
+  }
 }
 
 // How soon to check again: every 5 minutes from 3½ hours before a kickoff
@@ -179,6 +242,7 @@ async function nextCheckInMs(): Promise<number> {
 export function startWorldCupPolling(): void {
   const tick = async () => {
     await syncWorldCup().catch((err) => problem(`Sync failed: ${(err as Error).message}`));
+    await syncLiveScores().catch((err) => problem(`Live scores failed: ${(err as Error).message}`));
     await syncWorldCupTeamLists().catch((err) => console.error("[worldCupTeamLists] sync failed:", err));
     const wait = await nextCheckInMs().catch(() => HOURLY_MS);
     setTimeout(tick, Math.max(60_000, wait));
