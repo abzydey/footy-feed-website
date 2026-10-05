@@ -96,3 +96,20 @@ export function kickoffLabel(iso: string, withDay = true): string {
   if (!withDay) return time;
   return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} · ${time}`;
 }
+
+export interface WorldCupNation {
+  name: string;
+  abbr: string;
+  pool: "A" | "B";
+}
+
+// The ten nations, from the pool games in the draw, alphabetical.
+export function worldCupNations(matches: WorldCupMatch[]): WorldCupNation[] {
+  const seen = new Map<string, WorldCupNation>();
+  for (const m of matches) {
+    if (!m.pool) continue;
+    seen.set(m.homeAbbr, { name: m.homeName, abbr: m.homeAbbr, pool: m.pool });
+    seen.set(m.awayAbbr, { name: m.awayName, abbr: m.awayAbbr, pool: m.pool });
+  }
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+}

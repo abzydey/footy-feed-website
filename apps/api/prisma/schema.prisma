@@ -803,3 +803,19 @@ model WorldCupMatch {
   @@index([kickoffAt])
   @@map("world_cup_matches")
 }
+
+// A nation's announced men's World Cup squad, entered from the official
+// announcement (scripts/setWorldCupSquad.ts). Keyed by the draw's nation
+// code (AUS, NZL, …) so it lines up with WorldCupMatch. players:
+// [{ name, captain?, debutant? }] in the order announced; shadows: names of
+// shadow/standby players, when named. Re-entering a squad replaces it.
+model WorldCupSquad {
+  abbr        String   @id
+  name        String
+  players     Json
+  shadows     Json?
+  announcedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("world_cup_squads")
+}

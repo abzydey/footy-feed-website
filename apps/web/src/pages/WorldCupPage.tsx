@@ -9,6 +9,7 @@ import { featuredMatch, kickoffLabel, poolTable } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import EventCard from "../components/EventCard";
 import WorldCupMatchCard from "../components/WorldCupMatchCard";
+import WorldCupTabs from "../components/WorldCupTabs";
 import PageHero from "../components/ui/PageHero";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 
@@ -117,6 +118,7 @@ export default function WorldCupPage() {
   return (
     <div className="max-w-3xl lg:max-w-5xl mx-auto p-4 lg:px-5 space-y-6">
       <PageHero eyebrow="Men's · 15 Oct – 15 Nov 2026" title="Rugby League World Cup" subtitle="Fixtures, results, pool tables and news." />
+      <WorldCupTabs />
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {!matches && !error && <FeedSkeleton count={3} />}

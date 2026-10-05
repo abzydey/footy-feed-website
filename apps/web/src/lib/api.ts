@@ -67,6 +67,14 @@ export interface WorldCupMatch {
   ticketUrl: string | null;
 }
 
+export interface WorldCupSquad {
+  abbr: string;
+  name: string;
+  players: { name: string; captain?: boolean; debutant?: boolean }[];
+  shadows: string[] | null;
+  announcedAt: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -325,6 +333,7 @@ export const api = {
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
   listWorldCupMatches: () => request<WorldCupMatch[]>("/world-cup/matches"),
+  listWorldCupSquads: () => request<WorldCupSquad[]>("/world-cup/squads"),
   getWorldCupMatch: (id: string) =>
     request<{ match: WorldCupMatch; home: TeamListStages; away: TeamListStages }>(`/world-cup/matches/${id}`),
   listTransfers: (opts: { team?: string; limit?: number } = {}) => {

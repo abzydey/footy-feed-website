@@ -29,4 +29,11 @@ router.get("/matches/:id", async (req, res) => {
   };
   res.json({ match, home: stagesFor("HOME"), away: stagesFor("AWAY") });
 });
+// GET /api/world-cup/squads — every announced men's squad (nations not
+// yet announced simply aren't in the list).
+router.get("/squads", async (_req, res) => {
+  const squads = await prisma.worldCupSquad.findMany({ orderBy: { name: "asc" } });
+  res.json(squads);
+});
+
 export default router;
