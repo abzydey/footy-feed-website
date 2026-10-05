@@ -7,6 +7,7 @@ import { isTwitterConfigured, getTwitterClient } from "./twitter";
 import { notifyFollowersOfEvent } from "./notify";
 import { fetchTweetAuthorName } from "./twitterEmbed";
 import { extractTweetMedia, stripMediaLinks, TWEET_MEDIA_PARAMS } from "./tweetMedia";
+import { promotionalMatch } from "./socialFilter";
 import { HANDLE_TO_TEAM_SLUG } from "./teamTwitterHandles";
 
 // Comma-separated X usernames to poll, no leading "@". Starts with just the
@@ -78,6 +79,7 @@ export async function pollTwitterSources(): Promise<void> {
     return;
   }
 
+  const hidden: string[] = [];
   for (const username of SOURCE_USERNAMES) {
     try {
       const userId = await resolveUserId(client, username);
@@ -146,6 +148,14 @@ export async function pollTwitterSources(): Promise<void> {
         // quieter account could span days or weeks.
         if (postedAt && Date.now() - new Date(postedAt).getTime() > RETENTION_MS) continue;
 
+        // Merch/tickets/sponsor/birthday posts stay off Social (see
+        // socialFilter.ts); counted so the filter can be reviewed.
+        const promo = promotionalMatch(text);
+        if (promo) {
+          hidden.push(`@${authorUsername} ("${promo}")`);
+          continue;
+        }
+
         const existing = await prisma.event.findFirst({ where: { sourceUrl } });
         if (existing) continue;
 
@@ -201,6 +211,7 @@ export async function pollTwitterSources(): Promise<void> {
     }
   }
 
+  if (hidden.length > 0) console.log(`[socialPoller] hid ${hidden.length} promotional post(s): ${hidden.join(", ")}`);
   await pruneOldSocialPosts().catch((err) => console.error("[socialPoller] prune failed:", err));
 }
 
