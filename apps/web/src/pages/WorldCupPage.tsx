@@ -5,7 +5,7 @@ import { api, EventItem, WorldCupMatch } from "../lib/api";
 import { dedupeStories, readCachedFeed } from "../lib/feed";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { featuredMatch, kickoffLabel, POOL_NOTE, poolLabel, poolTable, SUB_POOL } from "../lib/worldCup";
+import { featuredMatch, kickoffLabel, POOL_NOTE, poolLabel, poolTable, sideName, SUB_POOL } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import EventCard from "../components/EventCard";
 import WorldCupMatchCard from "../components/WorldCupMatchCard";
@@ -70,7 +70,7 @@ function MatchRow({ m }: { m: WorldCupMatch }) {
   const side = (name: string, abbr: string, score: number | null, alignEnd: boolean) => (
     <span className={`flex items-center gap-2 min-w-0 ${alignEnd ? "flex-row-reverse text-right" : ""}`}>
       {abbr !== "TBA" && <Flag abbr={abbr} className="w-5 h-[15px] shrink-0" />}
-      <span className="font-bold text-[14px] text-white truncate">{abbr === "TBA" ? "TBA" : name}</span>
+      <span className={`font-bold text-[14px] truncate ${abbr === "TBA" ? "text-slate-400" : "text-white"}`}>{name}</span>
       {(done || live) && <span className="font-extrabold text-[14px] text-white tabular-nums">{score ?? 0}</span>}
     </span>
   );
@@ -81,9 +81,9 @@ function MatchRow({ m }: { m: WorldCupMatch }) {
         <span className={live ? "text-brand-siren" : ""}>{live ? "● Live" : done ? "Full time" : kickoffLabel(m.kickoffAt)}</span>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-center">
-        {side(m.homeName, m.homeAbbr, m.homeScore, false)}
+        {side(sideName(m, "home"), m.homeAbbr, m.homeScore, false)}
         <span className="text-[12px] font-bold text-slate-600">v</span>
-        {side(m.awayName, m.awayAbbr, m.awayScore, true)}
+        {side(sideName(m, "away"), m.awayAbbr, m.awayScore, true)}
       </div>
       <div className="text-[11.5px] text-slate-500 mt-1 truncate">
         {m.venue}, {m.city}

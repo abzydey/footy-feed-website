@@ -1,15 +1,14 @@
 import { ReactNode } from "react";
 
 import { WorldCupMatch } from "../lib/api";
-import { kickoffLabel, poolLabel } from "../lib/worldCup";
+import { kickoffLabel, poolLabel, sideName } from "../lib/worldCup";
 import Flag from "./Flag";
 
 function Side({ name, abbr }: { name: string; abbr: string }) {
-  const tba = abbr === "TBA";
   return (
     <div className="flex flex-col items-center gap-1.5 min-w-0">
       <Flag abbr={abbr} className="w-[60px] h-[45px] lg:w-[76px] lg:h-[57px]" />
-      <span className="font-extrabold text-[15px] lg:text-[17px] leading-tight text-white text-center">{tba ? "To be decided" : name}</span>
+      <span className="font-extrabold text-[15px] lg:text-[17px] leading-tight text-white text-center">{name}</span>
     </div>
   );
 }
@@ -32,14 +31,14 @@ export default function WorldCupMatchCard({ match: m, kicker, footer }: { match:
         </span>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-start">
-        <Side name={m.homeName} abbr={m.homeAbbr} />
+        <Side name={sideName(m, "home")} abbr={m.homeAbbr} />
         <div className="flex flex-col items-center gap-0.5 self-center">
           <span className="font-display italic font-black text-[28px] lg:text-[40px] leading-none text-white tabular-nums whitespace-nowrap">
             {live || done ? `${m.homeScore ?? 0}–${m.awayScore ?? 0}` : "v"}
           </span>
           {kicker && <span className="text-[11px] font-bold tracking-[.12em] text-slate-400 uppercase">{label}</span>}
         </div>
-        <Side name={m.awayName} abbr={m.awayAbbr} />
+        <Side name={sideName(m, "away")} abbr={m.awayAbbr} />
       </div>
       <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/[.07]">
         <span className="text-[12.5px] lg:text-[13.5px] text-slate-400 truncate">

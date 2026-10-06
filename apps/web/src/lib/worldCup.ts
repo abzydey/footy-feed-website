@@ -121,7 +121,7 @@ export const poolLabel = (pool: "A" | "B" | null | undefined): string =>
   pool === "A" ? "Pool A" : pool === "B" ? "Pools B & C" : "";
 
 export const POOL_NOTE: Record<"A" | "B", string> = {
-  A: "Each team plays the other three.",
+  A: "Each team plays the other three. The top 2 go to the semi-finals.",
   B: "Pool B (England, Lebanon, Samoa) and Pool C (France, PNG, Tonga) share one ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals.",
 };
 
@@ -141,3 +141,19 @@ export const SUB_POOL: Record<string, "B" | "C"> = {
 // A nation's own pool: "Pool A", "Pool B" or "Pool C".
 export const nationPoolLabel = (abbr: string, pool: "A" | "B" | null | undefined): string =>
   pool === "A" ? "Pool A" : SUB_POOL[abbr] ? `Pool ${SUB_POOL[abbr]}` : poolLabel(pool);
+
+// Who the knockout games are between before the teams are known (official
+// gameIds from the draw). Cross-over semis: Pool A 2nd v Pools B & C 1st on
+// 7 Nov (Newcastle), Pool A 1st v Pools B & C 2nd on 8 Nov (Sydney).
+const KNOCKOUT_SLOTS: Record<string, { home: string; away: string }> = {
+  "20261310410": { home: "Pool A 2nd", away: "Pools B & C 1st" },
+  "20261310420": { home: "Pool A 1st", away: "Pools B & C 2nd" },
+  "20261310510": { home: "Semi-final 1 winner", away: "Semi-final 2 winner" },
+};
+
+// A side's display name: the nation, or its knockout slot while still TBA.
+export function sideName(m: WorldCupMatch, side: "home" | "away"): string {
+  const abbr = side === "home" ? m.homeAbbr : m.awayAbbr;
+  if (abbr !== "TBA") return side === "home" ? m.homeName : m.awayName;
+  return KNOCKOUT_SLOTS[m.id]?.[side] ?? "TBA";
+}
