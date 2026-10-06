@@ -27,6 +27,11 @@ const POLL_INTERVAL_MS = 60 * 60 * 1000;
 // time. Kept in memory: after a restart the first poll reads the latest 10
 // once, as before, and the "already saved?" check below skips duplicates.
 const newestSeen = new Map<string, string>();
+
+// X returns tweet text with &, < and > HTML-encoded (&amp; &lt; &gt;).
+export function decodeEntities(text: string): string {
+  return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 
 // Deletes auto-polled posts once they age past RETENTION_MS. Scoped to
@@ -181,7 +186,7 @@ export async function pollTwitterSources(): Promise<void> {
             type: "SOCIAL_POST",
             teamId,
             headline: `@${authorUsername}`,
-            body: text,
+            body: decodeEntities(text),
             sourceUrl,
             sourceName: `@${authorUsername}`,
             sourceAuthor: authorName ?? undefined,
