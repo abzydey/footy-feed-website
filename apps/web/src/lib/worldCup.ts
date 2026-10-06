@@ -113,3 +113,14 @@ export function worldCupNations(matches: WorldCupMatch[]): WorldCupNation[] {
   }
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
+
+// The draw marks the six B/C teams with one group: they're two pools of
+// three that only play the OTHER pool, on one combined ladder (top 2 to the
+// semi-finals, per rlwc2026.com). Shown as one "Pools B & C" everywhere.
+export const poolLabel = (pool: "A" | "B" | null | undefined): string =>
+  pool === "A" ? "Pool A" : pool === "B" ? "Pools B & C" : "";
+
+export const POOL_NOTE: Record<"A" | "B", string> = {
+  A: "Each team plays the other three.",
+  B: "Two pools of three on one combined ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals.",
+};

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api, WorldCupMatch, WorldCupSquad } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { worldCupNations } from "../lib/worldCup";
+import { poolLabel, worldCupNations } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import WorldCupTabs from "../components/WorldCupTabs";
 import PageHero from "../components/ui/PageHero";
@@ -43,7 +43,7 @@ export default function WorldCupTeamsPage() {
         if (list.length === 0) return null;
         return (
           <section key={pool}>
-            <h2 className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase mb-2">Pool {pool}</h2>
+            <h2 className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase mb-2">{poolLabel(pool)}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {list.map((n) => {
                 const squad = squadFor(n.abbr);

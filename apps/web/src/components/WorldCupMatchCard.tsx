@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 
 import { WorldCupMatch } from "../lib/api";
-import { kickoffLabel } from "../lib/worldCup";
+import { kickoffLabel, poolLabel } from "../lib/worldCup";
 import Flag from "./Flag";
 
 function Side({ name, abbr }: { name: string; abbr: string }) {
@@ -19,7 +19,7 @@ function Side({ name, abbr }: { name: string; abbr: string }) {
 export default function WorldCupMatchCard({ match: m, kicker, footer }: { match: WorldCupMatch; kicker?: ReactNode; footer?: ReactNode }) {
   const live = m.status === "LIVE";
   const done = m.status === "FULL_TIME";
-  const label = `${m.roundName}${m.pool ? ` · Pool ${m.pool}` : ""}`;
+  const label = `${m.roundName}${m.pool ? ` · ${poolLabel(m.pool)}` : ""}`;
 
   const body = (
     <div className="px-[18px] pt-4 pb-[18px] lg:px-7 lg:pt-[22px] lg:pb-6 flex flex-col gap-4">

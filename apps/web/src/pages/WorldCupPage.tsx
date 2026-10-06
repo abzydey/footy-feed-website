@@ -5,7 +5,7 @@ import { api, EventItem, WorldCupMatch } from "../lib/api";
 import { dedupeStories, readCachedFeed } from "../lib/feed";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { featuredMatch, kickoffLabel, poolTable } from "../lib/worldCup";
+import { featuredMatch, kickoffLabel, POOL_NOTE, poolLabel, poolTable } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import EventCard from "../components/EventCard";
 import WorldCupMatchCard from "../components/WorldCupMatchCard";
@@ -19,7 +19,8 @@ function PoolCard({ matches, pool }: { matches: WorldCupMatch[]; pool: "A" | "B"
   const rows = poolTable(matches, pool);
   return (
     <section className="rounded-[18px] bg-surface border border-white/[.07] px-4 pt-3.5 pb-2">
-      <h3 className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase mb-2">Pool {pool}</h3>
+      <h3 className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase mb-1">{poolLabel(pool)}</h3>
+      <p className="text-[12px] text-slate-400 mb-2">{POOL_NOTE[pool]}</p>
       <table className="w-full text-[13px] tabular-nums">
         <thead>
           <tr className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500">
@@ -32,8 +33,8 @@ function PoolCard({ matches, pool }: { matches: WorldCupMatch[]; pool: "A" | "B"
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.abbr} className="border-t border-white/[.05]">
+          {rows.map((r, i) => (
+            <tr key={r.abbr} className={`border-t border-white/[.05] ${pool === "B" && i < 2 && r.played > 0 ? "bg-brand-violet/[.08]" : ""}`}>
               <td className="py-2 pr-2">
                 <span className="flex items-center gap-2 min-w-0">
                   <Flag abbr={r.abbr} className="w-5 h-[15px] shrink-0" />
@@ -66,7 +67,7 @@ function MatchRow({ m }: { m: WorldCupMatch }) {
   const inner = (
     <>
       <div className="flex items-center justify-between gap-3 text-[11.5px] font-semibold text-slate-500 mb-1">
-        <span>{m.pool ? `Pool ${m.pool}` : m.roundName}</span>
+        <span>{m.pool ? poolLabel(m.pool) : m.roundName}</span>
         <span className={live ? "text-brand-siren" : ""}>{live ? "● Live" : done ? "Full time" : kickoffLabel(m.kickoffAt)}</span>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-center">
