@@ -69,6 +69,7 @@ export default function WorldCupNationPage() {
                   {squad.players.map((p) => (
                     <li key={p.name} className="flex items-center gap-2 py-2 border-t border-white/[.05] text-[14px]">
                       <span className="font-bold text-white">{p.name}</span>
+                      {p.club && <span className="text-[12px] text-slate-400 truncate">{p.club}</span>}
                       {p.captain && <span className="text-[11px] font-extrabold text-brand-violet">(c)</span>}
                       {p.debutant && (
                         <span className="rounded-full px-2 py-[1px] text-[10px] font-extrabold uppercase tracking-wider text-brand-violet bg-brand-violet/[.12]">

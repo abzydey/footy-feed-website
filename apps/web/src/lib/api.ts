@@ -72,7 +72,7 @@ export interface WorldCupMatch {
 export interface WorldCupSquad {
   abbr: string;
   name: string;
-  players: { name: string; captain?: boolean; debutant?: boolean }[];
+  players: { name: string; club?: string; captain?: boolean; debutant?: boolean }[];
   shadows: string[] | null;
   note: string | null;
   announcedAt: string;

@@ -19,7 +19,8 @@ import { prisma } from "../src/lib/prisma";
 
 interface SquadInput {
   abbr: string;
-  players: { name: string; captain?: boolean; debutant?: boolean }[];
+  // club: the player's club when the announcement lists it.
+  players: { name: string; club?: string; captain?: boolean; debutant?: boolean }[];
   shadows?: string[];
   // Shown with the squad: "One to be omitted", an injury replacement…
   note?: string;
@@ -41,6 +42,7 @@ async function main() {
   if (!Array.isArray(input.players) || input.players.length === 0) throw new Error("players is empty");
   const players = input.players.map((p) => ({
     name: p.name.trim(),
+    ...(p.club?.trim() ? { club: p.club.trim() } : {}),
     ...(p.captain ? { captain: true } : {}),
     ...(p.debutant ? { debutant: true } : {}),
   }));
