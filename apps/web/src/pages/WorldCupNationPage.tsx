@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { api, WorldCupMatch, WorldCupSquad } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { kickoffLabel, poolLabel, worldCupNations } from "../lib/worldCup";
+import { kickoffLabel, nationPoolLabel, worldCupNations } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 
@@ -49,7 +49,7 @@ export default function WorldCupNationPage() {
             <Flag abbr={nation.abbr} className="w-16 h-12 shrink-0" />
             <div>
               <div className="font-display font-bold text-[11px] tracking-[.14em] text-brand-violet uppercase">
-                Rugby League World Cup · {poolLabel(nation.pool)}
+                Rugby League World Cup · {nationPoolLabel(nation.abbr, nation.pool)}
               </div>
               <h1 className="font-display italic font-black text-[30px] leading-tight text-white">{nation.name}</h1>
             </div>

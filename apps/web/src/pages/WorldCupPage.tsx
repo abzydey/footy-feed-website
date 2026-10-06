@@ -5,7 +5,7 @@ import { api, EventItem, WorldCupMatch } from "../lib/api";
 import { dedupeStories, readCachedFeed } from "../lib/feed";
 import { useRefreshTick } from "../lib/refresh";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
-import { featuredMatch, kickoffLabel, POOL_NOTE, poolLabel, poolTable } from "../lib/worldCup";
+import { featuredMatch, kickoffLabel, POOL_NOTE, poolLabel, poolTable, SUB_POOL } from "../lib/worldCup";
 import Flag from "../components/Flag";
 import EventCard from "../components/EventCard";
 import WorldCupMatchCard from "../components/WorldCupMatchCard";
@@ -39,6 +39,16 @@ function PoolCard({ matches, pool }: { matches: WorldCupMatch[]; pool: "A" | "B"
                 <span className="flex items-center gap-2 min-w-0">
                   <Flag abbr={r.abbr} className="w-5 h-[15px] shrink-0" />
                   <span className="font-bold text-white truncate">{r.name}</span>
+                  {pool === "B" && SUB_POOL[r.abbr] && (
+                    <span
+                      className={`shrink-0 rounded px-1.5 text-[10px] font-extrabold ${
+                        SUB_POOL[r.abbr] === "B" ? "text-brand-violet bg-brand-violet/[.14]" : "text-slate-300 bg-white/[.08]"
+                      }`}
+                      title={`Pool ${SUB_POOL[r.abbr]}`}
+                    >
+                      {SUB_POOL[r.abbr]}
+                    </span>
+                  )}
                 </span>
               </td>
               <td className="text-center text-slate-300">{r.played}</td>

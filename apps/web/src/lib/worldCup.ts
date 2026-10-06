@@ -122,5 +122,22 @@ export const poolLabel = (pool: "A" | "B" | null | undefined): string =>
 
 export const POOL_NOTE: Record<"A" | "B", string> = {
   A: "Each team plays the other three.",
-  B: "Two pools of three on one combined ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals.",
+  B: "Pool B (England, Lebanon, Samoa) and Pool C (France, PNG, Tonga) share one ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals.",
 };
+
+// Which of the two B/C pools each of those six nations is in — the draw data
+// only says "group 2" for all six; the lettering is from the official pools
+// table (rlwc2026.com, Pool B + C), and matches the fixtures (each plays only
+// the other pool).
+export const SUB_POOL: Record<string, "B" | "C"> = {
+  ENG: "B",
+  LEB: "B",
+  SAM: "B",
+  FRA: "C",
+  PNG: "C",
+  TNG: "C",
+};
+
+// A nation's own pool: "Pool A", "Pool B" or "Pool C".
+export const nationPoolLabel = (abbr: string, pool: "A" | "B" | null | undefined): string =>
+  pool === "A" ? "Pool A" : SUB_POOL[abbr] ? `Pool ${SUB_POOL[abbr]}` : poolLabel(pool);
