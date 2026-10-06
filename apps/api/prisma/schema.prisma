@@ -824,6 +824,9 @@ model WorldCupSquad {
   name        String
   players     Json
   shadows     Json?
+  // A short note shown with the squad, e.g. "One to be omitted" or an
+  // injury replacement.
+  note        String?
   announcedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

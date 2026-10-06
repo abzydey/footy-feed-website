@@ -5,7 +5,8 @@
 //
 // squad.json:
 //   { "abbr": "AUS", "players": [{ "name": "Isaah Yeo", "captain": true },
-//     { "name": "Bradman Best", "debutant": true }, …], "shadows": ["Thomas Jenkins"] }
+//     { "name": "Bradman Best", "debutant": true }, …], "shadows": ["Thomas Jenkins"],
+//     "note": "Lindsay Smith replaces the injured Lindsay Collins." }
 //
 // abbr is the official draw's nation code (AUS NZL FIJ COO SAM FRA PNG LEB
 // ENG TNG); the nation's name comes from the draw. Players stay in the
@@ -20,6 +21,8 @@ interface SquadInput {
   abbr: string;
   players: { name: string; captain?: boolean; debutant?: boolean }[];
   shadows?: string[];
+  // Shown with the squad: "One to be omitted", an injury replacement…
+  note?: string;
 }
 
 async function main() {
@@ -45,8 +48,8 @@ async function main() {
 
   await prisma.worldCupSquad.upsert({
     where: { abbr },
-    create: { abbr, name, players, shadows: shadows ?? Prisma.DbNull },
-    update: { name, players, shadows: shadows ?? Prisma.DbNull },
+    create: { abbr, name, players, shadows: shadows ?? Prisma.DbNull, note: input.note?.trim() || null },
+    update: { name, players, shadows: shadows ?? Prisma.DbNull, note: input.note?.trim() || null },
   });
   console.log(`${name} squad saved: ${players.length} players${shadows ? `, ${shadows.length} shadow` : ""}`);
 }

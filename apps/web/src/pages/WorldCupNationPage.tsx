@@ -64,6 +64,7 @@ export default function WorldCupNationPage() {
               <p className="text-[13px] text-slate-500 py-3">Not announced yet — it'll appear here once it is.</p>
             ) : (
               <>
+                {squad.note && <p className="text-[12.5px] font-semibold text-slate-300 pb-2">{squad.note}</p>}
                 <ul className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-6">
                   {squad.players.map((p) => (
                     <li key={p.name} className="flex items-center gap-2 py-2 border-t border-white/[.05] text-[14px]">

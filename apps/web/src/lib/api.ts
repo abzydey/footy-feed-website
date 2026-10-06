@@ -74,6 +74,7 @@ export interface WorldCupSquad {
   name: string;
   players: { name: string; captain?: boolean; debutant?: boolean }[];
   shadows: string[] | null;
+  note: string | null;
   announcedAt: string;
 }
 
