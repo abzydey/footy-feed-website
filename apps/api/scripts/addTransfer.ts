@@ -57,12 +57,14 @@ async function main() {
 
     const event = m.headline
       ? await prisma.event.findFirst({
-          where: { type: "TRANSFER", headline: m.headline },
-          orderBy: { createdAt: "desc" },
+          // A Signings story first; a retirement or release is usually only
+          // General News, so fall back to that.
+          where: { type: { in: ["TRANSFER", "GENERAL_NEWS"] }, headline: m.headline },
+          orderBy: [{ type: "desc" }, { createdAt: "desc" }],
           select: { id: true, createdAt: true },
         })
       : null;
-    if (m.headline && !event) throw new Error(`No Signings story with headline "${m.headline}"`);
+    if (m.headline && !event) throw new Error(`No Signings or News story with headline "${m.headline}"`);
 
     const existing = await prisma.transfer.findFirst({
       where: { player: m.player, kind: m.kind, fromTeamId, toTeamId },
