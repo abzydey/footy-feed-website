@@ -103,6 +103,10 @@ const TEAM_BADGE_STYLE: Record<string, BadgeStyle> = {
   // since, per both that image and the current official jersey listing.
   // Black and red, per the club (confirmed directly, 2026-10-02).
   "perth-bears": { pattern: "diagonal", secondary: "#E4002B" },
+  // Sampled from the club's "PNG Chiefs 2028" shield (sent directly,
+  // 2026-10-08): charcoal field, gold-to-orange outer border, red inner
+  // border — drawn as a charcoal badge crossed by a gold/orange/red band.
+  "png-chiefs": { pattern: "diagonal-band", secondary: "#FAAC1A", tertiary: "#E0201F", band: ["#FAAC1A", "#F05A25", "#E0201F"] },
   panthers: { pattern: "diagonal-band", secondary: "#FFFFFF", band: ["#BB302F", "#E8D148", "#2C9C29"] }, // black, red/yellow/green band
   // Real jersey is horizontal red/green stripes, not a vertical halves
   // split — corrected per a direct reference to the official jersey, and
