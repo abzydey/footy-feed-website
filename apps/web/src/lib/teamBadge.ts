@@ -13,6 +13,7 @@ export const TEAM_ABBREVIATIONS: Record<string, string> = {
   eels: "PAR",
   panthers: "PEN",
   "perth-bears": "PER",
+  "png-chiefs": "CHI",
   rabbitohs: "SOU",
   dragons: "STG",
   roosters: "SYD",
