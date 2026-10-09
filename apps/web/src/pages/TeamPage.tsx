@@ -186,7 +186,7 @@ export default function TeamPage() {
       <div
         className="px-5 pt-5 pb-4"
         style={{
-          background: `linear-gradient(165deg, ${team.primaryColor ?? "#241A52"}66 0%, #141B33 50%, #04091B 100%)`,
+          background: `linear-gradient(165deg, ${team.primaryColor ?? "#241A52"}66 0%, #1C2A58 50%, #0B1533 100%)`,
         }}
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between mb-4">

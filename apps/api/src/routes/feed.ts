@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
     orderBy: { createdAt: "desc" },
     take: limit,
     include: {
-      team: { select: { id: true, name: true, shortName: true, slug: true } },
+      team: { select: { id: true, name: true, shortName: true, slug: true, primaryColor: true } },
       player: { select: { id: true, name: true, slug: true } },
       game: {
         select: {
@@ -74,7 +74,7 @@ router.get("/:id", async (req, res) => {
   const event = await prisma.event.findFirst({
     where: { id: req.params.id, type: { in: ["GENERAL_NEWS", "TRANSFER"] } },
     include: {
-      team: { select: { id: true, name: true, shortName: true, slug: true } },
+      team: { select: { id: true, name: true, shortName: true, slug: true, primaryColor: true } },
       player: { select: { id: true, name: true, slug: true } },
       game: {
         select: {

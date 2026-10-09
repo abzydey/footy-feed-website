@@ -24,14 +24,20 @@ export default {
         },
         // Card background, one step up from the page's app background so
         // cards visually lift off the page instead of blending into it.
+        // Lifted from near-black (#04091B page / #0A1024 cards) to a true
+        // navy in Oct 2026 — the old pair were so close the page read as
+        // one black slab ("our page is a bit too dark").
         surface: {
-          DEFAULT: "#0A1024", // fs-surface-700 — cards, panels
-          alt: "#060B1E", // fs-surface-800 — alternating section band / ladder header row
-          hover: "#141B33", // fs-surface-600 — raised/press state
-          inset: "#1C2440", // fs-surface-500 — crest chips, avatars, inset fills
+          DEFAULT: "#142048", // fs-surface-700 — cards, panels
+          alt: "#0F1A3D", // fs-surface-800 — alternating section band / ladder header row
+          hover: "#1C2A58", // fs-surface-600 — raised/press state
+          inset: "#25346A", // fs-surface-500 — crest chips, avatars, inset fills
         },
         // Page background.
-        app: "#04091B",
+        app: "#0B1533",
+        // Secondary text (times, venues, captions) one notch brighter than
+        // Tailwind's slate-500 so it reads on phones against navy.
+        slate: { 500: "#8190AC" },
       },
       fontFamily: {
         display: ["Saira", "sans-serif"], // headings, kickers, numerals, jersey/ladder numerals — see brand pack Typography table. Italic is the default for display sizes.

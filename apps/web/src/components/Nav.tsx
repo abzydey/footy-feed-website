@@ -90,7 +90,7 @@ export default function Nav() {
 
   return (
     <>
-      <header className="sticky top-0 z-20 bg-app/90 backdrop-blur-sm border-b border-white/[.07] pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-20 bg-app/75 backdrop-blur-sm border-b border-white/[.07] pt-[env(safe-area-inset-top)]">
         {/* Phones: logo centred, search on the right. The empty box on the
             left balances the search button so the logo sits truly centred. */}
         <div className="lg:hidden flex items-center justify-between px-2 h-[52px]">
@@ -147,7 +147,7 @@ export default function Nav() {
           would size these against the header instead of the screen. */}
       <nav
         aria-label="Main"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#060B1E]/95 backdrop-blur-md border-t border-white/[.08] pb-[env(safe-area-inset-bottom)]"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-surface-alt/95 backdrop-blur-md border-t border-white/[.08] pb-[env(safe-area-inset-bottom)]"
       >
         <div className={`grid ${TABS.length === 5 ? "grid-cols-6" : "grid-cols-5"} h-14`}>
           {TABS.map((tab) => (

@@ -4,6 +4,10 @@
 
 body {
   @apply bg-app text-slate-100 font-sans;
+  /* A soft Full Set Purple glow behind the top of every page, fading into
+     the navy — scrolls away with the content. */
+  background-image: radial-gradient(ellipse 140% 420px at 50% -120px, rgba(168, 85, 247, 0.22), transparent 75%);
+  background-repeat: no-repeat;
   /* Heavy condensed weights (extrabold/black) on a pure black background
      otherwise show a ghosted/doubled-stroke look in Chromium on Windows —
      this isn't an intentional effect, just missing font-smoothing. */

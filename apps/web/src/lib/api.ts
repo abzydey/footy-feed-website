@@ -117,7 +117,7 @@ export interface EventItem {
   // deliberately lean include list.
   articleBody?: string | null;
   player?: { id: string; name: string; slug: string } | null;
-  team?: { id: string; name: string; slug: string } | null;
+  team?: { id: string; name: string; slug: string; primaryColor?: string | null } | null;
   game?: {
     id: string;
     round: string;
