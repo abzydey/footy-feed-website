@@ -4,9 +4,11 @@ import { EventItem } from "../lib/api";
 import { timeAgo } from "../lib/format";
 
 // What a headline is filed under: World Cup, Signings, its club, or plain
-// NRL News for a league-wide story.
+// NRL News for a league-wide story. Full Set originals are league-wide
+// pieces even when tagged to every club, so they read as NRL News.
 function kicker(e: EventItem): string {
   if (e.worldCup) return "World Cup";
+  if (e.isOriginalArticle) return "NRL News";
   if (e.type === "TRANSFER") return "Signings";
   return e.team?.name ?? "NRL News";
 }

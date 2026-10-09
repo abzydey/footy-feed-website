@@ -15,6 +15,7 @@ interface StripGame {
   kickoff: number;
   status: "SCHEDULED" | "LIVE" | "FULL_TIME";
   clock: string | null;
+  venue: string | null;
   sides: { name: string; score: number | null; mark: { color?: string; flag?: string } }[];
 }
 
@@ -30,6 +31,7 @@ function fromNrl(g: Game): StripGame {
     kickoff: new Date(g.kickoffAt).getTime(),
     status: g.status,
     clock: g.liveClock,
+    venue: g.venue,
     sides: [
       { name: g.homeTeam.shortName, score: g.homeScore, mark: { color: teamColors(g.homeTeam)[0] } },
       { name: g.awayTeam.shortName, score: g.awayScore, mark: { color: teamColors(g.awayTeam)[0] } },
@@ -45,6 +47,7 @@ function fromWorldCup(m: WorldCupMatch): StripGame {
     kickoff: new Date(m.kickoffAt).getTime(),
     status: m.status,
     clock: null,
+    venue: m.venue,
     sides: [
       { name: sideName(m, "home"), score: m.homeScore, mark: { flag: m.homeAbbr } },
       { name: sideName(m, "away"), score: m.awayScore, mark: { flag: m.awayAbbr } },
@@ -137,13 +140,14 @@ export default function ScoreStrip() {
         to={g.href}
         className="flex-1 min-w-0 rounded-[14px] bg-surface border border-white/[.07] px-3.5 py-2.5 hover:border-brand-violet/45 transition-colors duration-150"
       >
-        <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className={`flex items-center justify-between gap-2 ${g.venue ? "" : "mb-1.5"}`}>
           <span className="font-display font-bold text-[10.5px] tracking-[.14em] uppercase text-brand-violet truncate">{g.label}</span>
           <span className={`shrink-0 text-[10.5px] font-extrabold tracking-[.08em] uppercase ${live ? "text-brand-siren" : "text-slate-400"}`}>
             {live && "● "}
             {statusText(g)}
           </span>
         </div>
+        {g.venue && <div className="mb-1.5 text-[11.5px] text-slate-500 truncate">{g.venue}</div>}
         {g.sides.map((s, k) => (
           <div key={k} className="flex items-center gap-2.5 py-[2px]">
             {s.mark.flag ? (

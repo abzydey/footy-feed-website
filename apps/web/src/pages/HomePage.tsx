@@ -6,10 +6,8 @@ import { dedupeStories, readCachedFeed, writeCachedFeed } from "../lib/feed";
 import HeadlineList from "../components/HeadlineList";
 import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
-import NextGameCard from "../components/NextGameCard";
 import ScoreStrip from "../components/ScoreStrip";
 import SigningsHomeCard from "../components/SigningsHomeCard";
-import WorldCupHomeCard from "../components/WorldCupHomeCard";
 import WorldCupSquadsCard from "../components/WorldCupSquadsCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
@@ -53,23 +51,16 @@ export default function HomePage() {
   const articles = feed ? dedupeStories(feed).slice(0, LATEST_COUNT) : null;
 
   // One list of sections, two arrangements. Phones: a single column, in
-  // this order — scores, the match cards, the latest headlines, then the
-  // rest. Computers (lg): the score strip across the top, the match cards
-  // and headlines down the wider left column, the rest in a right-hand
-  // column — CSS grid placement only, so nothing renders (or fetches) twice.
+  // this order — the score strip (which replaced the big match cards), the
+  // latest headlines, then the rest. Computers (lg): the score strip and
+  // headlines down the wider left column, the rest in a right-hand column — CSS grid placement only, so nothing renders (or fetches) twice.
   return (
     <div className="max-w-3xl lg:max-w-6xl mx-auto p-4 lg:px-5 lg:pt-7 space-y-5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
       <div className="lg:col-span-2 lg:row-start-1">
         <ScoreStrip />
       </div>
 
-      <div className="lg:col-span-2 lg:row-start-2 space-y-5">
-        <NextGameCard />
-        {/* Only while the World Cup is on — renders nothing otherwise. */}
-        <WorldCupHomeCard />
-      </div>
-
-      <section className="lg:col-span-2 lg:row-start-3">
+      <section className="lg:col-span-2 lg:row-start-2">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="font-display font-bold text-xl tracking-[.06em] text-white uppercase">Latest</h2>
           <Link to="/news" className="text-[13px] font-bold text-brand-violet hover:text-brand-hover">
@@ -87,7 +78,7 @@ export default function HomePage() {
         {articles && articles.length > 0 && <HeadlineList items={articles} pinned={pinned} />}
       </section>
 
-      <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-3">
+      <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-2">
         <TeamListsCard />
         {/* World Cup only — the same quick-link row, for squads. */}
         <WorldCupSquadsCard />
