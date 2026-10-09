@@ -4,11 +4,12 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import BrandLogo from "./BrandLogo";
 import { FooterContent } from "./Footer";
 import { isNativeApp, tapHaptic } from "../lib/platform";
-import { FINALS_IN_MENU, IN_SEASON } from "../lib/season";
+import { FINALS_IN_MENU, IN_SEASON, WORLD_CUP_IN_MENU } from "../lib/season";
 
 // Navigation, two layouts from one list of pages:
 // - Phones/tablets (below lg): a slim top bar (logo, search) plus a bottom
-//   tab bar — Home, Finals, News, Teams, More — the standard app pattern.
+//   tab bar — Home, Finals (or Signings), World Cup while it's on, News,
+//   Teams, More — the standard app pattern.
 //   "More" opens a sheet with every other page. Same in the app and on the
 //   phone website, on purpose: someone arriving from a shared link already
 //   knows their way around the app.
@@ -26,6 +27,7 @@ const TABS: (NavItem & { icon: () => JSX.Element })[] = [
   ...(FINALS_IN_MENU
     ? [{ to: "/finals", label: "Finals", icon: TrophyIcon }]
     : [{ to: "/signings", label: "Signings", icon: SwapIcon }]),
+  ...(WORLD_CUP_IN_MENU ? [{ to: "/world-cup", label: "World Cup", icon: GlobeIcon }] : []),
   { to: "/news", label: "News", icon: NewsIcon },
   { to: "/teams", label: "Teams", icon: ShieldIcon },
 ];
@@ -147,7 +149,7 @@ export default function Nav() {
         aria-label="Main"
         className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[#060B1E]/95 backdrop-blur-md border-t border-white/[.08] pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="grid grid-cols-5 h-14">
+        <div className={`grid ${TABS.length === 5 ? "grid-cols-6" : "grid-cols-5"} h-14`}>
           {TABS.map((tab) => (
             <NavLink
               key={tab.to}
@@ -329,6 +331,15 @@ function NewsIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <path d="M7 8h10M7 12h10M7 16h6" />
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" />
     </svg>
   );
 }
