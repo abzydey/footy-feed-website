@@ -2,11 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme colours, as space-separated RGB so Tailwind's opacity modifiers
+   (border-white/10 etc.) work. Dark is the default and the brand's own
+   look; light is opt-in from the Appearance switch (lib/theme.ts). */
+:root,
+[data-theme="dark"],
+.force-dark {
+  color-scheme: dark;
+  --c-fg: 255 255 255;
+  --c-app: 11 21 51; /* #0B1533 */
+  --c-surface: 20 32 72; /* #142048 */
+  --c-surface-alt: 15 26 61; /* #0F1A3D */
+  --c-surface-hover: 28 42 88; /* #1C2A58 */
+  --c-surface-inset: 37 52 106; /* #25346A */
+  --c-slate-100: 241 245 249;
+  --c-slate-200: 226 232 240;
+  --c-slate-300: 203 213 225;
+  --c-slate-400: 148 163 184;
+  --c-slate-500: 129 144 172; /* a notch brighter than Tailwind's, for navy */
+  --c-slate-600: 71 85 105;
+  --c-slate-700: 51 65 85;
+  --c-slate-800: 30 41 59;
+  --c-violet: 168 85 247; /* #A855F7 Full Set Purple */
+  --c-violet-hover: 174 107 255;
+  --glow: rgba(168, 85, 247, 0.22);
+}
+
+/* Light: white cards on a cool off-white page, navy text, and a deeper
+   purple so small purple text keeps its contrast on white. */
+[data-theme="light"] {
+  color-scheme: light;
+  --c-fg: 11 21 51; /* navy */
+  --c-app: 241 243 249; /* #F1F3F9 */
+  --c-surface: 255 255 255;
+  --c-surface-alt: 233 236 245;
+  --c-surface-hover: 236 239 248;
+  --c-surface-inset: 222 227 241;
+  --c-slate-100: 22 32 60;
+  --c-slate-200: 34 46 78;
+  --c-slate-300: 52 64 96;
+  --c-slate-400: 80 92 120;
+  --c-slate-500: 100 111 136;
+  --c-slate-600: 140 150 170;
+  --c-slate-700: 180 188 204;
+  --c-slate-800: 213 218 228;
+  --c-violet: 139 63 224; /* #8B3FE0 */
+  --c-violet-hover: 124 45 210;
+  --glow: rgba(168, 85, 247, 0.12);
+}
+
+/* Text on a solid purple/orange fill stays real white in both themes. */
+.bg-brand-violet,
+.bg-brand-hover,
+.bg-brand-siren {
+  --c-fg: 255 255 255;
+}
+
+/* The header logo: white wordmark on dark, navy wordmark on light. */
+[data-theme="light"] .logo-on-dark,
+:root:not([data-theme="light"]) .logo-on-light {
+  display: none;
+}
+
+/* Partner logos are light artwork made for a dark background, so in the
+   light theme they sit on a navy band. */
+[data-theme="light"] .partner-band {
+  background: #0b1533;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
 body {
   @apply bg-app text-slate-100 font-sans;
   /* A soft Full Set Purple glow behind the top of every page, fading into
      the navy — scrolls away with the content. */
-  background-image: radial-gradient(ellipse 140% 420px at 50% -120px, rgba(168, 85, 247, 0.22), transparent 75%);
+  background-image: radial-gradient(ellipse 140% 420px at 50% -120px, var(--glow), transparent 75%);
   background-repeat: no-repeat;
   /* Heavy condensed weights (extrabold/black) on a pure black background
      otherwise show a ghosted/doubled-stroke look in Chromium on Windows —

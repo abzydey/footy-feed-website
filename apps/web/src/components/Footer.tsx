@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { isNativeApp, isStandalone } from "../lib/platform";
+import ThemePicker from "./ThemePicker";
 
 // Site-wide footer — About link + a single equal-treatment partner row.
 // Earlier versions gave House Money its own larger "Presented by" lockup
@@ -70,7 +71,11 @@ export function FooterContent({ stacked = false }: { stacked?: boolean }) {
         {adminViaCopyright ? <Link to="/admin">{copyright}</Link> : <span>{copyright}</span>}
       </div>
 
-      <div className="flex items-center gap-3">
+      <ThemePicker />
+
+      {/* force-dark + partner-band: the logos are light artwork, so in the
+          light theme this row sits on a navy band (index.css). */}
+      <div className="partner-band force-dark flex items-center gap-3">
         <span className="font-display font-extrabold text-[9.5px] tracking-[.24em] text-white/42 uppercase">
           Our partners
         </span>

@@ -36,7 +36,7 @@ export default function LadderPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-b from-[#141B33] to-app px-5 pt-4 pb-3.5">
+      <div className="bg-gradient-to-b from-surface-hover to-app px-5 pt-4 pb-3.5">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <h1 className="font-display italic font-black text-[28px] tracking-[.01em] text-white uppercase">
             {IN_SEASON ? "Ladder" : "Final ladder"}

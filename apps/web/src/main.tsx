@@ -6,6 +6,7 @@ import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/push";
 import { isNativeApp } from "./lib/platform";
+import { watchSystemTheme } from "./lib/theme";
 
 // Lets index.css apply app-only touches (no long-press link previews etc.).
 if (isNativeApp) document.documentElement.classList.add("native");
@@ -14,6 +15,8 @@ if (isNativeApp) document.documentElement.classList.add("native");
 // enablePushNotifications() re-checks/re-registers on its own if this
 // hasn't resolved yet by the time someone opts into notifications.
 registerServiceWorker()?.catch((err) => console.error("[push] service worker registration failed:", err));
+
+watchSystemTheme();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

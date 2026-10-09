@@ -153,7 +153,7 @@ export default function ScoreStrip() {
             {s.mark.flag ? (
               <Flag abbr={s.mark.flag} className="w-[18px] h-[13px] shrink-0" />
             ) : (
-              <span className="w-[4px] h-[16px] rounded-full shrink-0" style={{ background: s.mark.color ?? "#1C2440" }} aria-hidden="true" />
+              <span className="w-[4px] h-[16px] rounded-full shrink-0" style={{ background: s.mark.color ?? "rgb(var(--c-surface-inset))" }} aria-hidden="true" />
             )}
             <span className={`flex-1 min-w-0 truncate text-[14px] font-bold ${leader === -1 || leader === k ? "text-white" : "text-slate-400"}`}>{s.name}</span>
             {showScores && (

@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 
 import BrandLogo from "./BrandLogo";
 import { FooterContent } from "./Footer";
+import ThemePicker from "./ThemePicker";
 import { isNativeApp, tapHaptic } from "../lib/platform";
 import { FINALS_IN_MENU, IN_SEASON, WORLD_CUP_IN_MENU } from "../lib/season";
 
@@ -234,11 +235,12 @@ function MoreSheet({ open, onClose, pathname }: { open: boolean; onClose: () => 
             );
           })}
         </div>
-        {isNativeApp && (
-          <div className="mt-5 pt-4 border-t border-white/10">
-            <FooterContent stacked />
-          </div>
-        )}
+        {/* The app hides the site footer, so the whole footer (with the
+            Appearance switch) lives here; on the phone website the footer
+            is at the bottom of every page, so just the switch. */}
+        <div className="mt-5 pt-4 border-t border-white/10 flex justify-center">
+          {isNativeApp ? <FooterContent stacked /> : <ThemePicker />}
+        </div>
       </div>
     </div>
   );

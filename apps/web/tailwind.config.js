@@ -1,15 +1,37 @@
 /** @type {import('tailwindcss').Config} */
+// Every neutral (white, slate, surface, app) and the brand purple read CSS
+// variables set per theme in index.css, so the same class names work in
+// both the dark (default) and light themes — see lib/theme.ts.
+const v = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  // Hover styles only on devices that can hover — on phones a tapped row
+  // otherwise keeps its hover colour after you come back to the page.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {
+        // "white" is the foreground colour: real white in dark mode, navy in
+        // light mode. Solid purple/orange fills reset it to real white (see
+        // index.css), so button text stays white in both.
+        white: v("fg"),
+        slate: {
+          100: v("slate-100"),
+          200: v("slate-200"),
+          300: v("slate-300"),
+          400: v("slate-400"),
+          500: v("slate-500"),
+          600: v("slate-600"),
+          700: v("slate-700"),
+          800: v("slate-800"),
+        },
         // Full Set brand pack v1.0 — four colours only: navy, purple, white,
         // Siren. Purple is a single swappable token (accent) so a future
         // brand change stays a one-line edit. See handoff_fullset_brand/README.md.
         brand: {
-          DEFAULT: "#A855F7",
-          violet: "#A855F7", // Full Set Purple — buttons, links, section labels, kickers, top-8 rail
+          DEFAULT: v("violet"),
+          violet: v("violet"), // Full Set Purple — buttons, links, section labels, kickers, top-8 rail
           // Was #A472FF (a deliberately lighter shade for small purple text's
           // contrast on navy — 6.4:1 vs violet's own ~4.3:1, borderline for
           // WCAG AA at small sizes). Set equal to violet on request ("I want
@@ -18,8 +40,8 @@ export default {
           // renders as the exact same purple with a one-line change here,
           // rather than hunting down each usage — small violet text on navy
           // is a real, if minor, contrast regression from before.
-          heliotrope: "#A855F7",
-          hover: "#AE6BFF", // lighter tone shown on hover for solid brand-coloured buttons/fills and accent-on-hover text/links — deliberately distinct from violet, not an opacity trick
+          heliotrope: v("violet"),
+          hover: v("violet-hover"), // lighter tone shown on hover for solid brand-coloured buttons/fills and accent-on-hover text/links — deliberately distinct from violet, not an opacity trick
           siren: "#FF6B2C", // the one warm accent — live now, kickoff imminent, late change, OUT. Never decorative.
         },
         // Card background, one step up from the page's app background so
@@ -28,16 +50,13 @@ export default {
         // navy in Oct 2026 — the old pair were so close the page read as
         // one black slab ("our page is a bit too dark").
         surface: {
-          DEFAULT: "#142048", // fs-surface-700 — cards, panels
-          alt: "#0F1A3D", // fs-surface-800 — alternating section band / ladder header row
-          hover: "#1C2A58", // fs-surface-600 — raised/press state
-          inset: "#25346A", // fs-surface-500 — crest chips, avatars, inset fills
+          DEFAULT: v("surface"), // fs-surface-700 — cards, panels (dark #142048)
+          alt: v("surface-alt"), // fs-surface-800 — alternating section band / ladder header row (dark #0F1A3D)
+          hover: v("surface-hover"), // fs-surface-600 — raised/press state (dark #1C2A58)
+          inset: v("surface-inset"), // fs-surface-500 — crest chips, avatars, inset fills (dark #25346A)
         },
         // Page background.
-        app: "#0B1533",
-        // Secondary text (times, venues, captions) one notch brighter than
-        // Tailwind's slate-500 so it reads on phones against navy.
-        slate: { 500: "#8190AC" },
+        app: v("app"), // dark #0B1533
       },
       fontFamily: {
         display: ["Saira", "sans-serif"], // headings, kickers, numerals, jersey/ladder numerals — see brand pack Typography table. Italic is the default for display sizes.
