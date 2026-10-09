@@ -336,6 +336,7 @@ export const api = {
   getFeed: (limit?: number) => request<EventItem[]>(`/feed${limit ? `?limit=${limit}` : ""}`),
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
+  getStory: (id: string) => request<EventItem>(`/feed/${id}`),
   listWorldCupMatches: () => request<WorldCupMatch[]>("/world-cup/matches"),
   listWorldCupSquads: () => request<WorldCupSquad[]>("/world-cup/squads"),
   getWorldCupMatch: (id: string) =>

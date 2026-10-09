@@ -58,4 +58,26 @@ router.get("/", async (req, res) => {
   res.json(events);
 });
 
+// GET /api/feed/:id — one news or signings story, for the in-app story page
+// a headline opens (Full Set originals have their own /api/articles/:slug).
+router.get("/:id", async (req, res) => {
+  const event = await prisma.event.findFirst({
+    where: { id: req.params.id, type: { in: ["GENERAL_NEWS", "TRANSFER"] } },
+    include: {
+      team: { select: { id: true, name: true, shortName: true, slug: true } },
+      player: { select: { id: true, name: true, slug: true } },
+      game: {
+        select: {
+          id: true,
+          round: true,
+          homeTeam: { select: { shortName: true, slug: true } },
+          awayTeam: { select: { shortName: true, slug: true } },
+        },
+      },
+    },
+  });
+  if (!event) return res.status(404).json({ error: "Story not found" });
+  res.json(event);
+});
+
 export default router;

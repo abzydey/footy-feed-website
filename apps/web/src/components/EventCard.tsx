@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { EventItem } from "../lib/api";
+import { timeAgo } from "../lib/format";
 import { STAGE_BADGE_CLASS, STAGE_LABEL } from "../lib/teamListStage";
 import TweetMediaView from "./TweetMediaView";
 
@@ -14,14 +15,6 @@ const TYPE_LABEL: Record<string, string> = {
   SOCIAL_POST: "Social post",
 };
 
-function timeAgo(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 60) return `${Math.max(mins, 0)}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
 
 // "Full Set Wire" -> "FS", "The Sideline" -> "TS", "Daily Telegraph" -> "DT",
 // single word -> its first two letters. Matches the design handoff's source

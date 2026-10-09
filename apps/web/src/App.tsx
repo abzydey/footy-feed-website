@@ -26,6 +26,7 @@ import PodcastsPage from "./pages/PodcastsPage";
 import HighlightsPage from "./pages/HighlightsPage";
 import SearchPage from "./pages/SearchPage";
 import SigningsPage from "./pages/SigningsPage";
+import StoryPage from "./pages/StoryPage";
 import WorldCupPage from "./pages/WorldCupPage";
 import WorldCupMatchPage from "./pages/WorldCupMatchPage";
 import WorldCupTeamsPage from "./pages/WorldCupTeamsPage";
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/feed/:view" element={<FeedPage />} />
             <Route path="/news" element={<GeneralNewsPage />} />
             <Route path="/news/:slug" element={<NewsArticlePage />} />
+          <Route path="/story/:id" element={<StoryPage />} />
             <Route path="/teams" element={<TeamsPage />} />
             <Route path="/teams/:slug" element={<TeamPage />} />
             <Route path="/games" element={<GamesPage />} />
