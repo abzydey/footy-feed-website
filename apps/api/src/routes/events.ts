@@ -177,6 +177,8 @@ const updateEventSchema = z.object({
   // from Home/News). routes/teams.ts's recentEvents query already matches
   // any type by teamId, so no other change was needed to support this.
   teamId: z.string().optional(),
+  // Pin to the top of Home's news list (one at a time) or unpin.
+  pinned: z.boolean().optional(),
 });
 
 // PATCH /api/admin/events/:id — fix a typo, correct already-entered content
@@ -191,8 +193,14 @@ router.patch("/:id", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
-  const event = await prisma.event
-    .update({ where: { id: req.params.id }, data: parsed.data })
+  const event = await prisma
+    .$transaction(async (tx) => {
+      // Only one pinned story at a time: pinning this one unpins the rest.
+      if (parsed.data.pinned) {
+        await tx.event.updateMany({ where: { pinned: true, id: { not: req.params.id } }, data: { pinned: false } });
+      }
+      return tx.event.update({ where: { id: req.params.id }, data: parsed.data });
+    })
     .catch(() => null);
   if (!event) return res.status(404).json({ error: "Event not found" });
   res.json(event);

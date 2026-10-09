@@ -105,6 +105,8 @@ export interface EventItem {
   worldCup?: boolean;
   // A World Cup team list's game (see /world-cup/:id).
   worldCupMatchId?: string | null;
+  // Pinned to the top of Home's news list (one at a time).
+  pinned?: boolean;
   createdAt: string;
   // A Full Set-authored article — renders at /news/:slug inside the app
   // instead of linking out via sourceUrl (see schema.prisma design note).
@@ -337,6 +339,7 @@ export const api = {
   listSocialPosts: () => request<EventItem[]>(`/social`),
   getArticle: (slug: string) => request<EventItem>(`/articles/${slug}`),
   getStory: (id: string) => request<EventItem>(`/feed/${id}`),
+  getPinnedStory: () => request<EventItem | null>(`/feed/pinned`),
   listWorldCupMatches: () => request<WorldCupMatch[]>("/world-cup/matches"),
   listWorldCupSquads: () => request<WorldCupSquad[]>("/world-cup/squads"),
   getWorldCupMatch: (id: string) =>
@@ -401,7 +404,7 @@ export const api = {
     }),
   adminTestAlert: (token: string) =>
     request<{ sent: number; failed: number }>(`/admin/alerts/test`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
-  adminUpdateEvent: (token: string, id: string, data: { headline?: string; body?: string; teamId?: string }) =>
+  adminUpdateEvent: (token: string, id: string, data: { headline?: string; body?: string; teamId?: string; pinned?: boolean }) =>
     request<EventItem>(`/admin/events/${id}`, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${token}` },

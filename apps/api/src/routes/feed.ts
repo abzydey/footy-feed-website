@@ -58,6 +58,16 @@ router.get("/", async (req, res) => {
   res.json(events);
 });
 
+// GET /api/feed/pinned — the story pinned to the top of Home, or null.
+router.get("/pinned", async (_req, res) => {
+  const event = await prisma.event.findFirst({
+    where: { pinned: true, type: { in: ["GENERAL_NEWS", "TRANSFER"] } },
+    orderBy: { createdAt: "asc" },
+    include: { team: { select: { id: true, name: true, shortName: true, slug: true } } },
+  });
+  res.json(event);
+});
+
 // GET /api/feed/:id — one news or signings story, for the in-app story page
 // a headline opens (Full Set originals have their own /api/articles/:slug).
 router.get("/:id", async (req, res) => {

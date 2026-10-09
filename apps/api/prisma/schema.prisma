@@ -361,6 +361,9 @@ model Event {
   // A Rugby League World Cup story — shown on /world-cup and under the
   // News page's World Cup filter, alongside its normal club tag(s).
   worldCup          Boolean @default(false)
+  // Pinned to the top of Home's news list. At most one at a time —
+  // routes/events.ts's PATCH unpins the old one when a new one is pinned.
+  pinned            Boolean @default(false)
   // A World Cup team list (type LINEUP_CHANGE, no team/game): which World
   // Cup game, and which side ("HOME"/"AWAY"). See lib/worldCupTeamLists.ts.
   worldCupMatchId   String?

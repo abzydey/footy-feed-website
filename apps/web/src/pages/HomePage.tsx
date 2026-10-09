@@ -23,6 +23,7 @@ const LATEST_COUNT = 8;
 
 export default function HomePage() {
   const [feed, setFeed] = useState<EventItem[] | null>(readCachedFeed);
+  const [pinned, setPinned] = useState<EventItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const refreshTick = useRefreshTick();
 
@@ -42,6 +43,7 @@ export default function HomePage() {
         writeCachedFeed(fresh);
       })
       .catch((err) => setError(err.message));
+    api.getPinnedStory().then(setPinned).catch(() => {});
   }, [refreshTick]);
 
   // A fixed top-stories preview, not chip-driven anymore — the pills above
@@ -82,7 +84,7 @@ export default function HomePage() {
         )}
         {/* Headlines only (the full cards are on the News page), so Home
             shows eight stories in the space two cards used to take. */}
-        {articles && articles.length > 0 && <HeadlineList items={articles} />}
+        {articles && articles.length > 0 && <HeadlineList items={articles} pinned={pinned} />}
       </section>
 
       <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-3">

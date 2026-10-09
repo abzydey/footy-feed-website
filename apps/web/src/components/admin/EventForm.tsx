@@ -22,6 +22,7 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
   const [players, setPlayers] = useState<Player[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [recentEvents, setRecentEvents] = useState<EventItem[]>([]);
+  const [pinnedStory, setPinnedStory] = useState<EventItem | null>(null);
 
   const [teamSlug, setTeamSlug] = useState("");
   const [playerId, setPlayerId] = useState("");
@@ -54,6 +55,14 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
 
   function refreshEvents() {
     api.adminListEvents(token).then(setRecentEvents).catch(() => onLogout());
+    api.getPinnedStory().then(setPinnedStory).catch(() => {});
+  }
+
+  // Pin a story to the top of Home's news list (the API unpins whatever was
+  // pinned before), or unpin it.
+  async function togglePin(event: EventItem) {
+    await api.adminUpdateEvent(token, event.id, { pinned: !event.pinned }).catch(() => null);
+    refreshEvents();
   }
 
   const selectedTeam = teams.find((t) => t.slug === teamSlug);
@@ -310,6 +319,23 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
       </form>
 
       <section>
+        {/* The pinned story stays unpinnable here even once it has dropped
+            out of the recent entries below. */}
+        {pinnedStory && (
+          <div className="flex items-start justify-between gap-3 border border-brand-violet/40 px-3 py-2 mb-4 text-sm">
+            <div>
+              <div className="text-xs font-bold text-brand-violet uppercase tracking-wider">Pinned on Home</div>
+              <div className="text-white font-bold">{pinnedStory.headline}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePin(pinnedStory)}
+              className="shrink-0 text-xs font-bold px-2 py-0.5 border border-brand-violet text-brand-violet"
+            >
+              Unpin
+            </button>
+          </div>
+        )}
         <h2 className="text-xs font-bold text-brand-heliotrope uppercase tracking-wider mb-2">Recent entries</h2>
         <div>
           {recentEvents.map((event) => (
@@ -318,7 +344,20 @@ export default function EventForm({ token, onLogout }: { token: string; onLogout
                 <span>{event.type}</span>
                 <span>{new Date(event.createdAt).toLocaleString()}</span>
               </div>
-              <div className="text-white font-bold">{event.headline}</div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-white font-bold">{event.headline}</div>
+                {(event.type === "GENERAL_NEWS" || event.type === "TRANSFER") && (
+                  <button
+                    type="button"
+                    onClick={() => togglePin(event)}
+                    className={`shrink-0 text-xs font-bold px-2 py-0.5 border ${
+                      event.pinned ? "border-brand-violet text-brand-violet" : "border-white/20 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {event.pinned ? "Unpin" : "Pin to Home"}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
