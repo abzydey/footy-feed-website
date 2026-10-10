@@ -50,6 +50,8 @@ export default function FeedPage() {
     title: meta.title,
     description: meta.subtitle,
     path: `/feed/${view}`,
+    // Personal (followed teams only) — nothing for a search engine.
+    noindex: view === "my-teams",
   });
 
   useEffect(() => {

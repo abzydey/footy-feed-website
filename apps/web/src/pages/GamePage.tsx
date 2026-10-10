@@ -66,6 +66,7 @@ export default function GamePage() {
         : `${matchup} — ${metaGame.round}. Kickoff, venue, team lists, and build-up on Full Set.`
       : "NRL match details on Full Set.",
     path: id ? `/games/${id}` : undefined,
+    noindex: Boolean(error),
   });
 
   // SportsEvent structured data for search engines — homeTeam/awayTeam as

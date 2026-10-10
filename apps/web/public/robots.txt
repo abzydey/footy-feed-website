@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /search
+Disallow: /feed/my-teams
 
-Sitemap: https://fullset.au/sitemap.xml
+Sitemap: https://www.fullset.au/sitemap.xml

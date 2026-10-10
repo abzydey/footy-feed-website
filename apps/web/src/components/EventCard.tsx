@@ -64,9 +64,13 @@ interface EventCardProps {
   /** Slightly smaller headline/summary scale (17/13 vs 18.5/13.5) — used on
    * the Team page's news section per the design handoff's per-screen type table. */
   compact?: boolean;
+  /** The headline's tag — h1 when the card is the whole page (StoryPage), so
+   * the page has one real top-level heading; h3 in lists. */
+  headingLevel?: "h1" | "h3";
 }
 
-export default function EventCard({ event, compact = false }: EventCardProps) {
+export default function EventCard({ event, compact = false, headingLevel = "h3" }: EventCardProps) {
+  const Heading = headingLevel;
   const gameLink = event.game ? (
     <Link
       to={`/games/${event.game.id}`}
@@ -159,13 +163,13 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
           {STAGE_LABEL[event.teamListStage]}
         </span>
       )}
-      <h3
+      <Heading
         className={`font-extrabold text-white tracking-[-.018em] [text-wrap:pretty] ${
           compact ? "text-[17px] leading-[1.2]" : "text-[18.5px] leading-[1.18]"
         }`}
       >
         {event.headline}
-      </h3>
+      </Heading>
       <p
         className={`text-white/56 leading-[1.48] mt-[7px] [text-wrap:pretty] whitespace-pre-line ${compact ? "text-[13px]" : "text-[13.5px]"}`}
       >

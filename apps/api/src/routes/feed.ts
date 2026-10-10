@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { canonicalPathFor } from "../lib/canonical";
 import { prisma } from "../lib/prisma";
 
 const router = Router();
@@ -87,7 +88,7 @@ router.get("/:id", async (req, res) => {
     },
   });
   if (!event) return res.status(404).json({ error: "Story not found" });
-  res.json(event);
+  res.json({ ...event, canonicalPath: await canonicalPathFor(event) });
 });
 
 export default router;

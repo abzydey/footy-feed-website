@@ -11,6 +11,7 @@ import LateMailForm from "../components/admin/LateMailForm";
 import TrackedShowsForm from "../components/admin/TrackedShowsForm";
 import PlayerForm from "../components/admin/PlayerForm";
 import { markOwnDevice } from "../lib/visitor";
+import { useDocumentMeta } from "../lib/useDocumentMeta";
 import AdminAlertsCard from "../components/admin/AdminAlertsCard";
 
 const TOKEN_KEY = "footy-feed:adminToken";
@@ -24,6 +25,8 @@ export default function AdminPage() {
   useEffect(() => {
     if (token) markOwnDevice();
   }, [token]);
+
+  useDocumentMeta({ title: "Admin", description: "Full Set admin.", noindex: true });
 
   if (!token) return <LoginForm onLogin={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
   return <AdminTabs token={token} onLogout={() => { localStorage.removeItem(TOKEN_KEY); setToken(null); }} />;

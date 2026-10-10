@@ -37,6 +37,7 @@ export default function SearchPage() {
     title: "Search",
     description: "Search NRL podcast transcripts, chapters, and episodes on Full Set.",
     path: "/search",
+    noindex: true,
   });
 
   async function runSearch(q: string) {

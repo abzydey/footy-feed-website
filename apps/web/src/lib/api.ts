@@ -112,6 +112,9 @@ export interface EventItem {
   // instead of linking out via sourceUrl (see schema.prisma design note).
   isOriginalArticle: boolean;
   slug: string | null;
+  // Single-story responses only (api.getArticle, api.getStory): the URL all
+  // copies of this story name as canonical (API lib/canonical.ts).
+  canonicalPath?: string;
   // Only present on the single-article response (api.getArticle), not on
   // any feed/list response — see routes/articles.ts and routes/feed.ts's
   // deliberately lean include list.

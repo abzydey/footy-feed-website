@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api, EventItem } from "../lib/api";
 import { renderArticleMarkdown } from "../lib/markdown";
-import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { SITE_URL, useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 
 function formatPublishDate(iso: string) {
@@ -22,8 +22,8 @@ const TYPE_LABEL: Record<string, string> = {
 // real users' browser tab/history and JS-executing crawlers (Googlebot); it
 // deliberately can't cover link-preview bots (X, Slack, iMessage, ...),
 // which read raw HTML and never run JS — that's handled server-side by
-// apps/web/api/og/[slug].ts, a Vercel Edge Middleware that intercepts just
-// those bots' requests to this route (see middleware.ts).
+// apps/web/middleware.ts, which writes this page's tags (and the article
+// text) into the HTML for every request.
 export default function NewsArticlePage() {
   const { slug } = useParams<{ slug: string }>();
   const [article, setArticle] = useState<EventItem | null>(null);
@@ -42,9 +42,31 @@ export default function NewsArticlePage() {
   useDocumentMeta({
     title: article?.headline ?? "Article",
     description: article?.body ?? "A Full Set original article.",
-    path: slug ? `/news/${slug}` : undefined,
+    // An article tagged to several clubs exists as several copies (-2, -3,
+    // ...); all of them name the first one as canonical.
+    path: article?.canonicalPath ?? (slug ? `/news/${slug}` : undefined),
     type: "article",
+    noindex: notFound,
   });
+  useJsonLd(
+    useMemo(
+      () =>
+        article
+          ? {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              headline: article.headline,
+              description: article.body,
+              datePublished: article.createdAt,
+              image: [`${SITE_URL}/og-default.png`],
+              mainEntityOfPage: `${SITE_URL}${article.canonicalPath ?? `/news/${article.slug}`}`,
+              author: { "@type": "Organization", name: "Full Set", url: SITE_URL },
+              publisher: { "@type": "Organization", name: "Full Set", logo: { "@type": "ImageObject", url: `${SITE_URL}/icon-512.png` } },
+            }
+          : null,
+      [article]
+    )
+  );
 
   if (notFound) {
     return (

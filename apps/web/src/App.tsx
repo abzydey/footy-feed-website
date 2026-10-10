@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 
 import Nav from "./components/Nav";
@@ -9,30 +9,35 @@ import { PullToRefresh, RefreshProvider } from "./lib/refresh";
 import { useScrollRestoration } from "./lib/scrollRestoration";
 import { api } from "./lib/api";
 import HomePage from "./pages/HomePage";
-import FeedPage from "./pages/FeedPage";
-import GeneralNewsPage from "./pages/GeneralNewsPage";
-import NewsArticlePage from "./pages/NewsArticlePage";
-import TeamsPage from "./pages/TeamsPage";
-import TeamPage from "./pages/TeamPage";
-import GamesPage from "./pages/GamesPage";
-import GamePage from "./pages/GamePage";
-import TeamListsPage from "./pages/TeamListsPage";
-import LadderPage from "./pages/LadderPage";
-import FinalsPage from "./pages/FinalsPage";
-import JudiciaryPage from "./pages/JudiciaryPage";
-import InjuriesPage from "./pages/InjuriesPage";
-import SocialPage from "./pages/SocialPage";
-import PodcastsPage from "./pages/PodcastsPage";
-import HighlightsPage from "./pages/HighlightsPage";
-import SearchPage from "./pages/SearchPage";
-import SigningsPage from "./pages/SigningsPage";
-import StoryPage from "./pages/StoryPage";
-import WorldCupPage from "./pages/WorldCupPage";
-import WorldCupMatchPage from "./pages/WorldCupMatchPage";
-import WorldCupTeamsPage from "./pages/WorldCupTeamsPage";
-import WorldCupNationPage from "./pages/WorldCupNationPage";
-import AboutPage from "./pages/AboutPage";
-import AdminPage from "./pages/AdminPage";
+
+// Every page but Home loads on demand, so a first visit downloads only the
+// app shell and the page it landed on — a much smaller first load (good for
+// people on mobile data, and for search ranking, which scores load speed).
+const FeedPage = lazy(() => import("./pages/FeedPage"));
+const GeneralNewsPage = lazy(() => import("./pages/GeneralNewsPage"));
+const NewsArticlePage = lazy(() => import("./pages/NewsArticlePage"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage"));
+const TeamPage = lazy(() => import("./pages/TeamPage"));
+const GamesPage = lazy(() => import("./pages/GamesPage"));
+const GamePage = lazy(() => import("./pages/GamePage"));
+const TeamListsPage = lazy(() => import("./pages/TeamListsPage"));
+const LadderPage = lazy(() => import("./pages/LadderPage"));
+const FinalsPage = lazy(() => import("./pages/FinalsPage"));
+const JudiciaryPage = lazy(() => import("./pages/JudiciaryPage"));
+const InjuriesPage = lazy(() => import("./pages/InjuriesPage"));
+const SocialPage = lazy(() => import("./pages/SocialPage"));
+const PodcastsPage = lazy(() => import("./pages/PodcastsPage"));
+const HighlightsPage = lazy(() => import("./pages/HighlightsPage"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const SigningsPage = lazy(() => import("./pages/SigningsPage"));
+const StoryPage = lazy(() => import("./pages/StoryPage"));
+const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
+const WorldCupPage = lazy(() => import("./pages/WorldCupPage"));
+const WorldCupMatchPage = lazy(() => import("./pages/WorldCupMatchPage"));
+const WorldCupTeamsPage = lazy(() => import("./pages/WorldCupTeamsPage"));
+const WorldCupNationPage = lazy(() => import("./pages/WorldCupNationPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 
 // Maps a route to one of the small fixed set of page labels the backend
 // tracks (see api/src/routes/pageviews.ts) — a team/game detail route counts
@@ -101,6 +106,9 @@ export default function App() {
         {/* Keyed on the path so each page fades in, the way app screens do,
             instead of swapping instantly like web pages. */}
         <main key={location.pathname} className="animate-page-in">
+          <Suspense fallback={null}>
+          {/* New page? Add it to middleware.ts too (STATIC_META or a pattern),
+              or search engines are told it doesn't exist (404). */}
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/feed/:view" element={<FeedPage />} />
@@ -127,7 +135,9 @@ export default function App() {
           <Route path="/world-cup/:id" element={<WorldCupMatchPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          </Suspense>
         </main>
         {/* In the app the footer's About/partners/© live in the More sheet
             instead, on phone-sized screens (Nav.tsx). */}

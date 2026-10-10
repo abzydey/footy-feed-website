@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { api, EventItem, Game, LadderRow, Player, Team, TeamListStages } from "../lib/api";
@@ -11,7 +11,7 @@ import TeamBadge from "../components/TeamBadge";
 import TeamListCard from "../components/TeamListCard";
 import TeamMovesCard from "../components/TeamMovesCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
-import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { SITE_URL, useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
 
 // Brand rule: no green/amber/red status colours — Siren (the one warm
 // accent) is reserved for things that matter right now, which "OUT" for an
@@ -117,7 +117,24 @@ export default function TeamPage() {
       ? `${data.team.name} on Full Set — team lists, injury news, fixtures, and ladder position, updated in real time.`
       : "Team news, lists, and fixtures on Full Set.",
     path: slug ? `/teams/${slug}` : undefined,
+    noindex: Boolean(error),
   });
+  useJsonLd(
+    useMemo(
+      () =>
+        data
+          ? {
+              "@context": "https://schema.org",
+              "@type": "SportsTeam",
+              name: data.team.name,
+              sport: "Rugby league",
+              memberOf: { "@type": "SportsOrganization", name: "National Rugby League" },
+              url: `${SITE_URL}/teams/${data.team.slug}`,
+            }
+          : null,
+      [data]
+    )
+  );
 
   if (error) return <p className="p-4 text-red-400 text-sm">{error}</p>;
 

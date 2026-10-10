@@ -31,6 +31,7 @@ export default function WorldCupMatchPage() {
     title: m ? `${m.homeName} v ${m.awayName} — World Cup ${m.roundName}` : "World Cup",
     description: m ? `Team lists for ${m.homeName} v ${m.awayName}, Rugby League World Cup ${m.roundName}.` : "Rugby League World Cup game",
     path: `/world-cup/${id ?? ""}`,
+    noindex: Boolean(error),
   });
 
   const nation = (name: string, abbr: string) => (
