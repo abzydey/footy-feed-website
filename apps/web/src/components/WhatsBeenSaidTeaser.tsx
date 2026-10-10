@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api, SearchResult } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
+import { WORLD_CUP_IN_MENU } from "../lib/season";
 
 // Tried in order when GET /api/search/trending has no clear signal (fewer
 // than 2 podcast mentions of any one player in the last 7 days) — each is
@@ -54,7 +55,27 @@ function pickBestResult(results: SearchResult[]): SearchResult | null {
 // just returns a topic blind — always confirms it has a real result to
 // show before committing to it, so the card can't end up searching for
 // something that turns up empty.
+// While the World Cup is on (same switch as its tab, lib/season.ts) the card
+// is about the World Cup: the newest podcast episode that talks about it,
+// rather than the usual chapter-first ranking, which surfaces month-old
+// chapters that merely mention it in passing.
+const WORLD_CUP_TOPIC = "World Cup";
+
+function newestWorldCupResult(results: SearchResult[]): SearchResult | null {
+  const byDate = [...results].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
+  return byDate.find((r) => /world cup/i.test(r.episodeTitle)) ?? byDate[0] ?? null;
+}
+
 async function resolveQueryAndResult(): Promise<{ query: string; result: SearchResult } | null> {
+  if (WORLD_CUP_IN_MENU) {
+    try {
+      const best = newestWorldCupResult(await api.search(WORLD_CUP_TOPIC));
+      if (best) return { query: WORLD_CUP_TOPIC, result: best };
+    } catch {
+      // fall through to normal resolution below
+    }
+  }
+
   if (Date.now() < PIN_UNTIL) {
     try {
       const best = pickBestResult(await api.search(PINNED_TOPIC));
