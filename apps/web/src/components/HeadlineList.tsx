@@ -40,7 +40,8 @@ const hrefFor = (e: EventItem) => (e.isOriginalArticle && e.slug ? `/news/${e.sl
 // A compact, scannable list of the latest headlines — kicker and time on one
 // line, the headline under it. Lets Home show many stories in the space a
 // couple of full cards would take; the full cards live on the News page.
-// `pinned` (optional) is shown first, with a PINNED label.
+// `pinned` (optional) is shown first. No "Pinned" label, on request — it
+// just sits at the top.
 export default function HeadlineList({ items, pinned }: { items: EventItem[]; pinned?: EventItem | null }) {
   const rows = pinned ? [pinned, ...items.filter((e) => e.headline !== pinned.headline)] : items;
   return (
@@ -51,14 +52,6 @@ export default function HeadlineList({ items, pinned }: { items: EventItem[]; pi
             <span className="w-[3px] shrink-0 rounded-full opacity-80 group-hover:opacity-100 transition-opacity duration-150" style={{ background: accent(e) }} aria-hidden="true" />
             <span className="min-w-0 flex-1 flex flex-col gap-1">
               <span className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[.12em]">
-                {pinned && i === 0 && (
-                  <span className="flex items-center gap-1 font-display text-brand-violet">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M16 3l5 5-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z" />
-                    </svg>
-                    Pinned
-                  </span>
-                )}
                 <span className="font-display text-brand-violet">{kicker(e)}</span>
                 <span className="text-slate-500 normal-case tracking-normal font-semibold text-[11.5px]">· {timeAgo(e.createdAt)}</span>
                 {e.isOriginalArticle && (
