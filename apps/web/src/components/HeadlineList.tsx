@@ -58,7 +58,7 @@ export default function HeadlineList({ items, pinned }: { items: EventItem[]; pi
                   <span className="rounded px-1.5 text-[9.5px] text-brand-violet bg-brand-violet/[.12] tracking-wider">Full Set</span>
                 )}
               </span>
-              <span className="font-extrabold text-[15px] leading-snug text-white group-hover:text-brand-hover transition-colors duration-150">
+              <span className="font-bold text-[15px] leading-[1.42] text-white group-hover:text-brand-hover transition-colors duration-150">
                 {e.headline}
               </span>
             </span>

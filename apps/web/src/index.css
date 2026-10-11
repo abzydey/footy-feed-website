@@ -158,3 +158,10 @@ html.native [role="link"] {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Body-font weight (Oct 2026, "option 1" of the font comparison): Archivo
+   reads as a heavy block at extra-bold on phones, so body text tops out at
+   bold. Saira (font-display) headings and labels keep their weights. */
+.font-extrabold:not(.font-display) {
+  font-weight: 700;
+}
