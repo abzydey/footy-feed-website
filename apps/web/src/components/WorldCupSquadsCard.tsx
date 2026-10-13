@@ -49,7 +49,7 @@ export default function WorldCupSquadsCard() {
               <Flag key={s.abbr} abbr={s.abbr} className="w-6 h-[18px]" />
             ))}
             <span className="text-[12.5px] text-slate-400 ml-0.5">
-              {squads.length <= 2 ? squads.map((s) => s.name).join(" and ") : "and more"} named
+              {allNamed ? `All ${total} announced` : `${squads.length <= 2 ? squads.map((s) => s.name).join(" and ") : "and more"} named`}
             </span>
           </span>
         ) : (
