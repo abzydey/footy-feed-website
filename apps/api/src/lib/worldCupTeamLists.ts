@@ -23,6 +23,8 @@ const BROWSER_USER_AGENT =
 
 type Side = "HOME" | "AWAY";
 
+const BENCH_SIZE = 6;
+
 interface RawSection {
   key: string;
   players: Record<string, unknown>[];
@@ -65,8 +67,15 @@ function readSide(raw: RawSide): { sheet: ParsedTeamSheet; unreadable: number; s
       })
       .filter((p): p is ParsedPlayer => p !== null);
   const starters = read([...section("backs"), ...section("forwards")]);
-  const interchange = read(section("interchange"));
-  const reserves = read(section("reserves"));
+  // The World Cup uses NRL rules: a six-man bench (14-19, four of whom can be
+  // used). rlwc2026.com files only 14-17 under "interchange" and puts 18-19
+  // with the reserves, so the six lowest numbers after the starters are the
+  // bench and only the rest are reserves — the same Bench / Reserves split
+  // NRL lists use. Sorted by jersey number, not page order: the site
+  // doesn't always list reserves in order (England's No.18 came last).
+  const rest = read([...section("interchange"), ...section("reserves")]).sort((a, b) => a.number - b.number);
+  const interchange = rest.slice(0, BENCH_SIZE);
+  const reserves = rest.slice(BENCH_SIZE);
   return {
     sheet: { teamName: raw.header?.name ?? "", starters, interchange, reserves },
     unreadable,
