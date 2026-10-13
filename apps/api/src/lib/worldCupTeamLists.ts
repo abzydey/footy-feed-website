@@ -200,7 +200,9 @@ async function processSide(match: WorldCupMatch, side: Side, raw: RawSide, oppon
     const result = generateTwentyFourHourBody(
       { starters: sheet.starters, interchange: sheet.interchange, reserves: sheet.reserves, matchedTeamShortName: nation, initialBody },
       opponent,
-      match.kickoffAt
+      match.kickoffAt,
+      new Map(),
+      { nations: true }
     );
     if (!result.body) {
       problem(key, `${nation}'s 24-hour update couldn't be written automatically: ${result.reason}`);

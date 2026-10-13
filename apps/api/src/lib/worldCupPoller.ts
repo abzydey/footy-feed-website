@@ -24,6 +24,10 @@ const LIVE_INTERVAL_MS = 5 * 60 * 1000; // around a game: every 5 minutes
 const HOURLY_MS = 60 * 60 * 1000; // a week with games: team lists
 const FINAL_LIST_WINDOW_MS = 3.5 * 60 * 60 * 1000; // final lists, then kickoff
 const GAME_WEEK_MS = 8 * 86_400_000;
+// The 24-hour team update: checked every 10 minutes from 27 to 21 hours out.
+const DAY_BEFORE_FROM_MS = 27 * 60 * 60 * 1000;
+const DAY_BEFORE_TO_MS = 21 * 60 * 60 * 1000;
+const DAY_BEFORE_INTERVAL_MS = 10 * 60 * 1000;
 const WINDOW_AFTER_MS = 3 * 60 * 60 * 1000;
 
 interface DrawTeam {
@@ -221,10 +225,16 @@ export async function syncLiveScores(): Promise<void> {
   }
 }
 
-// How soon to check again: every 5 minutes from 3½ hours before a kickoff
-// until 3 hours after it (final team lists, then live scores), hourly in a
-// week with games (initial and 24-hour team lists), otherwise a few times
-// a day — and never later than the start of the next game week.
+// How soon to check again, looking at every upcoming game (not just the
+// next one — a round's games overlap, so one game's 24-hour update often
+// lands while another is about to kick off). Team lists follow the NRL's
+// rhythm: initial list early in the week, a 24-hour update the day before,
+// and the final list about 1.5 hours before kickoff.
+//   - every 5 minutes from 3½ hours before a kickoff until 3 hours after it
+//     (final team list, then live scores)
+//   - every 10 minutes from 27 to 21 hours before a kickoff (24-hour update)
+//   - hourly otherwise in a week with games (initial lists)
+//   - a few times a day when nothing's on, waking in time for the next window
 async function nextCheckInMs(): Promise<number> {
   const now = Date.now();
   const pending = await prisma.worldCupMatch.findMany({
@@ -232,11 +242,17 @@ async function nextCheckInMs(): Promise<number> {
     orderBy: { kickoffAt: "asc" },
     select: { kickoffAt: true },
   });
-  if (pending.length === 0) return IDLE_INTERVAL_MS;
-  const until = pending[0].kickoffAt.getTime() - now;
-  if (until <= FINAL_LIST_WINDOW_MS) return LIVE_INTERVAL_MS;
-  if (until <= GAME_WEEK_MS) return Math.min(HOURLY_MS, until - FINAL_LIST_WINDOW_MS);
-  return Math.min(IDLE_INTERVAL_MS, until - GAME_WEEK_MS);
+  let wait = IDLE_INTERVAL_MS;
+  for (const m of pending) {
+    const until = m.kickoffAt.getTime() - now;
+    if (until <= FINAL_LIST_WINDOW_MS) return LIVE_INTERVAL_MS;
+    if (until <= DAY_BEFORE_FROM_MS && until >= DAY_BEFORE_TO_MS) wait = Math.min(wait, DAY_BEFORE_INTERVAL_MS);
+    if (until > DAY_BEFORE_FROM_MS) wait = Math.min(wait, until - DAY_BEFORE_FROM_MS);
+    if (until <= GAME_WEEK_MS) wait = Math.min(wait, HOURLY_MS);
+    else wait = Math.min(wait, until - GAME_WEEK_MS);
+    wait = Math.min(wait, until - FINAL_LIST_WINDOW_MS);
+  }
+  return wait;
 }
 
 export function startWorldCupPolling(): void {

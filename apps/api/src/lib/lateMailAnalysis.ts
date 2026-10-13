@@ -168,7 +168,10 @@ export function generateTwentyFourHourBody(
   side: Pick<AnalyzedSide, "starters" | "interchange" | "reserves" | "matchedTeamShortName" | "initialBody">,
   opponentShortName: string,
   kickoffAt: Date,
-  reasons: Map<string, string> = new Map()
+  reasons: Map<string, string> = new Map(),
+  // Clubs read "the Roosters"; nations read "Australia" (World Cup lists,
+  // worldCupTeamLists.ts) — so "the" is only added for clubs.
+  { nations = false }: { nations?: boolean } = {}
 ): TwentyFourHourResult {
   if (!side.initialBody) return { body: null, reason: "no INITIAL list on file to diff against" };
   const initial = parseStoredBody(side.initialBody);
@@ -225,7 +228,8 @@ export function generateTwentyFourHourBody(
   const omitted = computeOmitted({ starters: side.starters, interchange: side.interchange, reserves: side.reserves } as ParsedTeamSheet, side.initialBody);
 
   const dayLabel = kickoffAt.toLocaleDateString("en-AU", { weekday: "long", timeZone: "Australia/Sydney" });
-  const trimClause = `as the ${side.matchedTeamShortName} trim their squad ahead of ${dayLabel}'s clash with the ${opponentShortName}`;
+  const the = nations ? "" : "the ";
+  const trimClause = `as ${the}${side.matchedTeamShortName} trim their squad ahead of ${dayLabel}'s clash with ${the}${opponentShortName}`;
   const remaining = side.reserves.map((p) => p.name);
   let reserveSentence: string;
   if (remaining.length === 0) reserveSentence = `No reserves remain ${trimClause}.`;
