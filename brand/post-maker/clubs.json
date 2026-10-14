@@ -1,0 +1,157 @@
+[
+ {
+  "slug": "perth-bears",
+  "short": "Bears",
+  "colors": [
+   "#000000",
+   "#E4002B"
+  ]
+ },
+ {
+  "slug": "broncos",
+  "short": "Broncos",
+  "colors": [
+   "#6C1D45",
+   "#FABF16"
+  ]
+ },
+ {
+  "slug": "bulldogs",
+  "short": "Bulldogs",
+  "colors": [
+   "#1A1ED5",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "png-chiefs",
+  "short": "Chiefs",
+  "colors": [
+   "#2B2627",
+   "#FAAC1A",
+   "#E0201F"
+  ]
+ },
+ {
+  "slug": "cowboys",
+  "short": "Cowboys",
+  "colors": [
+   "#082C5F",
+   "#FFDD02"
+  ]
+ },
+ {
+  "slug": "dolphins",
+  "short": "Dolphins",
+  "colors": [
+   "#FC141D",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "dragons",
+  "short": "Dragons",
+  "colors": [
+   "#C8102E",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "eels",
+  "short": "Eels",
+  "colors": [
+   "#006EB5",
+   "#FFD326"
+  ]
+ },
+ {
+  "slug": "knights",
+  "short": "Knights",
+  "colors": [
+   "#0254A6",
+   "#EE3524"
+  ]
+ },
+ {
+  "slug": "panthers",
+  "short": "Panthers",
+  "colors": [
+   "#000000",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "rabbitohs",
+  "short": "Rabbitohs",
+  "colors": [
+   "#FD2500",
+   "#15943B"
+  ]
+ },
+ {
+  "slug": "raiders",
+  "short": "Raiders",
+  "colors": [
+   "#36AF24",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "roosters",
+  "short": "Roosters",
+  "colors": [
+   "#E82C2E",
+   "#FFFFFF",
+   "#00305E"
+  ]
+ },
+ {
+  "slug": "sea-eagles",
+  "short": "Sea Eagles",
+  "colors": [
+   "#741B47",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "sharks",
+  "short": "Sharks",
+  "colors": [
+   "#6FD0EF",
+   "#FFFFFF"
+  ]
+ },
+ {
+  "slug": "storm",
+  "short": "Storm",
+  "colors": [
+   "#440085",
+   "#F9B019"
+  ]
+ },
+ {
+  "slug": "wests-tigers",
+  "short": "Tigers",
+  "colors": [
+   "#F6730B",
+   "#000000"
+  ]
+ },
+ {
+  "slug": "titans",
+  "short": "Titans",
+  "colors": [
+   "#00A4E2",
+   "#FFD02F"
+  ]
+ },
+ {
+  "slug": "warriors",
+  "short": "Warriors",
+  "colors": [
+   "#0D249F",
+   "#008643",
+   "#DA291C"
+  ]
+ }
+]

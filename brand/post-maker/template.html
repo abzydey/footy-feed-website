@@ -161,6 +161,15 @@
       </div>
 
       <div>
+        <label class="label" for="logoStyle">Logo</label>
+        <select id="logoStyle">
+          <option value="bug">Full logo top + bottom</option>
+          <option value="lockup">Full logo bottom</option>
+          <option value="corner">Small FS mark bottom</option>
+        </select>
+      </div>
+
+      <div>
         <label class="label" for="source" id="sourceLabel">Source</label>
         <input type="text" id="source" value="NRL.com">
       </div>
@@ -194,6 +203,9 @@
   const NAVY = "#0B1533", RAISED = "#1C2A58", PURPLE = "#A855F7", SIREN = "#FF6B2C";
   const WHITE = "#FFFFFF", BODY = "#E2E8F0", MUTED = "#94A3B8", HAIR = "rgba(255,255,255,0.08)";
   const FS_MARK = "__FS_MARK__";
+  // The header lockup (FS mark + FULLSET wordmark + tagline), brand/fullset-header-lockup.svg.
+  const LOCKUP = "__LOCKUP__";
+  const LOCKUP_RATIO = 1290 / 340;
   // Every club with its colours from the Full Set app's team badges.
   const CLUBS = __CLUBS__;
 
@@ -366,6 +378,12 @@
   function footer(ctx, W, baseline, pad, left, markH, metaSize) {
     ctx.textBaseline = "alphabetic";
     ctx.font = SANS(500, metaSize); ctx.fillStyle = MUTED; ctx.textAlign = "left";
+    if ($("logoStyle").value !== "corner") {
+      const h = markH * 1.5, w = h * LOCKUP_RATIO;
+      ctx.drawImage(lockupImg, W - pad - w, baseline - h * 0.82, w, h);
+      ctx.fillText(left ? `${left}  ·  fullset.au` : "fullset.au", pad, baseline);
+      return;
+    }
     if (left) ctx.fillText(left, pad, baseline);
     const markW = markH * (913 / 655);
     const markX = W - pad - markW;
@@ -373,6 +391,13 @@
     ctx.textAlign = "right"; ctx.fillStyle = MUTED; ctx.font = SANS(500, metaSize);
     ctx.fillText("fullset.au", markX - markH * 0.32, baseline);
     ctx.textAlign = "left";
+  }
+  function bug(ctx, x, y, h, align) {
+    const w = h * LOCKUP_RATIO, p = h * 0.24;
+    const bx = align === "right" ? x - w - p * 2 : x;
+    ctx.fillStyle = navyA(0.86);
+    roundRect(ctx, bx, y, w + p * 2, h + p * 2, h * 0.28); ctx.fill();
+    ctx.drawImage(lockupImg, bx + p, y + p, w, h);
   }
   function hairline(ctx, x1, x2, y) { ctx.fillStyle = HAIR; ctx.fillRect(x1, y, x2 - x1, 2); }
   function lines(ctx, ls, x, firstBaseline, lh) { ls.forEach((l, i) => ctx.fillText(l, x, firstBaseline + i * lh)); }
@@ -584,17 +609,23 @@
   }
 
   const markImg = new Image();
+  const lockupImg = new Image();
   let pending = false;
   function schedule() { if (!pending) { pending = true; requestAnimationFrame(render); } }
   function render() {
     pending = false;
-    if (!markImg.complete) return;
+    if (!markImg.complete || !lockupImg.complete) return;
     const d = inputs();
     let over = false;
     for (const [k, f] of Object.entries(FORMATS)) {
       const ctx = canvases[k].getContext("2d");
       ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
       over = f.draw(ctx, f.W, f.H, d) || over;
+      // Top logo over the photo (results have no photo, so they keep just the bottom one).
+      if ($("logoStyle").value === "bug" && d.type !== "result") {
+        const side = k === "xPost" && d.type !== "breaking";
+        bug(ctx, side ? f.W - 48 : 48, k === "igStory" ? 290 : 44, k === "xPost" ? 50 : 58, side ? "right" : "left");
+      }
       document.querySelector(`[data-format="${k}"] img`).src = canvases[k].toDataURL("image/png");
     }
     const hint = $("headlineHint");
@@ -646,6 +677,8 @@
   // ---- Start: wait for the brand fonts so the canvas never draws a fallback ---
   markImg.onload = schedule;
   markImg.src = FS_MARK;
+  lockupImg.onload = schedule;
+  lockupImg.src = LOCKUP;
   Promise.all([
     document.fonts.load("italic 900 100px Saira"),
     document.fonts.load("700 30px Saira"),
