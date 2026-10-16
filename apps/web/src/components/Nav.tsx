@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import BrandLogo from "./BrandLogo";
 import { FooterContent } from "./Footer";
 import ThemePicker from "./ThemePicker";
+import ThemeToggle from "./ThemeToggle";
 import { isNativeApp, tapHaptic } from "../lib/platform";
 import { FINALS_IN_MENU, IN_SEASON, WORLD_CUP_IN_MENU } from "../lib/season";
 
@@ -92,10 +93,9 @@ export default function Nav() {
   return (
     <>
       <header className="sticky top-0 z-20 bg-app/75 backdrop-blur-sm border-b border-white/[.07] pt-[env(safe-area-inset-top)]">
-        {/* Phones: logo centred, search on the right. The empty box on the
-            left balances the search button so the logo sits truly centred. */}
+        {/* Phones: light/dark toggle left, logo centred, search right. */}
         <div className="lg:hidden flex items-center justify-between px-2 h-[52px]">
-          <span className="w-11 h-11" aria-hidden="true" />
+          <ThemeToggle className="w-11 h-11" />
           <Link to="/" aria-label="Full Set home">
             <BrandLogo className="h-[30px] w-auto" />
           </Link>
@@ -133,6 +133,7 @@ export default function Nav() {
             ))}
             <DesktopMore active={DESKTOP_MORE.some((m) => matches(pathname, m))} />
           </nav>
+          <ThemeToggle className="shrink-0 w-10 h-10 -mr-5" />
           <Link
             to="/search"
             className="shrink-0 h-10 flex items-center gap-2 rounded-full border border-white/10 bg-surface pl-3 pr-4 text-[13.5px] text-slate-400 hover:text-white hover:border-white/20 transition-colors duration-150"
@@ -237,7 +238,8 @@ function MoreSheet({ open, onClose, pathname }: { open: boolean; onClose: () => 
         </div>
         {/* The app hides the site footer, so the whole footer (with the
             Appearance switch) lives here; on the phone website the footer
-            is at the bottom of every page, so just the switch. */}
+            is at the bottom of every page, so just the switch. The top-bar
+            sun/moon is the quick dark/light flip. */}
         <div className="mt-5 pt-4 border-t border-white/10 flex justify-center">
           {isNativeApp ? <FooterContent stacked /> : <ThemePicker />}
         </div>

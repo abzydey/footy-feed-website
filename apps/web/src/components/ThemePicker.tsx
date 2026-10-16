@@ -8,8 +8,8 @@ const OPTIONS: { value: ThemePref; label: string }[] = [
   { value: "system", label: "Match my phone" },
 ];
 
-// Appearance switch — in the footer and the More sheet (both render
-// FooterContent).
+// Appearance switch (Dark / Light / Match my phone) — in the footer and the
+// More sheet. The top-bar sun/moon (ThemeToggle) is the quick dark/light flip.
 export default function ThemePicker() {
   const [pref, setPref] = useState<ThemePref>(getThemePref);
 
