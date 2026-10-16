@@ -65,6 +65,9 @@ export interface WorldCupMatch {
   homeScore: number | null;
   awayScore: number | null;
   status: "SCHEDULED" | "LIVE" | "FULL_TIME";
+  // From NRL.com's match centre: "23'" / "HT" while live.
+  liveClock?: string | null;
+  tries?: { side: "HOME" | "AWAY"; scorer: string; minute: number }[] | null;
   matchCentreUrl: string | null;
   ticketUrl: string | null;
 }

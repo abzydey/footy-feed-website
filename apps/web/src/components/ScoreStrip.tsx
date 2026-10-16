@@ -50,7 +50,7 @@ function fromWorldCup(m: WorldCupMatch): StripGame {
     label: `WC · ${m.roundName}`,
     kickoff: new Date(m.kickoffAt).getTime(),
     status: m.status,
-    clock: null,
+    clock: m.liveClock ?? null,
     venue: m.venue,
     sides: [
       { name: side(m.homeAbbr, "home"), score: m.homeScore, mark: { flag: m.homeAbbr } },

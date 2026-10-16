@@ -1,8 +1,9 @@
-import { GameStatus } from "@prisma/client";
+import { GameStatus, Prisma, WorldCupMatch } from "@prisma/client";
 
 import { prisma } from "./prisma";
 import { sendAdminAlert } from "./adminAlert";
 import { syncWorldCupTeamLists } from "./worldCupTeamLists";
+import { fetchMatchCentre, parseTrySummaries } from "./matchCentreParser";
 
 // Keeps the men's Rugby League World Cup fixtures and results in sync with
 // the official draw page. That page (a Next.js site) embeds every game —
@@ -21,6 +22,7 @@ const BROWSER_USER_AGENT =
 
 const IDLE_INTERVAL_MS = 6 * 60 * 60 * 1000; // nothing on: four times a day
 const LIVE_INTERVAL_MS = 5 * 60 * 1000; // around a game: every 5 minutes
+const IN_PLAY_INTERVAL_MS = 60 * 1000; // a game being played: every minute (score, clock, tries)
 const HOURLY_MS = 60 * 60 * 1000; // a week with games: team lists
 const FINAL_LIST_WINDOW_MS = 3.5 * 60 * 60 * 1000; // final lists, then kickoff
 const GAME_WEEK_MS = 8 * 86_400_000;
@@ -176,6 +178,7 @@ const NRL_WC_ROUND: Record<string, number> = { "Round 1": 1, "Round 2": 2, "Roun
 
 interface NrlFixture {
   matchMode: string;
+  matchCentreUrl?: string;
   matchState?: string;
   clock?: { kickOffTimeLong?: string };
   homeTeam?: { score?: number };
@@ -215,6 +218,10 @@ export async function syncLiveScores(): Promise<void> {
       continue;
     }
     if (/^pre/i.test(f.matchMode)) continue; // not started
+    // The game's own NRL.com match centre, same page and format as NRL
+    // games: score, live clock and every try scorer with the minute. The
+    // draw list above only has the score, and lags it.
+    if (f.matchCentreUrl && (await syncFromMatchCentre(m, `https://www.nrl.com${f.matchCentreUrl}`))) continue;
     const homeScore = f.homeTeam?.score ?? null;
     const awayScore = f.awayTeam?.score ?? null;
     if (homeScore == null || awayScore == null) continue;
@@ -225,13 +232,52 @@ export async function syncLiveScores(): Promise<void> {
   }
 }
 
+export interface WorldCupTry {
+  side: "HOME" | "AWAY";
+  scorer: string;
+  minute: number;
+}
+
+// Score, clock and tries from a World Cup game's NRL.com match centre.
+// Returns false when the page couldn't be read, so the caller falls back to
+// the draw list's score. The try list is replaced whole each time, so a
+// try NRL.com drops (bunker overturn) drops here too.
+export async function syncFromMatchCentre(m: WorldCupMatch, url: string): Promise<boolean> {
+  let mc;
+  try {
+    mc = await fetchMatchCentre(url);
+  } catch (err) {
+    console.warn(`[worldCupPoller] match centre unreadable for ${m.homeName} v ${m.awayName}:`, (err as Error).message);
+    return false;
+  }
+  if (/^pre/i.test(mc.matchMode)) return true;
+  const status: GameStatus = /^post/i.test(mc.matchMode) ? "FULL_TIME" : "LIVE";
+  const liveClock = status === "FULL_TIME" ? null : mc.matchState === "HalfTime" ? "HT" : `${Math.floor(mc.gameSeconds / 60)}'`;
+  const tries: WorldCupTry[] = [
+    ...parseTrySummaries(mc.homeTries).map((t) => ({ side: "HOME" as const, ...t })),
+    ...parseTrySummaries(mc.awayTries).map((t) => ({ side: "AWAY" as const, ...t })),
+  ];
+  const same =
+    m.homeScore === mc.homeScore && m.awayScore === mc.awayScore && m.status === status && m.liveClock === liveClock &&
+    JSON.stringify(m.tries ?? []) === JSON.stringify(tries);
+  if (same) return true;
+  await prisma.worldCupMatch.update({
+    where: { id: m.id },
+    data: { homeScore: mc.homeScore, awayScore: mc.awayScore, status, liveClock, tries: tries as unknown as Prisma.InputJsonValue },
+  });
+  if (m.homeScore !== mc.homeScore || m.awayScore !== mc.awayScore || m.status !== status) {
+    console.log(`[worldCupPoller] ${status === "FULL_TIME" ? "FULL TIME" : "LIVE"}: ${m.homeName} ${mc.homeScore}-${mc.awayScore} ${m.awayName}`);
+  }
+  return true;
+}
+
 // How soon to check again, looking at every upcoming game (not just the
 // next one — a round's games overlap, so one game's 24-hour update often
 // lands while another is about to kick off). Team lists follow the NRL's
 // rhythm: initial list early in the week, a 24-hour update the day before,
 // and the final list about 1.5 hours before kickoff.
-//   - every 5 minutes from 3½ hours before a kickoff until 3 hours after it
-//     (final team list, then live scores)
+//   - every minute while a game is being played (score, clock, tries)
+//   - every 5 minutes from 3½ hours before a kickoff (final team list)
 //   - every 10 minutes from 27 to 21 hours before a kickoff (24-hour update)
 //   - hourly otherwise in a week with games (initial lists)
 //   - a few times a day when nothing's on, waking in time for the next window
@@ -245,12 +291,15 @@ async function nextCheckInMs(): Promise<number> {
   let wait = IDLE_INTERVAL_MS;
   for (const m of pending) {
     const until = m.kickoffAt.getTime() - now;
-    if (until <= FINAL_LIST_WINDOW_MS) return LIVE_INTERVAL_MS;
+    if (until <= 0) return IN_PLAY_INTERVAL_MS; // kicked off and not yet full time
+    // Before kickoff: every 5 minutes for the final list, and wake right at
+    // kickoff to start the every-minute live checks.
+    if (until <= FINAL_LIST_WINDOW_MS) wait = Math.min(wait, LIVE_INTERVAL_MS, until);
     if (until <= DAY_BEFORE_FROM_MS && until >= DAY_BEFORE_TO_MS) wait = Math.min(wait, DAY_BEFORE_INTERVAL_MS);
     if (until > DAY_BEFORE_FROM_MS) wait = Math.min(wait, until - DAY_BEFORE_FROM_MS);
     if (until <= GAME_WEEK_MS) wait = Math.min(wait, HOURLY_MS);
     else wait = Math.min(wait, until - GAME_WEEK_MS);
-    wait = Math.min(wait, until - FINAL_LIST_WINDOW_MS);
+    if (until > FINAL_LIST_WINDOW_MS) wait = Math.min(wait, until - FINAL_LIST_WINDOW_MS);
   }
   return wait;
 }

@@ -13,6 +13,28 @@ function Side({ name, abbr }: { name: string; abbr: string }) {
   );
 }
 
+// Try scorers for one side, in the order scored (from NRL.com's match centre).
+function TryList({ name, tries, align }: { name: string; tries: { scorer: string; minute: number }[]; align: "left" | "right" }) {
+  const sorted = [...tries].sort((a, b) => a.minute - b.minute);
+  return (
+    <div className={`min-w-0 ${align === "right" ? "text-right" : ""}`}>
+      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5 truncate">{name}</div>
+      {sorted.length === 0 ? (
+        <p className="text-slate-500 text-xs">No tries</p>
+      ) : (
+        <ul className="space-y-1">
+          {sorted.map((t, i) => (
+            <li key={i} className={`text-sm text-slate-300 flex gap-1.5 ${align === "right" ? "justify-end" : ""}`}>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{t.scorer}</span>
+              <span className="shrink-0 text-slate-500 tabular-nums">{t.minute}'</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // The big World Cup match card — same shell as the club MatchHero, flags in
 // place of club badges. Tapping it opens the official match centre.
 export default function WorldCupMatchCard({ match: m, kicker, footer }: { match: WorldCupMatch; kicker?: ReactNode; footer?: ReactNode }) {
@@ -27,7 +49,7 @@ export default function WorldCupMatchCard({ match: m, kicker, footer }: { match:
           {kicker ?? label}
         </span>
         <span className={`text-[12.5px] lg:text-[14px] font-semibold ${live ? "text-brand-siren" : "text-slate-400"}`}>
-          {live ? "● Live" : done ? "Full time" : kickoffLabel(m.kickoffAt)}
+          {live ? `● Live${m.liveClock ? ` · ${m.liveClock}` : ""}` : done ? "Full time" : kickoffLabel(m.kickoffAt)}
         </span>
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 items-start">
@@ -40,6 +62,13 @@ export default function WorldCupMatchCard({ match: m, kicker, footer }: { match:
         </div>
         <Side name={sideName(m, "away")} abbr={m.awayAbbr} />
       </div>
+      {(live || done) && m.tries && m.tries.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-white/[.07]">
+          {(["HOME", "AWAY"] as const).map((side) => (
+            <TryList key={side} name={sideName(m, side === "HOME" ? "home" : "away")} tries={m.tries!.filter((t) => t.side === side)} align={side === "HOME" ? "left" : "right"} />
+          ))}
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3 pt-3 border-t border-white/[.07]">
         <span className="text-[12.5px] lg:text-[13.5px] text-slate-400 truncate">
           {m.venue}, {m.city}

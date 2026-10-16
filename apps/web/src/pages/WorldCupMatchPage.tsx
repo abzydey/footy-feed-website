@@ -26,6 +26,14 @@ export default function WorldCupMatchPage() {
     api.getWorldCupMatch(id).then(setData).catch((err) => setError(err.message));
   }, [id, refreshTick]);
 
+  // While the game is on, keep the score, clock and try scorers current.
+  const live = data?.match.status === "LIVE";
+  useEffect(() => {
+    if (!live || !id) return;
+    const t = window.setInterval(() => api.getWorldCupMatch(id).then(setData).catch(() => {}), 30_000);
+    return () => window.clearInterval(t);
+  }, [live, id]);
+
   const m = data?.match;
   useDocumentMeta({
     title: m ? `${m.homeName} v ${m.awayName} — World Cup ${m.roundName}` : "World Cup",

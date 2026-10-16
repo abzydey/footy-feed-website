@@ -806,6 +806,12 @@ model WorldCupMatch {
   homeScore      Int?
   awayScore      Int?
   status         GameStatus @default(SCHEDULED)
+  // From NRL.com's match centre (lib/worldCupPoller.ts syncLiveScores), same
+  // source and format as NRL games: "23'" / "HT" while live, null otherwise;
+  // tries as [{ side: "HOME" | "AWAY", scorer, minute }], kept in step with
+  // NRL.com (a disallowed try drops off).
+  liveClock      String?
+  tries          Json?
   matchCentreUrl String?
   ticketUrl      String?
   createdAt      DateTime @default(now())
