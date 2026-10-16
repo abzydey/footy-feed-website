@@ -175,6 +175,9 @@ export default function EventCard({ event, compact = false, headingLevel = "h3" 
       >
         {event.body}
       </p>
+      {/* A photo attached to a news story (addNews.ts "media"), shown the
+          same way as a social post's. */}
+      {event.media && event.media.length > 0 && <TweetMediaView media={event.media} />}
       {event.player && <p className="text-xs text-slate-500 mt-2">Re: {event.player.name}</p>}
       {gameLink}
       <div className="flex items-center justify-between mt-[13px] pt-3 border-t border-white/[.06]">

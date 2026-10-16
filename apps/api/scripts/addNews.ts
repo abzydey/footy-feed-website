@@ -45,6 +45,9 @@ interface NewsInput {
   // A Rugby League World Cup story — also shows on /world-cup and under
   // the News page's World Cup filter.
   worldCup?: boolean;
+  // Photos to show on the card, e.g. [{ "url": "https://www.fullset.au/news/x.jpg", "width": 360, "height": 383 }]
+  // (put the file in apps/web/public/news/ and push first).
+  media?: { url: string; width?: number; height?: number }[];
 }
 
 // Same collision-suffix approach as adminPlayers.ts's player-slug loop and
@@ -105,6 +108,9 @@ async function main() {
       sourceUrl: input.link || undefined,
       isOriginalArticle,
       worldCup: Boolean(input.worldCup),
+      media: input.media?.length
+        ? input.media.map((m) => ({ type: "photo", url: m.url, previewUrl: null, width: m.width ?? null, height: m.height ?? null }))
+        : undefined,
       slug,
       articleBody: input.articleBody || undefined,
       createdBy: "claude-chat-import",
