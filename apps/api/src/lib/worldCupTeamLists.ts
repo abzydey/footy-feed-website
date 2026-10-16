@@ -178,7 +178,7 @@ const namesOf = (sheet: ParsedTeamSheet) =>
 async function processSide(match: WorldCupMatch, side: Side, raw: RawSide, opponent: string) {
   const key = `${match.id}|${side}`;
   const nation = side === "HOME" ? match.homeName : match.awayName;
-  const { sheet, unreadable, status } = readSide(raw);
+  const { sheet, unreadable } = readSide(raw);
   const total = sheet.starters.length + sheet.interchange.length + sheet.reserves.length;
   if (total === 0 && unreadable === 0) return; // not named yet
   if (unreadable > 0) {
@@ -222,10 +222,13 @@ async function processSide(match: WorldCupMatch, side: Side, raw: RawSide, oppon
   }
 
   // Final window (under 3 hours to kickoff): publish once the list differs
-  // from the last stage, or the site marks it confirmed.
+  // from the last stage (the real final changes land ~75-90 minutes out), or
+  // in the last hour with no change, as the confirmed 17. Not on the site's
+  // "Confirmed" status: rlwc2026.com shows that all week, so it posted the
+  // 24-hour list as "final" 3 hours out on the first night (15 Oct 2026).
   const previous = have.FINAL ?? have.TWENTY_FOUR_HOUR ?? have.INITIAL;
-  const confirmed = status !== "" && !/unconfirmed/i.test(status);
-  if (!have.FINAL && namesOf(sheet) === namesIn(previous?.body) && !confirmed) return;
+  const lastHour = match.kickoffAt.getTime() - Date.now() <= 60 * 60 * 1000;
+  if (!have.FINAL && namesOf(sheet) === namesIn(previous?.body) && !lastHour) return;
   await save(match, side, "FINAL", nation, buildBody(sheet, computeOmitted(sheet, initialBody)));
 }
 
