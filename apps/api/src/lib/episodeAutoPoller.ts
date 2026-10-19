@@ -85,8 +85,10 @@ interface YouTubeVideo {
 // something a frontend filter should be papering over.
 const MIN_DURATION_SECONDS = 61;
 
-function isoDurationToSeconds(iso: string): number {
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+// A scheduled premiere or live stream has no duration yet: treat it as 0
+// (filtered out like a Short) instead of failing the whole channel.
+function isoDurationToSeconds(iso: string | undefined): number {
+  const m = (iso ?? "").match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!m) return 0;
   const [, h, min, s] = m;
   return (Number(h) || 0) * 3600 + (Number(min) || 0) * 60 + (Number(s) || 0);
@@ -132,7 +134,7 @@ async function fetchChannelVideos(channelId: string, existingIds: Set<string>): 
     title: v.snippet.title,
     description: v.snippet.description,
     publishedAt: v.snippet.publishedAt,
-    durationSeconds: isoDurationToSeconds(v.contentDetails.duration),
+    durationSeconds: isoDurationToSeconds(v.contentDetails?.duration),
   }));
 }
 
