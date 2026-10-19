@@ -22,6 +22,31 @@ interface AutoEpisodeSource {
   // specific show/segment alongside unrelated content it also publishes.
   // Omit to auto-add every upload from the channel.
   titleFilter?: RegExp;
+  // A fuller check than a title pattern, run after it.
+  accept?: (v: YouTubeVideo) => Promise<boolean>;
+}
+
+const nationKey = (s: string) =>
+  s.toLowerCase().replace(/&amp;/g, "&").replace(/\bpng\b/g, "papua new guinea").replace(/\bnz\b/g, "new zealand").replace(/[^a-z]+/g, " ").trim();
+
+// 7Sport posts men's and women's World Cup highlights (plus other sport)
+// with the same title shape, "Tagline | Home v Away, Rugby League World
+// Cup", and the same nations play in both. So a video counts as men's only
+// when its two teams match a men's World Cup game (WorldCupMatch is men's
+// only) that kicked off in the four days before it was uploaded.
+export async function isMensWorldCupHighlight(v: YouTubeVideo): Promise<boolean> {
+  const m = v.title.match(/\|\s*(.+?)\s+v\s+(.+?),\s*Rugby League World Cup/i);
+  if (!m) return false;
+  const [a, b] = [nationKey(m[1]), nationKey(m[2])];
+  const published = new Date(v.publishedAt).getTime();
+  const games = await prisma.worldCupMatch.findMany({
+    where: { kickoffAt: { gte: new Date(published - 4 * 86_400_000), lte: new Date(published) } },
+    select: { homeName: true, awayName: true },
+  });
+  return games.some((g) => {
+    const [h, w] = [nationKey(g.homeName), nationKey(g.awayName)];
+    return (h === a && w === b) || (h === b && w === a);
+  });
 }
 
 const AUTO_SOURCES: AutoEpisodeSource[] = [
@@ -40,6 +65,10 @@ const AUTO_SOURCES: AutoEpisodeSource[] = [
   { podcastId: "cmtiksmfz0000vjugpaxhqeh7", youtubeChannelId: "UCBVrn_SGKAOv3yKPi4Oc3-A", titleFilter: /100%\s*footy/i }, // 100% Footy — full episodes
   { podcastId: "cmtiksmfz0000vjugpaxhqeh7", youtubeChannelId: "UCV5HXUHFR-yuSb7qDJ5_80g", titleFilter: /100%\s*footy/i }, // 100% Footy — clips
   { podcastId: "cmtm5ahtt0000m5uhkwn3dsh2", youtubeChannelId: "UCBVrn_SGKAOv3yKPi4Oc3-A", titleFilter: /^NRL Highlights:/i }, // NRL Highlights — match-highlight uploads only, not every NRL on Nine video
+  // Men's Rugby League World Cup 2026 highlights from 7Sport, into the same
+  // highlights bucket (the Highlights page). Women's games and 7Sport's
+  // other sport are left out (isMensWorldCupHighlight).
+  { podcastId: "cmtm5ahtt0000m5uhkwn3dsh2", youtubeChannelId: "UCxjyNmdeMBoExeefLOuQaqg", titleFilter: /Rugby League World Cup/i, accept: isMensWorldCupHighlight }, // 7Sport — men's World Cup highlights
 ];
 
 interface YouTubeVideo {
@@ -125,7 +154,9 @@ export async function pollAutoEpisodeSources(): Promise<void> {
 
       const videos = await fetchChannelVideos(source.youtubeChannelId, existingIds);
       const notAShort = videos.filter((v) => v.durationSeconds >= MIN_DURATION_SECONDS);
-      const matching = source.titleFilter ? notAShort.filter((v) => source.titleFilter!.test(v.title)) : notAShort;
+      const byTitle = source.titleFilter ? notAShort.filter((v) => source.titleFilter!.test(v.title)) : notAShort;
+      const matching: YouTubeVideo[] = [];
+      for (const v of byTitle) if (!source.accept || (await source.accept(v))) matching.push(v);
       if (matching.length === 0) continue;
 
       for (const v of matching) {

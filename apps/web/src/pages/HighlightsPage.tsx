@@ -5,7 +5,8 @@ import { EpisodeCard, EpisodeCardSkeleton } from "../components/EpisodeCard";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 
 // The one podcast bucket episodeAutoPoller.ts feeds for match highlights
-// (NRL on Nine's "NRL Highlights: ..." uploads only) — see that file for
+// (NRL on Nine's "NRL Highlights: ..." uploads, plus 7Sport's men's World Cup
+// highlights) — see that file for
 // the source config.
 const HIGHLIGHTS_PODCAST_SLUG = "nrl-highlights";
 
@@ -15,7 +16,7 @@ export default function HighlightsPage() {
 
   useDocumentMeta({
     title: "NRL Highlights",
-    description: "Full match highlights from every NRL game, as they're posted.",
+    description: "Full match highlights from every NRL game and the men's Rugby League World Cup, as they're posted.",
     path: "/highlights",
   });
 
