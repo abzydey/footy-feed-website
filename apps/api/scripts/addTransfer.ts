@@ -48,7 +48,7 @@ async function main() {
     if (!m.player || !Object.values(TransferKind).includes(m.kind)) {
       throw new Error(`Bad move: ${JSON.stringify(m)}`);
     }
-    if (m.kind === "SIGNED" && !m.to) throw new Error(`SIGNED needs "to": ${m.player}`);
+    if (m.kind === "SIGNED" && !m.to && !m.toLabel) throw new Error(`SIGNED needs "to" (or "toLabel" for a club outside the NRL): ${m.player}`);
     if (m.kind === "RE_SIGNED" && !m.to) throw new Error(`RE_SIGNED needs "to" (the club they stayed at): ${m.player}`);
     if ((m.kind === "RELEASED" || m.kind === "RETIRED") && !m.from) throw new Error(`${m.kind} needs "from": ${m.player}`);
 
