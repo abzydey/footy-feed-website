@@ -48,8 +48,12 @@ export interface PoolRow {
   points: number;
 }
 
-// Pool table from finished pool games: 2 points a win, 1 a draw; ties on
-// points split by points difference, then points scored. Every team in the
+// Pool table from finished pool games: 2 points a win, 1 a draw. Ties on
+// points (official IRL rules): two teams from the same pool split by points
+// difference; in the combined Pools B & C table, a Pool B team and a Pool C
+// team level on points split by the result of the game between them (every
+// B team plays every C team), then points difference. Points scored is the
+// last resort. Every team in the
 // pool is listed from the start (all zeros) so the table is there before
 // a ball is kicked.
 export function poolTable(matches: WorldCupMatch[], pool: "A" | "B"): PoolRow[] {
@@ -85,9 +89,27 @@ export function poolTable(matches: WorldCupMatch[], pool: "A" | "B"): PoolRow[] 
       a.points++;
     }
   }
+  // Who won the game between two teams: 1 = x, -1 = y, 0 = drawn/not played.
+  const headToHead = (x: string, y: string): number => {
+    const g = matches.find(
+      (m) => m.pool === pool && m.status === "FULL_TIME" && m.homeScore != null && m.awayScore != null &&
+        ((m.homeAbbr === x && m.awayAbbr === y) || (m.homeAbbr === y && m.awayAbbr === x))
+    );
+    if (!g || g.homeScore === g.awayScore) return 0;
+    const homeWon = g.homeScore! > g.awayScore!;
+    return (g.homeAbbr === x) === homeWon ? 1 : -1;
+  };
+  const crossPool = (x: string, y: string) => pool === "B" && SUB_POOL[x] && SUB_POOL[y] && SUB_POOL[x] !== SUB_POOL[y];
   return [...rows.values()]
     .map((r) => ({ ...r, diff: r.pointsFor - r.pointsAgainst }))
-    .sort((x, y) => y.points - x.points || y.diff - x.diff || y.pointsFor - x.pointsFor || x.name.localeCompare(y.name));
+    .sort(
+      (x, y) =>
+        y.points - x.points ||
+        (crossPool(x.abbr, y.abbr) ? -headToHead(x.abbr, y.abbr) : 0) ||
+        y.diff - x.diff ||
+        y.pointsFor - x.pointsFor ||
+        x.name.localeCompare(y.name)
+    );
 }
 
 export function kickoffLabel(iso: string, withDay = true): string {
@@ -122,7 +144,7 @@ export const poolLabel = (pool: "A" | "B" | null | undefined): string =>
 
 export const POOL_NOTE: Record<"A" | "B", string> = {
   A: "Each team plays the other three. The top 2 go to the semi-finals.",
-  B: "Pool B (England, Lebanon, Samoa) and Pool C (France, PNG, Tonga) share one ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals.",
+  B: "Pool B (England, Lebanon, Samoa) and Pool C (France, PNG, Tonga) share one ladder: each team plays the three teams in the other pool. The top 2 go to the semi-finals. Level on points: a B team and a C team are split by the game between them; two teams from the same pool by points difference.",
 };
 
 // Which of the two B/C pools each of those six nations is in — the draw data
