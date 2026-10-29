@@ -22,6 +22,7 @@ const STATIC_PATHS = [
   "/injuries",
   "/judiciary",
   "/signings",
+  "/free-agents",
   "/world-cup",
   "/world-cup/teams",
   "/finals",

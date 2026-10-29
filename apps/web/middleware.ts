@@ -62,6 +62,7 @@ const STATIC_META: Record<string, Omit<PageMeta, "path">> = {
   "/judiciary": { title: "Judiciary", description: "NRL Match Review Committee outcomes — charges, grades, suspensions and fines, round by round." },
   "/injuries": { title: "Injuries", description: "Every NRL club's current injury and availability list in one place — player, status, and details." },
   "/signings": { title: "NRL Signings Tracker", description: "Every confirmed NRL signing, re-signing and departure, club by club." },
+  "/free-agents": { title: "NRL Free Agency Tracker 2028", description: "Every NRL player off contract at the end of 2027, crossed off as they re-sign or move. Free agency opens November 1." },
   "/world-cup": { title: "Rugby League World Cup 2026", description: "Men's Rugby League World Cup 2026 fixtures, results, pool tables and news." },
   "/world-cup/teams": { title: "World Cup teams & squads", description: "Every men's Rugby League World Cup 2026 nation and its announced squad." },
   "/about": { title: "About", description: "About Full Set — a fan-focused companion for NRL supporters, with a page for every club." },

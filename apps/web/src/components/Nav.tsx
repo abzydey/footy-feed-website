@@ -66,6 +66,7 @@ const MORE_LINKS: NavItem[] = [
   { to: "/injuries", label: "Injuries" },
   { to: "/judiciary", label: "Judiciary" },
   { to: "/signings", label: "Signings Tracker" },
+  { to: "/free-agents", label: "Free Agents" },
   { to: "/feed/my-teams", label: "My Teams" },
   { to: "/feed/signings", label: "Signing News" },
   { to: "/feed/top", label: "Top Stories" },

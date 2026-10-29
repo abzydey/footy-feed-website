@@ -35,6 +35,7 @@ import sitemapRouter from "./routes/sitemap";
 import injuriesRouter from "./routes/injuries";
 import articlesRouter from "./routes/articles";
 import transfersRouter from "./routes/transfers";
+import freeAgentsRouter from "./routes/freeAgents";
 import worldCupRouter from "./routes/worldCup";
 import adminAlertsRouter from "./routes/adminAlerts";
 import { startTwitterPoller } from "./lib/socialPoller";
@@ -95,6 +96,7 @@ app.use("/api/finals-injuries", finalsInjuriesRouter);
 app.use("/api/injuries", injuriesRouter);
 app.use("/api/articles", articlesRouter);
 app.use("/api/transfers", transfersRouter);
+app.use("/api/free-agents", freeAgentsRouter);
 app.use("/api/world-cup", worldCupRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)

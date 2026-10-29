@@ -30,6 +30,7 @@ const PodcastsPage = lazy(() => import("./pages/PodcastsPage"));
 const HighlightsPage = lazy(() => import("./pages/HighlightsPage"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const SigningsPage = lazy(() => import("./pages/SigningsPage"));
+const FreeAgentsPage = lazy(() => import("./pages/FreeAgentsPage"));
 const StoryPage = lazy(() => import("./pages/StoryPage"));
 const NotFoundPage = lazy(() => import("./pages/NotFoundPage"));
 const WorldCupPage = lazy(() => import("./pages/WorldCupPage"));
@@ -129,6 +130,7 @@ export default function App() {
             <Route path="/injuries" element={<InjuriesPage />} />
             <Route path="/search" element={<SearchPage />} />
           <Route path="/signings" element={<SigningsPage />} />
+          <Route path="/free-agents" element={<FreeAgentsPage />} />
           <Route path="/world-cup" element={<WorldCupPage />} />
           <Route path="/world-cup/teams" element={<WorldCupTeamsPage />} />
           <Route path="/world-cup/teams/:abbr" element={<WorldCupNationPage />} />

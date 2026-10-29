@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { api, Team, Transfer } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
@@ -86,6 +86,14 @@ export default function SigningsPage() {
         title="Signings Tracker"
         subtitle="Every confirmed signing, re-signing and departure, club by club."
       />
+
+      <Link
+        to="/free-agents"
+        className="flex items-center justify-between gap-3 rounded-[14px] border border-brand-violet/30 bg-brand-violet/[.08] px-4 py-3 hover:border-brand-violet/60"
+      >
+        <span className="text-[13.5px] font-bold text-white">Free agency 2028: who's still available?</span>
+        <span className="text-[12.5px] font-bold text-brand-violet">Free Agent Tracker →</span>
+      </Link>
 
       {teams && (
         <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">

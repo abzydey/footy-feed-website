@@ -5,6 +5,7 @@ import { api, EventItem } from "../lib/api";
 import { dedupeStories, readCachedFeed, writeCachedFeed } from "../lib/feed";
 import HeadlineList from "../components/HeadlineList";
 import FinalsInjuryHomeCard from "../components/FinalsInjuryHomeCard";
+import FreeAgencyHomeCard from "../components/FreeAgencyHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import ScoreStrip from "../components/ScoreStrip";
 import SigningsHomeCard from "../components/SigningsHomeCard";
@@ -79,6 +80,8 @@ export default function HomePage() {
       </section>
 
       <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-2">
+        {/* Free agency (until mid-December) — renders nothing after. */}
+        <FreeAgencyHomeCard />
         <TeamListsCard />
         {/* World Cup only — the same quick-link row, for squads. */}
         <WorldCupSquadsCard />

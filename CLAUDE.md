@@ -47,6 +47,11 @@ temp file first (avoids shell-quoting problems with apostrophes).
   that club's followers.
 - `addTransfer.ts` — signings tracker entry: `[{ player, kind: SIGNED |
   RE_SIGNED | RELEASED | RETIRED, from, to, until, headline }]`.
+- `setFreeAgents.ts` — the free agency list at /free-agents (players off
+  contract at the end of 2027): add players, set `tier`, `linked` clubs
+  (from our own stories only), `freeAgentNow`. Players are crossed off
+  automatically by `addTransfer.ts` entries (matched by name; deals ending
+  before 2028 don't count) — never cross anyone off by hand.
 - `setWorldCupSquad.ts` — a nation's World Cup squad.
 - `setLateMailUrl.ts <url>` — pin the weekly NRL.com team-list article.
 - `bulkImportInjuries.ts` — status-only injury import (never creates news).
@@ -92,6 +97,9 @@ straight away — no confirmation step, no tweet draft.
   clearly doesn't match the story, publish without it and ask.
 - When the owner sends their own summary for a story already published, swap
   the summary into the existing rows rather than posting again.
+- Free agency: when a story links an available free agent with a club
+  ("in talks", "tabled an offer"), add that club to his `linked` list with
+  setFreeAgents.ts. A club pulling its offer → `freeAgentNow: true`.
 - Flag (don't silently change) anything odd: a tag that isn't in the story,
   a figure that contradicts an earlier story, a deal reported as confirmed
   that earlier reports said was only offered.

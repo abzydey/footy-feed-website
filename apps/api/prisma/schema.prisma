@@ -117,6 +117,7 @@ model Team {
   finalsInjuries   FinalsInjuryEntry[]
   transfersIn      Transfer[]        @relation("TransferTo")
   transfersOut     Transfer[]        @relation("TransferFrom")
+  freeAgents       FreeAgent[]
 
   @@map("teams")
 }
@@ -786,6 +787,45 @@ enum TransferKind {
   RE_SIGNED
   RELEASED
   RETIRED
+}
+
+// ---------------------------------------------------------------------------
+// Free agency tracker: every player off contract at the end of a season
+// (season = the first year they could play for a new club, e.g. 2028 for
+// players off contract at the end of 2027). Whether a player is still on
+// the market is NOT stored here — it comes from the signings tracker
+// (Transfer rows matched by name, see routes/freeAgents.ts), so a confirmed
+// Signing crosses the player off with nothing extra to do.
+// ---------------------------------------------------------------------------
+model FreeAgent {
+  id           String         @id @default(cuid())
+  season       Int
+  player       String
+  // Other spellings the signings tracker might use ("Clinton Gutherson").
+  aliases      String[]
+  teamId       String?
+  team         Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  position     String?
+  tier         FreeAgentTier?
+  // Clubs our own stories link the player with (Team slugs).
+  linked       String[]
+  // On the open market already (e.g. his club pulled its offer).
+  freeAgentNow Boolean        @default(false)
+  note         String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([season, player])
+  @@map("free_agents")
+}
+
+// The top of the market, biggest first. Untiered = the rest of the list.
+enum FreeAgentTier {
+  MARQUEE
+  STAR
+  ESTABLISHED
+  VALUE
+  RISING
 }
 
 // Men's Rugby League World Cup fixtures and results, synced from the

@@ -50,6 +50,27 @@ export interface Transfer {
   } | null;
 }
 
+// One player on the free agency list (the API's FreeAgent, with where he
+// ended up worked out from the signings tracker).
+export type FreeAgentTier = "MARQUEE" | "STAR" | "ESTABLISHED" | "VALUE" | "RISING";
+export type FreeAgentStatus = "AVAILABLE" | "RE_SIGNED" | "SIGNED" | "RETIRED";
+export interface FreeAgent {
+  id: string;
+  player: string;
+  position: string | null;
+  tier: FreeAgentTier | null;
+  team: TransferTeam | null;
+  linked: TransferTeam[];
+  freeAgentNow: boolean;
+  note: string | null;
+  status: FreeAgentStatus;
+  newTeam: TransferTeam | null;
+  newTeamLabel: string | null;
+  until: number | null;
+  decidedAt: string | null;
+  story: { id: string; headline: string; sourceUrl: string | null; slug: string | null; isOriginalArticle: boolean } | null;
+}
+
 // A men's Rugby League World Cup game (the API's WorldCupMatch).
 export interface WorldCupMatch {
   id: string;
@@ -357,6 +378,7 @@ export const api = {
     const qs = q.toString();
     return request<Transfer[]>(`/transfers${qs ? `?${qs}` : ""}`);
   },
+  listFreeAgents: () => request<{ season: number; players: FreeAgent[] }>("/free-agents"),
   listGames: (round?: string) => request<Game[]>(`/games${round ? `?round=${encodeURIComponent(round)}` : ""}`),
   listRounds: () => request<string[]>("/games/rounds"),
   getGame: (id: string) => request<GameDetail>(`/games/${id}`),
