@@ -205,8 +205,11 @@ export default function FreeAgentsPage() {
   const refreshTick = useRefreshTick();
 
   const teamSlug = params.get("team") ?? undefined;
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
   const position = params.get("position") ?? undefined;
-  const view: View = params.get("view") === "all" || teamSlug || position ? "all" : "top";
+  // Searching looks through everyone, not just the top tiers.
+  const view: View = params.get("view") === "all" || teamSlug || position || q ? "all" : "top";
   const show = (params.get("show") as Show | null) ?? "all";
 
   useDocumentMeta({
@@ -243,9 +246,10 @@ export default function FreeAgentsPage() {
         (p) =>
           (!teamSlug || p.team?.slug === teamSlug) &&
           (!position || p.position === position) &&
+          (!q || p.player.toLowerCase().includes(q)) &&
           (show === "all" || (show === "done" ? isDone(p) : !isDone(p)))
       ),
-    [players, teamSlug, position, show]
+    [players, teamSlug, position, show, q]
   );
 
   const doneCount = players.filter(isDone).length;
@@ -261,8 +265,8 @@ export default function FreeAgentsPage() {
       const inTier = filtered.filter((p) => p.tier === (t as FreeAgentTier));
       if (inTier.length) groups.push({ title: TIER_LABEL[t], blurb: TIER_BLURB[t], players: inTier });
     }
-  } else if (club || position) {
-    if (filtered.length) groups.push({ title: [club?.shortName, position].filter(Boolean).join(" · "), players: [...filtered].sort(byTier) });
+  } else if (club || position || q) {
+    if (filtered.length) groups.push({ title: [club?.shortName, position, q && `“${query.trim()}”`].filter(Boolean).join(" · "), players: [...filtered].sort(byTier) });
   } else {
     for (const t of clubs) {
       const ofClub = filtered.filter((p) => p.team?.slug === t.slug).sort(byTier);
@@ -314,6 +318,13 @@ export default function FreeAgentsPage() {
           {making && <GraphicMaker players={players} season={data.season} club={club} onClose={() => setMaking(false)} />}
 
           <div className="space-y-2.5">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Search all ${players.length} players`}
+              className="w-full rounded-full bg-white/[.04] border border-white/[.14] px-4 py-2 text-[14px] text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-violet/60"
+            />
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
               <button type="button" className={chip(view === "top")} onClick={() => setParams(new URLSearchParams(show !== "all" ? { show } : {}), { replace: true })}>
                 Top free agents
@@ -352,6 +363,15 @@ export default function FreeAgentsPage() {
               {groups.map((g) => (
                 <Group key={g.title} title={g.title} blurb={g.blurb} players={g.players} />
               ))}
+              {view === "top" && (
+                <button
+                  type="button"
+                  onClick={() => set("view", "all")}
+                  className="w-full rounded-[14px] border border-white/[.1] py-3 text-[13.5px] font-bold text-brand-violet hover:border-brand-violet/50"
+                >
+                  See all {players.length} players, club by club →
+                </button>
+              )}
             </div>
           )}
 
