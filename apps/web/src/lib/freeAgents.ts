@@ -120,6 +120,22 @@ interface Row {
   sub?: string; // second detail after the name (club or position)
 }
 
+// The tag beside a name: where he went once he's off the market, else the
+// row's detail (club or position).
+const rowTag = (r: Row, compact: boolean) => (isDone(r.p) ? outcomeTag(r.p, compact) : r.sub ?? "");
+const tagFont = (r: Row, size: number) => (isDone(r.p) ? body(800)(Math.round(size * 0.62)) : body(600)(Math.round(size * 0.7)));
+
+// Width a row needs at a given name size, tag included.
+function rowWidth(ctx: CanvasRenderingContext2D, r: Row, size: number, compact: boolean): number {
+  const tag = rowTag(r, compact);
+  spaced(ctx, isDone(r.p) ? 1 : 0);
+  ctx.font = tagFont(r, size);
+  const tagW = tag ? ctx.measureText(tag).width + 14 : 0;
+  spaced(ctx, 0);
+  ctx.font = body(700)(size);
+  return 18 + ctx.measureText(r.p.player).width + tagW;
+}
+
 // One name in a grid cell: club colour bar, the name (struck through in
 // purple once he's off the market) and, if he is, where he went.
 function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w: number, size: number, compact: boolean) {
@@ -130,9 +146,9 @@ function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w:
   ctx.fillRect(x, y - barH / 2, 5, barH);
   ctx.globalAlpha = 1;
 
-  const tag = done ? outcomeTag(r.p, compact) : r.sub ?? "";
+  const tag = rowTag(r, compact);
   spaced(ctx, done ? 1 : 0);
-  ctx.font = done ? body(800)(Math.round(size * 0.62)) : body(600)(Math.round(size * 0.7));
+  ctx.font = tagFont(r, size);
   const tagW = tag ? ctx.measureText(tag).width : 0;
   ctx.textBaseline = "middle";
   ctx.textAlign = "right";
@@ -142,7 +158,7 @@ function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w:
 
   ctx.textAlign = "left";
   const nameX = x + 18;
-  const name = fitText(ctx, r.p.player, w - 18 - (tag ? tagW + 14 : 0), body(700), size, Math.round(size * 0.66));
+  const name = fitText(ctx, r.p.player, w - 18 - (tag ? tagW + 14 : 0), body(700), size, size);
   ctx.fillStyle = done ? MUTED : WHITE;
   ctx.fillText(name, nameX, y);
   if (done) {
@@ -236,9 +252,12 @@ export async function drawFreeAgencyGraphic(canvas: HTMLCanvasElement, input: Gr
   const bottom = H - 150;
   const perCol = Math.max(1, Math.ceil(rows.length / cols));
   const rowH = Math.min(cols === 1 ? 62 : cols === 2 ? 56 : 44, (bottom - top) / perCol);
-  const size = Math.round(Math.min(cols === 3 ? 25 : cols === 2 ? 30 : 34, rowH * 0.58));
+  // One size for every name in the post: as big as the row allows, then
+  // smaller only as far as the longest name (with its tag) needs to fit.
+  let size = Math.round(Math.min(cols === 3 ? 25 : cols === 2 ? 30 : 34, rowH * 0.58));
   const gap = 34;
   const colW = (W - PAD * 2 - gap * (cols - 1)) / cols;
+  while (size > 16 && rows.some((r) => rowWidth(ctx, r, size, cols === 3) > colW)) size -= 1;
   rows.forEach((r, i) => {
     const c = Math.floor(i / perCol);
     const k = i % perCol;
