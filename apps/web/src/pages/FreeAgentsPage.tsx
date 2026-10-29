@@ -48,6 +48,7 @@ function PlayerRow({ p, divider }: { p: FreeAgent; divider: boolean }) {
           {details}
           {!done && p.linked.length > 0 && <span className="text-slate-500"> · Linked: {p.linked.map((t) => t.shortName).join(", ")}</span>}
         </span>
+        {!done && p.note && <span className="text-[12px] italic text-slate-500">{p.note}</span>}
       </span>
       {done ? (
         <span className="shrink-0 flex items-center gap-1.5">
