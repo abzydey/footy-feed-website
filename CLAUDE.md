@@ -32,6 +32,36 @@ poller), live NRL scores (NRL.com match centre), World Cup fixtures/scores/
 team lists, the X social feed, podcast/highlights polling. Nothing needs a
 laptop to be on.
 
+## Cloud sessions
+
+The owner works from the Claude app (Code tab) with no laptop. This file, the
+rulebook and the session log are the handover; earlier chats don't carry over.
+
+- `scripts/cloud-setup.sh` installs dependencies and generates Prisma at session
+  start. Database and push settings come from the cloud environment's variables
+  (`DATABASE_URL`, `DIRECT_DATABASE_URL`, `FIREBASE_SERVICE_ACCOUNT_JSON`): there
+  is no `.env`. Never print them, and never ask the owner to paste a secret in chat.
+- Push finished work straight to `main`: that is what deploys, and the owner
+  can't merge pull requests comfortably from a phone. Never force-push.
+- Never run the full API (`apps/api/src/index.ts`) anywhere but Railway. It starts
+  every poller against the one live database and could double-publish. To preview
+  UI, use a throwaway server that mounts only the route being tested and passes
+  other `/api` GETs through to production.
+- When retrying a script, check the live feed before each attempt, and don't
+  judge success from `cmd | tail -1 && break`: the pipe hides the script's failure.
+  The feed returns a JSON array whose rows have `headline`, `type`, `team.slug`.
+- Update the session log (link above) after significant work, and keep its Open
+  items current.
+- Late Mail by chat means calling production `POST /api/admin/late-mail/parse`,
+  which needs `ADMIN_JWT_SECRET` in the environment (not set by default). The
+  older notes' localhost instructions no longer apply.
+- A FINAL team-list update gets a short @NRLCentral tweet draft for the owner:
+  changes only, never the full roster, and a change already reported at 24 hours
+  isn't presented as new. Never auto-post to X.
+- `docs/claude-memory/` has the longer background on each rule, copied from the
+  laptop. Read the relevant file when a task touches it. Where it disagrees with
+  this file, this file wins.
+
 ## Running scripts
 
 From `apps/api`: `npx tsx scripts/<name>.ts <file.json>`. Write the JSON to a

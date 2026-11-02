@@ -1,0 +1,15 @@
+- [Push regularly](push_regularly.md) — commit & push to GitHub after each significant round of changes, don't let work pile up uncommitted.
+- [Signings need General News too](signings_general_news_rule.md) — every Signing gets TRANSFER + GENERAL_NEWS copies and a tracker entry (addTransfer.ts); not vice versa.
+- [Team List format & highlighting](team_list_strikethrough_format.md) — exact "Omitted..." phrase for strikethrough; full grid preferred for FINAL; changed-slot players auto-highlight, no extra phrase needed.
+- [News article workflow](news_article_workflow.md) — pasted article → published News item only (no tweet draft), full rules in CONTRIBUTING-news.md at repo root.
+- [NRL jersey number → position](nrl_jersey_number_positions.md) — 1 FB, 2/5 wing, 3/4 centre, 6 5/8, 7 HB, 8/10 prop, 9 hooker, 11/12 2nd row, 13 lock.
+- [Team list screenshot cropping risk](team_list_screenshot_cropping_risk.md) — don't infer a player was omitted just because they're absent from a possibly-cropped screenshot; confirm the full list first.
+- [Late Mail chat workflow](late_mail_chat_workflow.md) — user triggers Late Mail parse from chat, not the admin UI; show results here, publish only after approval.
+- [Tuesday team-list link → pin it](tuesday_team_list_link.md) — when user sends the weekly NRL.com team-list link, run scripts/setLateMailUrl.ts immediately; poller reads that page all week.
+- [Injury bulk-import: no auto News](injury_ingestion_no_auto_news.md) — bulk injury imports update Player.currentStatus only, never create an Event; single deliberate updates from a real article are fine as an Event.
+- [DB moved to Singapore](db_singapore_move.md) — live DB is Neon fullset-sg; old us-east-2 project deleted 2026-10-15.
+- [Prisma migrate: direct URL](prisma_migrate_direct_url.md) — migrations use schema directUrl (DIRECT_DATABASE_URL); pooler strands the lock (P1002), fix by terminating holder.
+- [World Cup first-run checks](world_cup_first_run_checks.md) — RLWC team-list player fields were guessed; verify ~13 Oct 2026. Live scores via NRL.com comp 131 (no X).
+- [Theme tokens, both modes](theme_tokens_both_modes.md) — dark default + light via CSS vars; new UI uses tokens only, screenshot both themes.
+- [Brand assets = source of truth](brand_assets_source_of_truth.md) — repo brand/ files + Full Set design system artifact are the official logo/brand; never redraw.
+- [No local full API](no_local_full_api.md) — never run apps/api index.ts locally (starts pollers on live DB); preview with a route-only pass-through server.
