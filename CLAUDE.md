@@ -47,6 +47,8 @@ rulebook and the session log are the handover; earlier chats don't carry over.
   run as normal and notifications go out from Railway. `$queryRaw` and
   `AdminUser` aren't available and transactions aren't atomic. `prisma migrate`
   can't run from a session: Railway's deploy applies committed migrations.
+- Cloud setup tested from a cloud session on 2 Nov 2026: database through the
+  bridge, and pushing to main.
 - Push finished work straight to `main`: that is what deploys, and the owner
   can't merge pull requests comfortably from a phone. Never force-push.
 - Never run the full API (`apps/api/src/index.ts`) anywhere but Railway. It starts
