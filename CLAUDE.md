@@ -190,6 +190,8 @@ straight away — no confirmation step, no tweet draft.
   #AE6BFF), Siren #FF6B2C only for live/breaking/OUT. Fonts: Saira (display,
   italic 900) and Archivo (body; headlines bold 700, not extra-bold).
 - If site colours or fonts change, update the design system artifact too.
+- App icons copy the Instagram avatar (navy with purple glow): rebuild with
+  `node scripts/app-icons-from-avatar.mjs`, after `scripts/brand-assets.mjs` if run.
 - Post Maker: edit `brand/post-maker/template.html`, build with
   `node brand/post-maker/build.cjs <out.html>`, republish to its URL.
 
