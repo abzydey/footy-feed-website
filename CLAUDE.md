@@ -49,6 +49,9 @@ rulebook and the session log are the handover; earlier chats don't carry over.
   can't run from a session: Railway's deploy applies committed migrations.
 - Cloud setup tested from a cloud session on 2 Nov 2026: database through the
   bridge, and pushing to main.
+- Live API logs: `node scripts/railway-logs.cjs [filter] [lines]`, for example
+  `lateMail` or `worldCup`. It needs `RAILWAY_TOKEN` in the environment. Check them
+  first when something automatic looks wrong.
 - Push finished work straight to `main`: that is what deploys, and the owner
   can't merge pull requests comfortably from a phone. Never force-push.
 - Never run the full API (`apps/api/src/index.ts`) anywhere but Railway. It starts
