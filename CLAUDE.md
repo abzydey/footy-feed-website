@@ -34,8 +34,10 @@ laptop to be on.
 
 ## Cloud sessions
 
-The owner works from the Claude app (Code tab) with no laptop. This file, the
-rulebook and the session log are the handover; earlier chats don't carry over.
+The owner always works in cloud sessions (Claude app or claude.ai/code, Code tab,
+environment "Full Set"), including when home: this is permanent, not just for
+travel. Don't suggest moving back to a laptop. This file, the rulebook and the
+session log are the handover; earlier chats don't carry over.
 
 - `scripts/cloud-setup.sh` installs dependencies and generates Prisma at session
   start. There is no `.env`: the cloud environment sets `DB_BRIDGE_URL` and
