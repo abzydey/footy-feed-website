@@ -9,12 +9,31 @@ export const isFirebaseAdminConfigured = Boolean(process.env.FIREBASE_SERVICE_AC
 
 let messaging: Messaging | undefined;
 
+// Hosting dashboards can turn the private key's \n escapes into real line
+// breaks when the value is pasted, which JSON.parse rejects. Puts them back,
+// only inside strings, so a pretty-printed value still parses.
+export function parseServiceAccount(raw: string) {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (const ch of raw) {
+    if (inString && !escaped && (ch === "\n" || ch === "\r")) {
+      if (ch === "\n") out += "\\n";
+      continue;
+    }
+    if (ch === '"' && !escaped) inString = !inString;
+    escaped = inString && ch === "\\" && !escaped;
+    out += ch;
+  }
+  return JSON.parse(out);
+}
+
 export function getFirebaseMessaging(): Messaging | undefined {
   if (!isFirebaseAdminConfigured) return undefined;
 
   if (!messaging) {
     if (getApps().length === 0) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!);
+      const serviceAccount = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!);
       initializeApp({ credential: cert(serviceAccount) });
     }
     messaging = getMessaging();
