@@ -35,9 +35,11 @@ laptop to be on.
 ## Cloud sessions
 
 The owner always works in cloud sessions (Claude app or claude.ai/code, Code tab,
-environment "Full Set"), including when home: this is permanent, not just for
-travel. Don't suggest moving back to a laptop. This file, the rulebook and the
-session log are the handover; earlier chats don't carry over.
+environment "Full Set"), including when home: this is the normal way of working.
+They also keep one long-running session on the laptop for when they're at it. In
+that session, run `git pull --rebase` before starting work, because cloud sessions
+push to `main` too; it uses the laptop's `.env`, not the bridge. This file, the
+rulebook and the session log are the handover; earlier chats don't carry over.
 
 - `scripts/cloud-setup.sh` installs dependencies and generates Prisma at session
   start. There is no `.env`: the cloud environment sets `DB_BRIDGE_URL` and
