@@ -38,6 +38,7 @@ import transfersRouter from "./routes/transfers";
 import freeAgentsRouter from "./routes/freeAgents";
 import worldCupRouter from "./routes/worldCup";
 import adminAlertsRouter from "./routes/adminAlerts";
+import adminDbBridgeRouter from "./routes/adminDbBridge";
 import { startTwitterPoller } from "./lib/socialPoller";
 import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
@@ -69,6 +70,8 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
 // most of a request's cost. compression gzips JSON (the feed is ~50KB raw).
 app.use(cors({ origin: allowedOrigins, maxAge: 86400 }));
 app.use(compression());
+// Long articles can pass through the database bridge, so it takes more.
+app.use("/api/admin/db-bridge", express.json({ limit: "5mb" }));
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
@@ -101,6 +104,7 @@ app.use("/api/world-cup", worldCupRouter);
 
 // Admin panel (auth + write endpoints for events feed the brief pages + alerts)
 app.use("/api/admin/auth", adminAuthRouter);
+app.use("/api/admin/db-bridge", adminDbBridgeRouter);
 app.use("/api/admin/events", eventsRouter);
 app.use("/api/admin/games", adminGamesRouter);
 app.use("/api/admin/episodes", adminEpisodesRouter);

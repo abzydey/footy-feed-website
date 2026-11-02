@@ -38,9 +38,15 @@ The owner works from the Claude app (Code tab) with no laptop. This file, the
 rulebook and the session log are the handover; earlier chats don't carry over.
 
 - `scripts/cloud-setup.sh` installs dependencies and generates Prisma at session
-  start. Database and push settings come from the cloud environment's variables
-  (`DATABASE_URL`, `DIRECT_DATABASE_URL`, `FIREBASE_SERVICE_ACCOUNT_JSON`): there
-  is no `.env`. Never print them, and never ask the owner to paste a secret in chat.
+  start. There is no `.env`: the cloud environment sets `DB_BRIDGE_URL` and
+  `ADMIN_JWT_SECRET`. Never print them, and never ask the owner to paste a secret
+  in chat.
+- Cloud sessions can't connect to the database directly (only web requests get
+  out). With `DB_BRIDGE_URL` set, `prisma` in `src/lib/prisma.ts` sends each call
+  to the live API (`lib/dbBridgeClient.ts`, `routes/adminDbBridge.ts`), so scripts
+  run as normal and notifications go out from Railway. `$queryRaw` and
+  `AdminUser` aren't available and transactions aren't atomic. `prisma migrate`
+  can't run from a session: Railway's deploy applies committed migrations.
 - Push finished work straight to `main`: that is what deploys, and the owner
   can't merge pull requests comfortably from a phone. Never force-push.
 - Never run the full API (`apps/api/src/index.ts`) anywhere but Railway. It starts

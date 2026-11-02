@@ -1,3 +1,4 @@
+import { callBridge } from "./dbBridgeClient";
 import { prisma } from "./prisma";
 import { GENERAL_NEWS_TARGET_ID } from "./constants";
 import { getFirebaseMessaging } from "./firebase";
@@ -12,6 +13,11 @@ import { getFirebaseMessaging } from "./firebase";
  * project still runs without crashing.
  */
 export async function notifyFollowersOfEvent(eventId: string): Promise<void> {
+  if (process.env.DB_BRIDGE_URL) {
+    await callBridge("/notify", { eventId });
+    return;
+  }
+
   const event = await prisma.event.findUnique({
     where: { id: eventId },
     include: { team: true, player: { include: { team: true } }, game: true },
