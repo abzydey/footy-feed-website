@@ -68,14 +68,20 @@ function readSide(raw: RawSide): { sheet: ParsedTeamSheet; unreadable: number; s
       .filter((p): p is ParsedPlayer => p !== null);
   const starters = read([...section("backs"), ...section("forwards")]);
   // The World Cup uses NRL rules: a six-man bench (14-19, four of whom can be
-  // used). rlwc2026.com files only 14-17 under "interchange" and puts 18-19
-  // with the reserves, so the six lowest numbers after the starters are the
-  // bench and only the rest are reserves — the same Bench / Reserves split
-  // NRL lists use. Sorted by jersey number, not page order: the site
-  // doesn't always list reserves in order (England's No.18 came last).
-  const rest = read([...section("interchange"), ...section("reserves")]).sort((a, b) => a.number - b.number);
-  const interchange = rest.slice(0, BENCH_SIZE);
-  const reserves = rest.slice(BENCH_SIZE);
+  // used). On an initial list rlwc2026.com files only 14-17 under
+  // "interchange" and puts 18-19 with the reserves, so the bench is the
+  // page's interchange players topped up to six from the reserves by lowest
+  // jersey number (sorted, not page order: the site doesn't always list
+  // reserves in order — England's No.18 came last). Once the page's own
+  // interchange has six, it is trusted as-is: a later list can put a
+  // higher number on the bench (Tedesco, No.22, replacing the omitted
+  // Mitchell, No.18, for the 2026 final), which a pure number sort got wrong.
+  const byNumber = (a: ParsedPlayer, b: ParsedPlayer) => a.number - b.number;
+  const listed = read(section("interchange")).sort(byNumber);
+  const others = read(section("reserves")).sort(byNumber);
+  const topUp = Math.max(0, BENCH_SIZE - listed.length);
+  const interchange = [...listed, ...others.slice(0, topUp)].sort(byNumber);
+  const reserves = others.slice(topUp);
   return {
     sheet: { teamName: raw.header?.name ?? "", starters, interchange, reserves },
     unreadable,
