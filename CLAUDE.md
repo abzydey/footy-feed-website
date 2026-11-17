@@ -178,7 +178,7 @@ straight away — no confirmation step, no tweet draft.
 - Squads live in `WorldCupSquad`; for an injury replacement remove the
   player, add the replacement with club, and extend the `note`.
 - 7Sport's men's highlights are added to the Highlights page automatically.
-- After the final: set `WORLD_CUP_IN_MENU = false` in
+- On Friday 20 Nov 2026 (owner chose to wait), not before: set `WORLD_CUP_IN_MENU = false` in
   `apps/web/src/lib/season.ts`.
 
 ## Brand
