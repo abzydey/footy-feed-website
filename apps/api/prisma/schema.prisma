@@ -769,6 +769,11 @@ model Transfer {
   // Last season of the deal, e.g. 2028 for "until the end of 2028". Null
   // when the story doesn't say.
   contractUntil Int?
+  // Reported by the media (e.g. "agreed to terms") but not yet announced
+  // by the club. Shown as reported, and not counted as a done deal on the
+  // free agency list. A later addTransfer.ts run of the same move without
+  // "reported" confirms it.
+  reported      Boolean      @default(false)
   // The news story it came from, for the "read more" link.
   eventId       String?
   event         Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
@@ -811,6 +816,10 @@ model FreeAgent {
   linked       String[]
   // On the open market already (e.g. his club pulled its offer).
   freeAgentNow Boolean        @default(false)
+  // Team slug he's reported (not confirmed) to have agreed with, for
+  // reports that aren't in the signings tracker. His own club = a reported
+  // re-signing.
+  reportedTo   String?
   note         String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt

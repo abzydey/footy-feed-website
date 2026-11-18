@@ -27,6 +27,8 @@ export const TIER_BLURB: Record<FreeAgentTier, string> = {
 
 // Off the market: re-signed, signed elsewhere or retired.
 export const isDone = (p: FreeAgent) => p.status !== "AVAILABLE";
+// A deal reported by the media but not yet confirmed by the club.
+export const isReported = (p: FreeAgent) => !isDone(p) && !!p.reported;
 
 const shortName = (t: TransferTeam | null, label: string | null) => t?.shortName ?? label ?? "new club";
 
@@ -36,6 +38,15 @@ export function outcomeText(p: FreeAgent): string {
   if (p.status === "SIGNED") return `Signed with ${shortName(p.newTeam, p.newTeamLabel)}${p.until ? ` to ${p.until}` : ""}`;
   if (p.status === "RETIRED") return "Retired";
   return "Available";
+}
+
+// "Reported: staying", "Reported: Chiefs" — a deal that isn't confirmed yet.
+export function reportedText(p: FreeAgent): string {
+  const r = p.reported;
+  if (!r) return "";
+  if (r.kind === "RE_SIGNED") return "Reported: staying";
+  if (r.kind === "RETIRED") return "Reported: retiring";
+  return `Reported: ${r.team?.shortName ?? "new club"}`;
 }
 
 // Biggest names first: by tier, then name.
@@ -122,13 +133,23 @@ interface Row {
 
 // The tag beside a name: where he went once he's off the market, else the
 // row's detail (club or position).
-const rowTag = (r: Row, compact: boolean) => (isDone(r.p) ? outcomeTag(r.p, compact) : r.sub ?? "");
-const tagFont = (r: Row, size: number) => (isDone(r.p) ? body(800)(Math.round(size * 0.62)) : body(600)(Math.round(size * 0.7)));
+// A reported (unconfirmed) deal: the same short label with an asterisk,
+// explained under the list.
+function reportedTag(p: FreeAgent): string {
+  const r = p.reported!;
+  if (r.kind === "RE_SIGNED") return "STAYS*";
+  if (r.kind === "RETIRED") return "RETIRING*";
+  return `→ ${(r.team?.shortName ?? "NEW CLUB").toUpperCase()}*`;
+}
+const REPORTED = "rgba(168,85,247,0.78)";
+const rowTag = (r: Row, compact: boolean) => (isDone(r.p) ? outcomeTag(r.p, compact) : isReported(r.p) ? reportedTag(r.p) : r.sub ?? "");
+const tagged = (p: FreeAgent) => isDone(p) || isReported(p);
+const tagFont = (r: Row, size: number) => (tagged(r.p) ? body(800)(Math.round(size * 0.62)) : body(600)(Math.round(size * 0.7)));
 
 // Width a row needs at a given name size, tag included.
 function rowWidth(ctx: CanvasRenderingContext2D, r: Row, size: number, compact: boolean): number {
   const tag = rowTag(r, compact);
-  spaced(ctx, isDone(r.p) ? 1 : 0);
+  spaced(ctx, tagged(r.p) ? 1 : 0);
   ctx.font = tagFont(r, size);
   const tagW = tag ? ctx.measureText(tag).width + 14 : 0;
   spaced(ctx, 0);
@@ -137,9 +158,12 @@ function rowWidth(ctx: CanvasRenderingContext2D, r: Row, size: number, compact: 
 }
 
 // One name in a grid cell: club colour bar, the name (struck through in
-// purple once he's off the market) and, if he is, where he went.
+// purple once he's off the market) and, if he is, where he went. A reported
+// deal keeps the name white, with a dashed purple underline and the label
+// marked with an asterisk.
 function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w: number, size: number, compact: boolean) {
   const done = isDone(r.p);
+  const reported = isReported(r.p);
   const barH = Math.round(size * 1.05);
   ctx.fillStyle = clubAccent(r.p.team);
   ctx.globalAlpha = done ? 0.45 : 1;
@@ -147,12 +171,12 @@ function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w:
   ctx.globalAlpha = 1;
 
   const tag = rowTag(r, compact);
-  spaced(ctx, done ? 1 : 0);
+  spaced(ctx, done || reported ? 1 : 0);
   ctx.font = tagFont(r, size);
   const tagW = tag ? ctx.measureText(tag).width : 0;
   ctx.textBaseline = "middle";
   ctx.textAlign = "right";
-  ctx.fillStyle = done ? PURPLE : MUTED;
+  ctx.fillStyle = done ? PURPLE : reported ? REPORTED : MUTED;
   if (tag) ctx.fillText(tag, x + w, y + 1);
   spaced(ctx, 0);
 
@@ -165,6 +189,12 @@ function drawRow(ctx: CanvasRenderingContext2D, r: Row, x: number, y: number, w:
     const nw = ctx.measureText(name).width;
     ctx.fillStyle = PURPLE;
     ctx.fillRect(nameX - 3, y - 1, nw + 6, Math.max(3, Math.round(size / 9)));
+  } else if (reported) {
+    const nw = ctx.measureText(name).width;
+    const t = Math.max(2, Math.round(size / 12));
+    const uy = y + Math.round(size * 0.62);
+    ctx.fillStyle = REPORTED;
+    for (let dx = 0; dx < nw; dx += 9) ctx.fillRect(nameX + dx, uy, Math.min(5, nw - dx), t);
   }
 }
 
@@ -209,6 +239,8 @@ export async function drawFreeAgencyGraphic(canvas: HTMLCanvasElement, input: Gr
     cols = 3;
     stat = `${list.filter(isDone).length} of ${list.length} off the market`;
     share = list.length ? list.filter(isDone).length / list.length : 0;
+    const rep = list.filter(isReported).length;
+    if (rep) stat += ` · ${rep} reported`;
   } else if (kind === "available") {
     const top = players.filter((p) => p.tier);
     list = top.filter((p) => !isDone(p)).sort(byTier).slice(0, 30);
@@ -224,7 +256,10 @@ export async function drawFreeAgencyGraphic(canvas: HTMLCanvasElement, input: Gr
     cols = list.length > 14 ? 2 : 1;
     stat = `${list.filter(isDone).length} of ${list.length} off-contract players signed`;
     share = list.length ? list.filter(isDone).length / list.length : 0;
+    const rep = list.filter(isReported).length;
+    if (rep) stat += ` · ${rep} reported`;
   }
+  const anyReported = rows.some((r) => isReported(r.p));
 
   // Header.
   ctx.textBaseline = "alphabetic";
@@ -249,7 +284,8 @@ export async function drawFreeAgencyGraphic(canvas: HTMLCanvasElement, input: Gr
 
   // Names.
   const top = 350;
-  const bottom = H - 150;
+  // Room under the names for the asterisk's key when a deal is only reported.
+  const bottom = anyReported ? H - 178 : H - 150;
   const perCol = Math.max(1, Math.ceil(rows.length / cols));
   const rowH = Math.min(cols === 1 ? 62 : cols === 2 ? 56 : 44, (bottom - top) / perCol);
   // One size for every name in the post: as big as the row allows, then
@@ -268,6 +304,14 @@ export async function drawFreeAgencyGraphic(canvas: HTMLCanvasElement, input: Gr
     ctx.fillStyle = SOFT;
     ctx.textBaseline = "middle";
     ctx.fillText(kind === "available" ? "Every top free agent has signed." : "No players off contract.", PAD, top + 40);
+  }
+
+  if (anyReported) {
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.font = body(600)(22);
+    ctx.fillStyle = SOFT;
+    ctx.fillText("* Reported, not yet confirmed by the club", PAD, H - 146);
   }
 
   // Footer: the Full Set lockup and the address.

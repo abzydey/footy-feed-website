@@ -39,6 +39,8 @@ export interface Transfer {
   fromLabel: string | null;
   toLabel: string | null;
   contractUntil: number | null;
+  // Reported by the media, not yet announced by the club.
+  reported: boolean;
   announcedAt: string;
   event: {
     id: string;
@@ -69,6 +71,13 @@ export interface FreeAgent {
   until: number | null;
   decidedAt: string | null;
   story: { id: string; headline: string; sourceUrl: string | null; slug: string | null; isOriginalArticle: boolean } | null;
+  // A deal reported but not yet confirmed by the club (he's still on the
+  // market until it is): RE_SIGNED = reported to be staying.
+  reported: {
+    kind: "RE_SIGNED" | "SIGNED" | "RETIRED";
+    team: TransferTeam | null;
+    story: { id: string; headline: string; sourceUrl: string | null; slug: string | null; isOriginalArticle: boolean } | null;
+  } | null;
 }
 
 // A men's Rugby League World Cup game (the API's WorldCupMatch).

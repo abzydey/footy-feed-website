@@ -6,6 +6,11 @@
 //      "tier": "MARQUEE", "linked": ["titans"], "freeAgentNow": false,
 //      "aliases": ["Harrison Grant"], "note": "..." }]
 //
+// "reportedTo": "<slug>" marks a deal reported but not confirmed by the club
+// and not in the signings tracker (his own club = reported re-signing);
+// null clears it. A new player needs "team": an update for a name not on
+// the list is refused, so a typo can't add a stray entry.
+//
 // Only the fields given are changed, so an update can be just
 // { "player": "Sam Walker", "linked": ["perth-bears", "cowboys"] }.
 // "tier": null drops a player out of the top list; "remove": true deletes
@@ -27,6 +32,7 @@ interface Input {
   tier?: FreeAgentTier | null;
   linked?: string[];
   freeAgentNow?: boolean;
+  reportedTo?: string | null;
   aliases?: string[];
   note?: string | null;
   remove?: boolean;
@@ -59,10 +65,12 @@ async function main() {
       ...(p.tier !== undefined && { tier: p.tier }),
       ...(p.linked !== undefined && { linked: p.linked.map(slugOk) }),
       ...(p.freeAgentNow !== undefined && { freeAgentNow: p.freeAgentNow }),
+      ...(p.reportedTo !== undefined && { reportedTo: p.reportedTo === null ? null : slugOk(p.reportedTo) }),
       ...(p.aliases !== undefined && { aliases: p.aliases }),
       ...(p.note !== undefined && { note: p.note }),
     };
     const existing = await prisma.freeAgent.findUnique({ where });
+    if (!existing && !p.team) throw new Error(`${p.player} isn't on the list; adding a player needs "team" (check the spelling)`);
     if (existing) await prisma.freeAgent.update({ where, data });
     else await prisma.freeAgent.create({ data: { season, player: p.player, ...data } });
     console.log(`${existing ? "Updated" : "Added"}: ${p.player}`);

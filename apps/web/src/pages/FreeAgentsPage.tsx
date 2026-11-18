@@ -7,7 +7,9 @@ import {
   drawFreeAgencyGraphic,
   GraphicKind,
   isDone,
+  isReported,
   outcomeText,
+  reportedText,
   TALKS_OPEN_AT,
   TIER_BLURB,
   TIER_LABEL,
@@ -29,11 +31,14 @@ const chip = (active: boolean) =>
     active ? "bg-brand-violet text-white border-transparent" : "bg-white/[.04] text-white/60 border-white/[.14] hover:text-white"
   }`;
 
-// One player. Crossed off (struck through in purple) once he's re-signed,
+// One player. A deal only reported (not yet confirmed) gets a dashed
+// "Reported" chip. Crossed off (struck through in purple) once he's re-signed,
 // signed elsewhere or retired, with the outcome on the right; tapping a
 // crossed-off player opens the story.
 function PlayerRow({ p, divider }: { p: FreeAgent; divider: boolean }) {
   const done = isDone(p);
+  const reported = isReported(p);
+  const story = done ? p.story : reported ? p.reported!.story : null;
   const details = [p.position, p.team?.shortName].filter(Boolean).join(" · ");
   const content: ReactNode = (
     <>
@@ -61,6 +66,13 @@ function PlayerRow({ p, divider }: { p: FreeAgent; divider: boolean }) {
             {outcomeText(p)}
           </span>
         </span>
+      ) : reported ? (
+        <span className="shrink-0 flex items-center gap-1.5">
+          {p.reported!.kind === "SIGNED" && p.reported!.team && <TeamBadge team={p.reported!.team} size="sm" className="!w-5 !h-5 opacity-70" />}
+          <span className="rounded-full px-2 py-[2px] text-[10px] font-extrabold uppercase tracking-wider text-brand-violet border border-dashed border-brand-violet/60">
+            {reportedText(p)}
+          </span>
+        </span>
       ) : (
         p.freeAgentNow && (
           <span className="shrink-0 rounded-full px-2 py-[2px] text-[10px] font-extrabold uppercase tracking-wider text-brand-violet border border-brand-violet/40">
@@ -71,9 +83,9 @@ function PlayerRow({ p, divider }: { p: FreeAgent; divider: boolean }) {
     </>
   );
   const cls = `flex items-center gap-3 py-[11px] ${divider ? "border-t border-white/[.05]" : ""}`;
-  if (done && p.story) {
+  if (story) {
     return (
-      <Link to={p.story.isOriginalArticle && p.story.slug ? `/news/${p.story.slug}` : `/story/${p.story.id}`} className={`${cls} hover:opacity-80`}>
+      <Link to={story.isOriginalArticle && story.slug ? `/news/${story.slug}` : `/story/${story.id}`} className={`${cls} hover:opacity-80`}>
         {content}
       </Link>
     );

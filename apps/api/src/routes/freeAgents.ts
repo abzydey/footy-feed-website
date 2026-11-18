@@ -59,7 +59,20 @@ router.get("/", async (req, res) => {
   res.json({
     season,
     players: agents.map((a) => {
-      const move = [a.player, ...a.aliases].map((n) => latestMove.get(nameKey(n))).find(Boolean) ?? null;
+      const found = [a.player, ...a.aliases].map((n) => latestMove.get(nameKey(n))).find(Boolean) ?? null;
+      // A move only reported by the media (not yet announced by the club)
+      // leaves him on the market, shown as reported; so does reportedTo,
+      // for reports that aren't in the signings tracker.
+      const move = found && !found.reported ? found : null;
+      const reportedTeam = found?.reported ? found.toTeam : a.reportedTo ? teamBySlug.get(a.reportedTo) ?? null : null;
+      const reported =
+        !move && reportedTeam
+          ? {
+              kind: (found?.reported ? found.kind : reportedTeam.id === a.team?.id ? "RE_SIGNED" : "SIGNED") as "RE_SIGNED" | "SIGNED" | "RETIRED",
+              team: reportedTeam,
+              story: found?.reported ? found.event : null,
+            }
+          : null;
       return {
         id: a.id,
         player: a.player,
@@ -75,6 +88,7 @@ router.get("/", async (req, res) => {
         until: move?.contractUntil ?? null,
         decidedAt: move?.announcedAt ?? null,
         story: move?.event ?? null,
+        reported,
       };
     }),
   });

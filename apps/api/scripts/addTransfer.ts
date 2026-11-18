@@ -13,6 +13,12 @@
 // TRANSFER event with that exact headline) and takes that story's time as
 // the announcement time; announcedAt (ISO) overrides it. A move already
 // recorded (same player, kind and clubs) is skipped, so re-running is safe.
+//
+// "reported": true records a deal the media reports (e.g. "agreed to terms")
+// that the club hasn't announced: shown as reported, not a done deal. When
+// the club confirms it, run the same move again without "reported" (with the
+// club's story as headline): the existing entry is marked confirmed and
+// linked to that story instead of being skipped.
 import fs from "fs";
 
 import { TransferKind } from "@prisma/client";
@@ -29,6 +35,7 @@ interface MoveInput {
   until?: number;
   headline?: string;
   announcedAt?: string;
+  reported?: boolean;
 }
 
 async function teamId(slug: string | undefined): Promise<string | null> {
@@ -70,7 +77,19 @@ async function main() {
       where: { player: m.player, kind: m.kind, fromTeamId, toTeamId },
     });
     if (existing) {
-      console.log(`Skipped (already recorded): ${m.player} ${m.kind}`);
+      if (existing.reported && !m.reported) {
+        await prisma.transfer.update({
+          where: { id: existing.id },
+          data: {
+            reported: false,
+            ...(m.until !== undefined && { contractUntil: m.until }),
+            ...(event && { eventId: event.id, announcedAt: m.announcedAt ? new Date(m.announcedAt) : event.createdAt }),
+          },
+        });
+        console.log(`Confirmed (was reported): ${m.player} ${m.kind}`);
+      } else {
+        console.log(`Skipped (already recorded): ${m.player} ${m.kind}`);
+      }
       continue;
     }
 
@@ -83,6 +102,7 @@ async function main() {
         fromLabel: m.fromLabel ?? null,
         toLabel: m.toLabel ?? null,
         contractUntil: m.until ?? null,
+        reported: m.reported === true,
         eventId: event?.id ?? null,
         announcedAt: m.announcedAt ? new Date(m.announcedAt) : (event?.createdAt ?? new Date()),
       },
@@ -90,7 +110,7 @@ async function main() {
     console.log(
       `Added: ${m.player} — ${m.kind}${m.from ? ` from ${m.from}` : m.fromLabel ? ` from ${m.fromLabel}` : ""}${
         m.to ? ` to ${m.to}` : m.toLabel ? ` to ${m.toLabel}` : ""
-      }${m.until ? ` until ${m.until}` : ""}`
+      }${m.until ? ` until ${m.until}` : ""}${m.reported ? " (reported)" : ""}`
     );
   }
 }

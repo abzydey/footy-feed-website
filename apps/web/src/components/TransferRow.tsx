@@ -56,6 +56,14 @@ export default function TransferRow({ transfer: t, divider = true }: { transfer:
           <span className={`shrink-0 rounded-full px-2 py-[2px] text-[10px] font-extrabold uppercase tracking-wider ${KIND_CLASS[t.kind]}`}>
             {KIND_LABEL[t.kind]}
           </span>
+          {t.reported && (
+            <span
+              className="shrink-0 rounded-full px-2 py-[1px] text-[10px] font-extrabold uppercase tracking-wider text-brand-violet border border-dashed border-brand-violet/60"
+              title="Reported, not yet confirmed by the club"
+            >
+              Reported
+            </span>
+          )}
         </span>
         <span className="text-[12.5px] text-slate-400 truncate">
           {routeText(t)}

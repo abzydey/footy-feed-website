@@ -145,6 +145,14 @@ straight away — no confirmation step, no tweet draft.
 - Free agency: when a story links an available free agent with a club
   ("in talks", "tabled an offer"), add that club to his `linked` list with
   setFreeAgents.ts. A club pulling its offer → `freeAgentNow: true`.
+- Reported vs confirmed (owner's rule, 18 Nov 2026): a deal is confirmed
+  only once the club announces it. A media report that a deal is done
+  ("agreed to terms", "has re-signed" per a journalist) is *reported*: in the
+  tracker add it with `"reported": true` in addTransfer.ts; if it isn't
+  tracker material, set `reportedTo: "<slug>"` (his own club = reported
+  re-signing) with setFreeAgents.ts. Reported deals show with an asterisk,
+  not crossed off. When the club confirms, run the same addTransfer.ts move
+  without `reported` (headline = the club's story) and clear `reportedTo`.
 - Flag (don't silently change) anything odd: a tag that isn't in the story,
   a figure that contradicts an earlier story, a deal reported as confirmed
   that earlier reports said was only offered.
