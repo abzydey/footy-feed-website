@@ -98,6 +98,10 @@ temp file first (avoids shell-quoting problems with apostrophes).
   automatically by `addTransfer.ts` entries (matched by name; deals ending
   before 2028 don't count) — never cross anyone off by hand.
 - `setWorldCupSquad.ts` — a nation's World Cup squad.
+- `importDraw.ts <season> [--dry-run]` — load a season's NRL draw from NRL.com
+  (all rounds; re-run when games move, it updates instead of duplicating).
+  2027 loaded 20 Nov 2026. Round names repeat yearly, so the Games page
+  reads rounds within the current season.
 - `setLateMailUrl.ts <url>` — pin the weekly NRL.com team-list article.
 - `bulkImportInjuries.ts` — status-only injury import (never creates news).
 
