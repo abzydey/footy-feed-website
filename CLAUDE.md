@@ -181,6 +181,9 @@ straight away — no confirmation step, no tweet draft.
 
 ## Men's Rugby League World Cup 2026 (until the final, 15 Nov 2026)
 
+Over. The World Cup poller was switched off on 20 Nov 2026 (`apps/api/src/index.ts`);
+the pages stay under More as a record. The notes below are for reference.
+
 - Fixtures from rlwc2026.com; scores, live clock and try scorers from each
   game's NRL.com match centre (competition 131). Team lists from each game's
   rlwc2026.com page, same three stages as the NRL, six-man bench (14–19)
