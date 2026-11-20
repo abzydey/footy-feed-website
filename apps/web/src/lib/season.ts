@@ -14,4 +14,4 @@ export const FINALS_IN_MENU = false;
 // While the Rugby League World Cup is on: World Cup gets its own tab in the
 // phone tab bar. Turn off after the final (15 Nov 2026); the page stays in
 // More and the computer menu bar either way.
-export const WORLD_CUP_IN_MENU = true;
+export const WORLD_CUP_IN_MENU = false;
