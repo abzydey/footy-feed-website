@@ -93,10 +93,58 @@ function GameCard({ g }: { g: StripGame }) {
   );
 }
 
+// Ticking countdown to the season's first kickoff, above Round 1's cards.
+// Gone the moment the opener starts.
+function SeasonCountdown({ opener }: { opener: Game }) {
+  const kickoff = new Date(opener.kickoffAt).getTime();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const left = Math.max(0, kickoff - now);
+  if (left === 0) return null;
+
+  const units = [
+    { value: Math.floor(left / DAY), label: "Days" },
+    { value: Math.floor(left / 3_600_000) % 24, label: "Hrs" },
+    { value: Math.floor(left / 60_000) % 60, label: "Mins" },
+    { value: Math.floor(left / 1000) % 60, label: "Secs" },
+  ];
+  const when = new Date(kickoff);
+  return (
+    <Link
+      to={`/games/${opener.id}`}
+      className="block rounded-[14px] bg-surface border border-brand-violet/30 px-4 py-3.5 hover:border-brand-violet/60 transition-colors duration-150 shadow-[0_0_28px_-10px_rgb(168_85_247/.55)]"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="font-display font-bold text-[11px] tracking-[.14em] uppercase text-brand-violet">{opener.round} kicks off</div>
+        <div className="text-[11px] font-bold text-slate-400 truncate">
+          {when.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })},{" "}
+          {when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+        </div>
+      </div>
+      <div className="mt-2 grid grid-cols-4 gap-2" role="timer" aria-label={`${units[0].value} days until ${opener.round}`}>
+        {units.map((u) => (
+          <div key={u.label} className="rounded-lg bg-white/[.05] py-2 text-center">
+            <div className="font-display italic font-black text-[26px] leading-none tabular-nums text-white">{String(u.value).padStart(2, "0")}</div>
+            <div className="mt-1 text-[10px] font-extrabold tracking-[.1em] uppercase text-slate-400">{u.label}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2.5 text-[12.5px] font-bold text-white truncate">
+        {opener.homeTeam.shortName} v {opener.awayTeam.shortName}
+        {opener.venue && <span className="font-semibold text-slate-400"> · {opener.venue}</span>}
+      </div>
+    </Link>
+  );
+}
+
 // The scoreboard at the top of Home: compact cards for every game around now
 // in kickoff order, in a row you swipe (or
 // step with the arrows on a computer). Opens scrolled to the live game, the
-// latest result, or the next game. Tapping a card opens the game.
+// latest result, or the next game. Tapping a card opens the game. Between
+// seasons, when nothing is that close, it shows the next round instead.
 export default function ScoreStrip() {
   const [nrl, setNrl] = useState<Game[] | null>(null);
   const refreshTick = useRefreshTick();
@@ -108,13 +156,24 @@ export default function ScoreStrip() {
     api.listGames().then(setNrl).catch(() => setNrl((p) => p ?? []));
   }, [refreshTick, poll]);
 
+  // The next game, when it's the season opener: the countdown runs until it.
+  const opener = useMemo(() => {
+    const next = nrl?.filter((g) => g.status === "SCHEDULED" && new Date(g.kickoffAt).getTime() > Date.now()).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))[0];
+    return next && next.round === "Round 1" ? next : null;
+  }, [nrl]);
+
   const games = useMemo(() => {
     if (!nrl) return null;
     const now = Date.now();
-    return nrl
-      .map(fromNrl)
-      .filter((g) => g.status === "LIVE" || (g.kickoff > now - RECENT_DAYS * DAY && g.kickoff < now + AHEAD_DAYS * DAY))
-      .sort((a, b) => a.kickoff - b.kickoff);
+    let shown = nrl.filter((g) => {
+      const kickoff = new Date(g.kickoffAt).getTime();
+      return g.status === "LIVE" || (kickoff > now - RECENT_DAYS * DAY && kickoff < now + AHEAD_DAYS * DAY);
+    });
+    if (shown.length === 0) {
+      const next = nrl.filter((g) => new Date(g.kickoffAt).getTime() > now).sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt))[0];
+      if (next) shown = nrl.filter((g) => g.round === next.round && g.kickoffAt.slice(0, 4) === next.kickoffAt.slice(0, 4));
+    }
+    return shown.map(fromNrl).sort((a, b) => a.kickoff - b.kickoff);
   }, [nrl]);
 
   // First load only: scroll so the starting game is the first card in view.
@@ -135,7 +194,7 @@ export default function ScoreStrip() {
     return () => window.clearInterval(id);
   }, [anyLive]);
 
-  if (!games || games.length === 0) return null;
+  if (!games || games.length === 0) return opener ? <SeasonCountdown opener={opener} /> : null;
 
   const step = (dir: -1 | 1) => {
     const row = rowRef.current;
@@ -155,16 +214,19 @@ export default function ScoreStrip() {
   );
 
   return (
-    <section aria-label="Scores" className="flex items-stretch gap-2">
-      {arrow(-1)}
-      {/* Bleeds to the screen edge on phones so a part-shown card at the
-          right says "swipe for more". */}
-      <div ref={rowRef} className="relative flex-1 min-w-0 flex gap-2 overflow-x-auto scrollbar-hide snap-x -mr-4 pr-4 lg:mr-0 lg:pr-0">
-        {games.map((g) => (
-          <GameCard key={g.key} g={g} />
-        ))}
-      </div>
-      {arrow(1)}
-    </section>
+    <div className="space-y-2.5">
+      {opener && <SeasonCountdown opener={opener} />}
+      <section aria-label="Scores" className="flex items-stretch gap-2">
+        {arrow(-1)}
+        {/* Bleeds to the screen edge on phones so a part-shown card at the
+            right says "swipe for more". */}
+        <div ref={rowRef} className="relative flex-1 min-w-0 flex gap-2 overflow-x-auto scrollbar-hide snap-x -mr-4 pr-4 lg:mr-0 lg:pr-0">
+          {games.map((g) => (
+            <GameCard key={g.key} g={g} />
+          ))}
+        </div>
+        {arrow(1)}
+      </section>
+    </div>
   );
 }

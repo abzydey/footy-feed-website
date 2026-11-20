@@ -50,7 +50,7 @@ const DESKTOP_LINKS: NavItem[] = IN_SEASON
   : [
       { to: "/", label: "Home", end: true },
       { to: "/signings", label: "Signings" },
-      { to: "/world-cup", label: "World Cup" },
+      { to: "/games", label: "Games" },
       { to: "/news", label: "News" },
       { to: "/teams", label: "Teams" },
       { to: "/ladder", label: "Ladder" },
@@ -60,7 +60,6 @@ const DESKTOP_LINKS: NavItem[] = IN_SEASON
 // dropdown skips the ones already in its menu bar. My Teams / Signing News /
 // Top Stories used to be the pills on Home — this is their home now.
 const MORE_LINKS: NavItem[] = [
-  { to: "/world-cup", label: "World Cup" },
   { to: "/games", label: "Games" },
   { to: "/team-lists", label: "Team Lists" },
   { to: "/injuries", label: "Injuries" },
@@ -73,6 +72,7 @@ const MORE_LINKS: NavItem[] = [
   { to: "/social", label: "Social" },
   { to: "/podcasts", label: "Podcasts" },
   { to: "/highlights", label: "Highlights" },
+  { to: "/world-cup", label: "World Cup 2026" },
   { to: "/search", label: "What's Been Said" },
   { to: "/ladder", label: "Ladder" },
 ];
