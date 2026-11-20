@@ -7,8 +7,12 @@ import PageHero from "../components/ui/PageHero";
 import SectionLabel from "../components/ui/SectionLabel";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 function formatKickoff(iso: string) {
+  if (kickoffTimeTbc(iso)) {
+    return `${new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, time TBC`;
+  }
   return new Date(iso).toLocaleString(undefined, {
     weekday: "short",
     month: "short",

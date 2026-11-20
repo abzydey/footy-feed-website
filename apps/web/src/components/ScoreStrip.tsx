@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api, Game } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
 import { teamColors } from "../lib/teamBadge";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 // One game in the strip, in the shape the cards draw.
 interface StripGame {
@@ -41,7 +42,8 @@ function statusText(g: StripGame): string {
   if (g.status === "LIVE") return g.clock ? `Live · ${g.clock}` : "Live";
   if (g.status === "FULL_TIME") return "Full time";
   const d = new Date(g.kickoff);
-  return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
+  const time = kickoffTimeTbc(d.toISOString()) ? "time TBC" : d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${time}`;
 }
 
 // Which game the strip starts on: one being played, else the latest result
@@ -121,7 +123,7 @@ function SeasonCountdown({ opener }: { opener: Game }) {
         <div className="font-display font-bold text-[11px] tracking-[.14em] uppercase text-brand-violet">{opener.round} kicks off</div>
         <div className="text-[11px] font-bold text-slate-400 truncate">
           {when.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })},{" "}
-          {when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          {kickoffTimeTbc(opener.kickoffAt) ? "time TBC" : when.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
         </div>
       </div>
       <div className="mt-2 grid grid-cols-4 gap-2" role="timer" aria-label={`${units[0].value} days until ${opener.round}`}>

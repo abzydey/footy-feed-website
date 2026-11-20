@@ -24,6 +24,14 @@ function sydneyOffsetMs(t: number): number {
   return asUtc - Math.floor(t / 1000) * 1000;
 }
 
+// NRL.com lists a game whose kick-off time isn't announced yet (the 2027
+// Las Vegas games) at midnight Sydney time. No game really starts then, so
+// show its date with "Time TBC" until the real time is imported.
+export function kickoffTimeTbc(iso: string): boolean {
+  const parts = SYDNEY.formatToParts(new Date(iso));
+  return parts.find((p) => p.type === "hour")?.value === "00" && parts.find((p) => p.type === "minute")?.value === "00";
+}
+
 // The same Sydney clock time one day earlier.
 export function sameTimeDayBefore(t: number): number {
   const naive = t - 24 * 60 * 60 * 1000;

@@ -7,6 +7,7 @@ import { useRefreshTick } from "../lib/refresh";
 import { teamAbbreviation } from "../lib/teamBadge";
 import MatchHero from "./MatchHero";
 import TeamBadge from "./TeamBadge";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 const LIVE_POLL_MS = 20_000;
 const GF_RESULT_DAYS = 21; // how long Home leads with the Grand Final result
@@ -46,6 +47,7 @@ function OffSeasonCard() {
 // top-right corner blank). Asking for only the time fields directly has no
 // such assumption to break.
 function formatKickoffTime(iso: string): string {
+  if (kickoffTimeTbc(iso)) return "Time TBC";
   return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 

@@ -12,6 +12,7 @@ import TeamListCard from "../components/TeamListCard";
 import TeamMovesCard from "../components/TeamMovesCard";
 import { FeedSkeleton } from "../components/ui/Skeleton";
 import { SITE_URL, useDocumentMeta, useJsonLd } from "../lib/useDocumentMeta";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 // Brand rule: no green/amber/red status colours — Siren (the one warm
 // accent) is reserved for things that matter right now, which "OUT" for an
@@ -28,6 +29,9 @@ const TEAM_TABS = ["Overview", "Fixtures", "Stats"] as const;
 type TeamTab = (typeof TEAM_TABS)[number];
 
 function formatKickoff(iso: string) {
+  if (kickoffTimeTbc(iso)) {
+    return `${new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, time TBC`;
+  }
   return new Date(iso).toLocaleString(undefined, {
     weekday: "short",
     month: "short",

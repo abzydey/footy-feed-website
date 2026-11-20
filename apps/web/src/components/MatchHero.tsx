@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Game } from "../lib/api";
 import { teamColors } from "../lib/teamBadge";
 import TeamBadge from "./TeamBadge";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 // "2d 06h" / "6h 12m" / "12m" until kickoff.
 function countdownTo(iso: string, now: number): string {
@@ -28,7 +29,7 @@ function useNow(intervalMs: number) {
 function kickoffLabel(iso: string): string {
   const d = new Date(iso);
   const day = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
-  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const time = kickoffTimeTbc(iso) ? "Time TBC" : d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   return `${day} · ${time}`;
 }
 

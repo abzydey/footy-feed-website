@@ -6,10 +6,14 @@ import { RowListSkeleton } from "../components/ui/Skeleton";
 import TeamBadge from "../components/TeamBadge";
 import { useDocumentMeta } from "../lib/useDocumentMeta";
 import { needsLivePolling, usePolling } from "../lib/liveGamePolling";
+import { kickoffTimeTbc } from "../lib/sydneyTime";
 
 const LIVE_POLL_MS = 20_000;
 
 function formatKickoff(iso: string) {
+  if (kickoffTimeTbc(iso)) {
+    return `${new Date(iso).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}, time TBC`;
+  }
   return new Date(iso).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
