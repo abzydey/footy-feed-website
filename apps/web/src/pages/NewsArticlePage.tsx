@@ -129,6 +129,28 @@ export default function NewsArticlePage() {
         <div className="mt-8 border-t border-white/[.08] pt-8">
           {renderArticleMarkdown(article.articleBody ?? "")}
         </div>
+
+        {/* Photos attached to the story (addNews.ts "media"), e.g. our own
+            social graphics: shown whole here, one under another, since the
+            feed card's grid crops them to squares. Tap for the full image. */}
+        {article.media && article.media.some((m) => m.type === "photo") && (
+          <div className="mt-8 flex flex-col gap-4">
+            {article.media
+              .filter((m) => m.type === "photo")
+              .map((m) => (
+                <a key={m.url} href={m.url} target="_blank" rel="noreferrer" className="block">
+                  <img
+                    src={m.url}
+                    alt=""
+                    loading="lazy"
+                    width={m.width ?? undefined}
+                    height={m.height ?? undefined}
+                    className="block w-full h-auto rounded-xl border border-white/[.08] bg-white/[.04]"
+                  />
+                </a>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
