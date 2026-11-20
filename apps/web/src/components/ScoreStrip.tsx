@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { api, Game, WorldCupMatch } from "../lib/api";
+import { api, Game } from "../lib/api";
 import { useRefreshTick } from "../lib/refresh";
 import { teamColors } from "../lib/teamBadge";
-import { sideName } from "../lib/worldCup";
-import Flag from "./Flag";
 
-// One game in the strip, NRL or World Cup, in a common shape.
+// One game in the strip, in the shape the cards draw.
 interface StripGame {
   key: string;
   href: string;
-  label: string; // "Grand Final", "WC · Round 1"
+  label: string; // "Round 1", "Grand Final"
   kickoff: number;
   status: "SCHEDULED" | "LIVE" | "FULL_TIME";
   clock: string | null;
   venue: string | null;
-  sides: { name: string; score: number | null; mark: { color?: string; flag?: string } }[];
+  sides: { name: string; score: number | null; color?: string }[];
 }
 
 const DAY = 86_400_000;
@@ -33,28 +31,8 @@ function fromNrl(g: Game): StripGame {
     clock: g.liveClock,
     venue: g.venue,
     sides: [
-      { name: g.homeTeam.shortName, score: g.homeScore, mark: { color: teamColors(g.homeTeam)[0] } },
-      { name: g.awayTeam.shortName, score: g.awayScore, mark: { color: teamColors(g.awayTeam)[0] } },
-    ],
-  };
-}
-
-// Nations by their three-letter code next to the flag (AUS, NZL, PNG), the
-// scoreboard convention — full names like "Papua New Guinea" don't fit a
-// compact card. Knockout slots not yet decided keep their description.
-function fromWorldCup(m: WorldCupMatch): StripGame {
-  const side = (abbr: string, which: "home" | "away") => (abbr && abbr !== "TBA" ? abbr : sideName(m, which));
-  return {
-    key: `wc-${m.id}`,
-    href: `/world-cup/${m.id}`,
-    label: `WC · ${m.roundName}`,
-    kickoff: new Date(m.kickoffAt).getTime(),
-    status: m.status,
-    clock: m.liveClock ?? null,
-    venue: m.venue,
-    sides: [
-      { name: side(m.homeAbbr, "home"), score: m.homeScore, mark: { flag: m.homeAbbr } },
-      { name: side(m.awayAbbr, "away"), score: m.awayScore, mark: { flag: m.awayAbbr } },
+      { name: g.homeTeam.shortName, score: g.homeScore, color: teamColors(g.homeTeam)[0] },
+      { name: g.awayTeam.shortName, score: g.awayScore, color: teamColors(g.awayTeam)[0] },
     ],
   };
 }
@@ -100,11 +78,7 @@ function GameCard({ g }: { g: StripGame }) {
       <div className="mt-1.5 space-y-[3px]">
         {g.sides.map((s, k) => (
           <div key={k} className="flex items-center gap-2">
-            {s.mark.flag ? (
-              <Flag abbr={s.mark.flag} className="w-[17px] h-[12px] shrink-0" />
-            ) : (
-              <span className="w-[4px] h-[15px] rounded-full shrink-0" style={{ background: s.mark.color ?? "rgb(var(--c-surface-inset))" }} aria-hidden="true" />
-            )}
+            <span className="w-[4px] h-[15px] rounded-full shrink-0" style={{ background: s.color ?? "rgb(var(--c-surface-inset))" }} aria-hidden="true" />
             <span className={`flex-1 min-w-0 truncate text-[13.5px] font-bold ${leader === -1 || leader === k ? "text-white" : "text-slate-400"}`}>{s.name}</span>
             {showScores && (
               <span className={`font-display italic font-black text-[16px] tabular-nums ${leader === -1 || leader === k ? "text-white" : "text-slate-400"}`}>
@@ -120,12 +94,11 @@ function GameCard({ g }: { g: StripGame }) {
 }
 
 // The scoreboard at the top of Home: compact cards for every game around now
-// — NRL and World Cup together, in kickoff order — in a row you swipe (or
+// in kickoff order, in a row you swipe (or
 // step with the arrows on a computer). Opens scrolled to the live game, the
 // latest result, or the next game. Tapping a card opens the game.
 export default function ScoreStrip() {
   const [nrl, setNrl] = useState<Game[] | null>(null);
-  const [wc, setWc] = useState<WorldCupMatch[] | null>(null);
   const refreshTick = useRefreshTick();
   const [poll, setPoll] = useState(0);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -133,16 +106,16 @@ export default function ScoreStrip() {
 
   useEffect(() => {
     api.listGames().then(setNrl).catch(() => setNrl((p) => p ?? []));
-    api.listWorldCupMatches().then(setWc).catch(() => setWc((p) => p ?? []));
   }, [refreshTick, poll]);
 
   const games = useMemo(() => {
-    if (!nrl || !wc) return null;
+    if (!nrl) return null;
     const now = Date.now();
-    return [...nrl.map(fromNrl), ...wc.map(fromWorldCup)]
+    return nrl
+      .map(fromNrl)
       .filter((g) => g.status === "LIVE" || (g.kickoff > now - RECENT_DAYS * DAY && g.kickoff < now + AHEAD_DAYS * DAY))
       .sort((a, b) => a.kickoff - b.kickoff);
-  }, [nrl, wc]);
+  }, [nrl]);
 
   // First load only: scroll so the starting game is the first card in view.
   // Later refreshes leave the viewer's own scroll position alone.

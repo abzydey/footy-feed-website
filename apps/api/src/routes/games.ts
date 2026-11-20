@@ -7,13 +7,34 @@ const router = Router();
 const teamSelect = { id: true, name: true, shortName: true, slug: true, logoUrl: true, primaryColor: true } as const;
 const STAGES = ["INITIAL", "TWENTY_FOUR_HOUR", "FINAL"] as const;
 
+// Round names repeat every season ("Round 1", "Finals Week 1"), so rounds are
+// always read within one season: the calendar year of their kickoffs.
+function seasonRange(year: number) {
+  return { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) };
+}
+
+// The season the Games page is on: that of the next kickoff, or of the last
+// game once every fixture is played.
+async function currentSeason(): Promise<number | null> {
+  const game =
+    (await prisma.game.findFirst({ where: { kickoffAt: { gt: new Date() } }, orderBy: { kickoffAt: "asc" } })) ??
+    (await prisma.game.findFirst({ orderBy: { kickoffAt: "desc" } }));
+  return game ? game.kickoffAt.getUTCFullYear() : null;
+}
+
 // GET /api/games — fixture directory, soonest first. Optional ?round= filters
 // to just that round (used by the Games page's round navigation — see
-// GET /rounds below for the list of rounds to navigate between).
+// GET /rounds below for the list of rounds to navigate between). in the latest
+// season that has it, so the 2026 finals still show before 2027's are drawn.
 router.get("/", async (req, res) => {
   const round = typeof req.query.round === "string" ? req.query.round : undefined;
+  let where = undefined;
+  if (round) {
+    const latest = await prisma.game.findFirst({ where: { round }, orderBy: { kickoffAt: "desc" } });
+    where = latest ? { round, kickoffAt: seasonRange(latest.kickoffAt.getUTCFullYear()) } : { round };
+  }
   const games = await prisma.game.findMany({
-    where: round ? { round } : undefined,
+    where,
     orderBy: { kickoffAt: "asc" },
     include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },
   });
@@ -24,9 +45,11 @@ router.get("/", async (req, res) => {
 // chronologically ordered by that round's earliest kickoff (not sorted as
 // text — "Round 10" would otherwise sort before "Round 9", and this also
 // has to work for non-numbered rounds like "Grand Final"). Powers the
-// Games page's previous/next round navigation.
+// Games page's previous/next round navigation. Current season only.
 router.get("/rounds", async (_req, res) => {
-  const games = await prisma.game.findMany({ select: { round: true, kickoffAt: true } });
+  const season = await currentSeason();
+  if (season === null) return res.json([]);
+  const games = await prisma.game.findMany({ where: { kickoffAt: seasonRange(season) }, select: { round: true, kickoffAt: true } });
   const earliestByRound = new Map<string, Date>();
   for (const g of games) {
     const existing = earliestByRound.get(g.round);
@@ -54,7 +77,7 @@ router.get("/current-round", async (_req, res) => {
 
   const round = anchorGame.round;
   const games = await prisma.game.findMany({
-    where: { round },
+    where: { round, kickoffAt: seasonRange(anchorGame.kickoffAt.getUTCFullYear()) },
     orderBy: { kickoffAt: "asc" },
     include: { homeTeam: { select: teamSelect }, awayTeam: { select: teamSelect } },
   });

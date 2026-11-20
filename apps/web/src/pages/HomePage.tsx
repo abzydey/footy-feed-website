@@ -9,7 +9,6 @@ import FreeAgencyHomeCard from "../components/FreeAgencyHomeCard";
 import LatestEpisodeTeaser from "../components/LatestEpisodeTeaser";
 import ScoreStrip from "../components/ScoreStrip";
 import SigningsHomeCard from "../components/SigningsHomeCard";
-import WorldCupSquadsCard from "../components/WorldCupSquadsCard";
 import TeamListsCard from "../components/TeamListsCard";
 import WhatsBeenSaidTeaser from "../components/WhatsBeenSaidTeaser";
 import { FeedSkeleton } from "../components/ui/Skeleton";
@@ -83,8 +82,6 @@ export default function HomePage() {
 
       <div className="space-y-5 lg:space-y-4 lg:col-start-3 lg:row-start-1 lg:row-span-2">
         <TeamListsCard />
-        {/* World Cup only — the same quick-link row, for squads. */}
-        <WorldCupSquadsCard />
         {/* Finals-only — renders nothing outside the finals window. */}
         <FinalsInjuryHomeCard />
         <SigningsHomeCard />

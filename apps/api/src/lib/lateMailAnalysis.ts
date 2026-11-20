@@ -289,18 +289,24 @@ export async function analyzeLateMail(lateMail: ParsedLateMail): Promise<Analyze
       const homeTeam = matchTeam(m.homeTeam.teamName);
       const awayTeam = matchTeam(m.awayTeam.teamName);
 
-      const game =
+      // With the whole season's draw loaded, the same two clubs meet more
+      // than once: take this week's game (the soonest from four days ago on),
+      // falling back to their latest meeting.
+      const pairing =
         homeTeam && awayTeam
-          ? await prisma.game.findFirst({
-              where: {
-                OR: [
-                  { homeTeamId: homeTeam.id, awayTeamId: awayTeam.id },
-                  { homeTeamId: awayTeam.id, awayTeamId: homeTeam.id },
-                ],
-              },
-              orderBy: { kickoffAt: "desc" },
-            })
+          ? {
+              OR: [
+                { homeTeamId: homeTeam.id, awayTeamId: awayTeam.id },
+                { homeTeamId: awayTeam.id, awayTeamId: homeTeam.id },
+              ],
+            }
           : null;
+      const game = pairing
+        ? ((await prisma.game.findFirst({
+            where: { ...pairing, kickoffAt: { gte: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) } },
+            orderBy: { kickoffAt: "asc" },
+          })) ?? (await prisma.game.findFirst({ where: pairing, orderBy: { kickoffAt: "desc" } })))
+        : null;
 
       const [homeInitial, awayInitial] = game
         ? await Promise.all([
