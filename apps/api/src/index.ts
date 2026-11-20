@@ -44,7 +44,7 @@ import { startPodcastDiscoveryPoller } from "./lib/podcastDiscoveryPoller";
 import { startLiveScorePolling } from "./lib/liveScorePoller";
 import { startEpisodeAutoPolling } from "./lib/episodeAutoPoller";
 import { startLateMailPolling } from "./lib/lateMailPoller";
-import { startWorldCupPolling } from "./lib/worldCupPoller";
+// import { startWorldCupPolling } from "./lib/worldCupPoller"; (off since the 2026 final)
 
 const app = express();
 
@@ -129,5 +129,6 @@ app.listen(port, () => {
   startLiveScorePolling();
   startEpisodeAutoPolling();
   startLateMailPolling();
-  startWorldCupPolling();
+  // World Cup 2026 is over (final 15 Nov): its pages stay as a record, read
+  // from the database. Call startWorldCupPolling() again for the next one.
 });
