@@ -212,6 +212,8 @@ the pages stay under More as a record. The notes below are for reference.
   `node scripts/app-icons-from-avatar.mjs`, after `scripts/brand-assets.mjs` if run.
 - Post Maker: edit `brand/post-maker/template.html`, build with
   `node brand/post-maker/build.cjs <out.html>`, republish to its URL.
+- When making a post for the owner, send only the Instagram post size
+  (1080×1350); they don't need the story or X versions (owner, 21 Nov 2026).
 
 ## Web app conventions
 
