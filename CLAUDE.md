@@ -39,7 +39,8 @@ environment "Full Set"), including when home: this is the normal way of working.
 They also keep one long-running session on the laptop for when they're at it. In
 that session, run `git pull --rebase` before starting work, because cloud sessions
 push to `main` too; it uses the laptop's `.env`, not the bridge. This file, the
-rulebook and the session log are the handover; earlier chats don't carry over.
+rulebook and the session log are the handover; earlier chats don't carry over,
+so read the session log's latest entries and Open items when starting work.
 
 - `scripts/cloud-setup.sh` installs dependencies and generates Prisma at session
   start. There is no `.env`: the cloud environment sets `DB_BRIDGE_URL` and
@@ -65,8 +66,20 @@ rulebook and the session log are the handover; earlier chats don't carry over.
 - When retrying a script, check the live feed before each attempt, and don't
   judge success from `cmd | tail -1 && break`: the pipe hides the script's failure.
   The feed returns a JSON array whose rows have `headline`, `type`, `team.slug`.
-- Update the session log (link above) after significant work, and keep its Open
-  items current.
+- **Session log — every session, not optional.** Its source is
+  `docs/session-log/index.html` in this repo (the link above is the published
+  copy). It went unupdated from 2 Nov to 25 Nov 2026 because sessions skipped it.
+  After any code change, script run (news, tracker, draw…) or decision, before
+  telling the owner you're done:
+  1. Add a short dated entry at the end of the `#log` section (plain language,
+     same style as the others) and update the Open items and the masthead's
+     "Last entry" date. News gets one entry per day or batch, not per story.
+  2. Commit it with the work (or on its own for script-only work) and push.
+  3. Republish: Artifact publish with `file_path` = that file and
+     `url` = https://claude.ai/artifact/Jnp56yzuxDPNYWnsYijDLS (read the url
+     first if this session hasn't). Never publish to a new URL.
+- The laptop session pulls `main` automatically at start/resume
+  (`scripts/cloud-setup.sh`); still `git pull --rebase` before each piece of work.
 - Late Mail by chat means calling production `POST /api/admin/late-mail/parse`,
   which needs `ADMIN_JWT_SECRET` in the environment (not set by default). The
   older notes' localhost instructions no longer apply.

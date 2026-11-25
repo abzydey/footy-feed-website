@@ -1,8 +1,11 @@
 #!/bin/bash
 # Runs at the start of every Claude Code session (.claude/settings.json) and
-# does nothing outside the cloud. Installs dependencies and generates the
-# Prisma client, so apps/api scripts work straight away from a fresh clone.
+# Installs dependencies and generates the Prisma client in the cloud, so
+# apps/api scripts work straight away from a fresh clone. On the laptop it only
+# pulls main, since cloud sessions push there too.
 if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
+  cd "$CLAUDE_PROJECT_DIR" 2>/dev/null && [ "$(git branch --show-current)" = main ] &&
+    git pull --rebase --autostash -q >/dev/null 2>&1
   exit 0
 fi
 

@@ -1,0 +1,406 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Full Set Session Log</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:ital,wght@0,600;0,800;1,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #090d1f;
+    --surface: #10152b;
+    --surface-raised: #161c38;
+    --border: rgba(168,85,247,0.18);
+    --border-strong: rgba(168,85,247,0.32);
+    --text: #f1effa;
+    --text-muted: #8b93ac;
+    --text-faint: #5c6483;
+    --accent: #a855f7;
+    --accent-soft: #c49bff;
+    --critical: #ff6b2c;
+    --ok: #3ecf8e;
+    --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg: #f6f5fb;
+      --surface: #ffffff;
+      --surface-raised: #fbfaff;
+      --border: rgba(147,51,234,0.16);
+      --border-strong: rgba(147,51,234,0.3);
+      --text: #14172a;
+      --text-muted: #676f8c;
+      --text-faint: #9a9fb8;
+      --accent: #9333ea;
+      --accent-soft: #7e22ce;
+      --critical: #d9530f;
+      --ok: #1f9d68;
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f6f5fb;
+    --surface: #ffffff;
+    --surface-raised: #fbfaff;
+    --border: rgba(147,51,234,0.16);
+    --border-strong: rgba(147,51,234,0.3);
+    --text: #14172a;
+    --text-muted: #676f8c;
+    --text-faint: #9a9fb8;
+    --accent: #9333ea;
+    --accent-soft: #7e22ce;
+    --critical: #d9530f;
+    --ok: #1f9d68;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 80px;
+  }
+  ::selection { background: var(--accent); color: #fff; }
+
+  .page { max-width: 740px; margin: 0 auto; }
+
+  .masthead { padding: 56px 0 28px; border-bottom: 1px solid var(--border); }
+  .masthead .kicker {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent-soft); display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .masthead .kicker::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--critical);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--critical) 20%, transparent); flex-shrink: 0;
+  }
+  .masthead h1 {
+    font-family: var(--font-display); font-style: italic; font-weight: 800;
+    font-size: clamp(38px, 7vw, 54px); letter-spacing: -0.01em; line-height: 0.96;
+    margin: 0 0 14px; text-wrap: balance; text-transform: uppercase;
+  }
+  .masthead h1 em { font-style: italic; color: var(--accent); }
+  .masthead p.dek { color: var(--text-muted); max-width: 62ch; font-size: 15px; margin: 0; }
+  .masthead .meta {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--text-faint);
+  }
+  .masthead .meta b { color: var(--text-muted); font-weight: 500; }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--accent-soft); margin: 0 0 8px;
+  }
+  h2 {
+    font-family: var(--font-display); font-weight: 800; font-style: italic; text-transform: uppercase;
+    font-size: 28px; letter-spacing: -0.005em; margin: 0 0 6px; text-wrap: balance;
+  }
+  section > p.lede { color: var(--text-muted); margin: 0 0 24px; max-width: 64ch; font-size: 14.5px; }
+
+  .infra-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .infra-cell { background: var(--surface); padding: 14px 16px; min-width: 0; }
+  .infra-cell .label {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 5px;
+  }
+  .infra-cell .value { font-family: var(--font-mono); font-size: 13px; color: var(--text); word-break: break-all; line-height: 1.45; }
+  .infra-cell .value.link { color: var(--accent-soft); }
+  @media (max-width: 560px) { .infra-grid { grid-template-columns: 1fr; } }
+
+  .status-row {
+    display: flex; gap: 12px; padding: 13px 14px; border-radius: 8px; margin-bottom: 8px;
+    background: var(--surface); border: 1px solid var(--border); align-items: flex-start;
+  }
+  .status-row .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .status-row.ok .dot { background: var(--ok); }
+  .status-row.watch .dot { background: var(--critical); }
+  .status-row .body b { color: var(--text); }
+  .status-row .body { font-size: 14px; color: var(--text-muted); }
+
+  .log-entry { display: grid; grid-template-columns: 92px 1fr; gap: 18px; padding: 20px 0; border-top: 1px solid var(--border); }
+  .log-entry:first-child { border-top: none; padding-top: 0; }
+  .log-date { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); padding-top: 3px; }
+  .log-body h3 { font-family: var(--font-body); font-weight: 600; font-size: 16px; margin: 0 0 6px; color: var(--text); }
+  .log-body p { margin: 0; color: var(--text-muted); font-size: 14.5px; }
+  .log-body p + p { margin-top: 8px; }
+  code {
+    font-family: var(--font-mono); font-size: 0.89em; background: var(--surface-raised);
+    border: 1px solid var(--border); padding: 0.1em 0.4em; border-radius: 4px; color: var(--accent-soft);
+  }
+  @media (max-width: 560px) { .log-entry { grid-template-columns: 1fr; gap: 4px; } }
+
+  .open-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .open-list li {
+    padding: 12px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--critical); border-radius: 6px; font-size: 14.5px; color: var(--text-muted);
+  }
+  .open-list li b { color: var(--text); font-weight: 600; }
+
+  footer.colophon { padding-top: 40px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); line-height: 1.8; }
+</style>
+
+<div class="page">
+
+  <div class="masthead">
+    <div class="kicker">Continuity record · not a live dashboard</div>
+    <h1>Full Set<br><em>Session Log</em></h1>
+    <p class="dek">
+      A standing record of the Full Set project — infrastructure to reach it from any device, and a
+      condensed log of what's been built — kept so nothing is lost if the working laptop is unavailable.
+    </p>
+    <div class="meta">
+      <span><b>Repo</b> abzydey/footy-feed-website</span>
+      <span><b>Domain</b> www.fullset.au (fullset.au redirects)</span>
+      <span><b>Brand purple</b> #A855F7</span>
+      <span><b>Last entry</b> 2026-11-25</span>
+    </div>
+  </div>
+
+  <section id="cloud">
+    <div class="eyebrow">Set up 2 Nov 2026 · how sessions stay in sync</div>
+    <h2>Working in the cloud</h2>
+    <p class="lede">
+      From 2 Nov 2026 the owner always works in cloud sessions, at home as well as overseas. The site, the API and every automatic job already run on
+      Railway and Vercel, so they don't move. What moves is the Claude workflow: publishing news, running
+      scripts and changing code, which until now ran on the laptop. It moves to a Claude Code cloud session in the
+      Code tab of the Claude app.
+    </p>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>The database connection: solved with the bridge.</b> Cloud sessions can't connect to Neon directly: outbound traffic goes through an HTTP/HTTPS proxy and direct database connections are blocked. Scripts instead use the database bridge, which sends each call through the Railway API (<code>DB_BRIDGE_URL</code>). It passed its read and write tests from a cloud session on 2 Nov 2026.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>How every session stays in step (from 25 Nov 2026).</b> GitHub <code>main</code> is the shared copy. Cloud sessions start from a fresh copy of it, and the laptop session pulls it automatically when it starts or resumes. This log's source is <code>docs/session-log/index.html</code> in the repo: each session adds its entry in the same commit as the work, then republishes this page to the same link. News published by script isn't in git, so it gets a short entry here too.</div></div>
+    <ul class="open-list">
+      <li><b>1. Owner: connect GitHub.</b> At claude.ai/code, give Claude access to abzydey/footy-feed-website.</li>
+      <li><b>2. Owner: create the cloud environment.</b> The environment holds <code>DB_BRIDGE_URL</code> and <code>ADMIN_JWT_SECRET</code> only. Enter them only on that settings screen, never in chat.</li>
+      <li><b>3. Claude: prepare the repo.</b> Copy laptop-only memory rules into <code>CLAUDE.md</code>, and commit a start-up hook that installs dependencies and generates Prisma in cloud sessions.</li>
+      <li><b>4. Test.</b> Passed from a cloud session on 2 Nov 2026: database read and write through the bridge, a push to main and a session log update. Still to do from the phone: publish a real story with a screenshot, and confirm the notification.</li>
+      <li><b>5. Owner: run a Codemagic build</b> so the apps have the free agency page and all October changes.</li>
+      <li><b>6. Owner: check account access from the phone.</b> Railway, Vercel, Neon, GitHub, Codemagic, Firebase and X, with a password manager and backup codes. Check that any code sent by SMS will arrive overseas, and that billing and X API credit won't lapse.</li>
+      <li><b>7. Owner: set up the backup.</b> Log in to <code>/admin</code> on the phone and turn on admin alerts. It can post a story if Claude can't, but it doesn't cover the tracker scripts or pinning the team-list link.</li>
+    </ul>
+  </section>
+
+  <section id="infra">
+    <div class="eyebrow">First, if you're rebuilding from zero</div>
+    <h2>Where everything lives</h2>
+    <p class="lede">
+      Every one of these is reachable by logging into its own dashboard from any device — nothing below
+      depends on the laptop. Account access (password manager + 2FA recovery codes, synced off-device) is
+      the actual precondition for all of it.
+    </p>
+    <div class="infra-grid">
+      <div class="infra-cell"><div class="label">Code</div><div class="value link">github.com/abzydey/footy-feed-website</div></div>
+      <div class="infra-cell"><div class="label">API host</div><div class="value">Railway — project <span style="color:var(--text)">grand-quietude</span>, Hobby plan ($5/mo) since 2026-09-24, Singapore region</div></div>
+      <div class="infra-cell"><div class="label">Railway project ID</div><div class="value">1fa8c9ca-2ad8-484c-b958-c9e1ca91b8d8</div></div>
+      <div class="infra-cell"><div class="label">Railway API service ID</div><div class="value">ac31e72e-e5b6-4db9-868d-116bf806cb7f</div></div>
+      <div class="infra-cell"><div class="label">Web host</div><div class="value link">Vercel — footy-feed-website-web (root <span style="color:var(--text)">apps/web</span>, primary domain www.fullset.au)</div></div>
+      <div class="infra-cell"><div class="label">Database</div><div class="value">Neon Postgres — project <span style="color:var(--text)">fullset-sg</span> (Singapore) since 2026-10-01, Launch plan. Migrations go through <code style="background:none;border:none;padding:0;">DIRECT_DATABASE_URL</code></div></div>
+      <div class="infra-cell"><div class="label">Neon host</div><div class="value">ep-green-truth-b3h31ka0-pooler<br>.c-4.ap-southeast-1.aws.neon.tech<br><span style="color:var(--text-faint)">old us-east-2 project deleted 2026-10-15</span></div></div>
+      <div class="infra-cell"><div class="label">Push / Firebase project</div><div class="value">footy-feed-281c9</div></div>
+      <div class="infra-cell"><div class="label">Native bundle ID</div><div class="value">au.fullset.app</div></div>
+      <div class="infra-cell"><div class="label">Native shells</div><div class="value">Capacitor — Android + iOS, committed in <code style="background:none;border:none;padding:0;">apps/web/android</code> &amp; <code style="background:none;border:none;padding:0;">/ios</code></div></div>
+      <div class="infra-cell"><div class="label">Native CI</div><div class="value link">Codemagic — <span style="color:var(--text)">footy-feed-website</span>, config at repo-root <code style="background:none;border:none;padding:0;">codemagic.yaml</code></div></div>
+      <div class="infra-cell"><div class="label">Apple Developer</div><div class="value">Individual enrollment (Order W1857463193) — <strong>active</strong> since 2026-09-08, confirmed 2026-09-14</div></div>
+      <div class="infra-cell"><div class="label">Registered business name</div><div class="value">FULLSET APP — ASIC, against existing ABN</div></div>
+      <div class="infra-cell"><div class="label">Weekly team-list source</div><div class="value">Pinned in the DB (AppSetting <span style="color:var(--text)">lateMail.pinnedUrl</span>) via <code style="background:none;border:none;padding:0;">scripts/setLateMailUrl.ts</code></div></div>
+    </div>
+  </section>
+
+  <section id="status">
+    <div class="eyebrow">As of 2026-10-15</div>
+    <h2>Backup status</h2>
+    <p class="lede">Checked directly against Railway and Vercel's configured variables, not assumed.</p>
+
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>Code, database, and every secret actually in production</b> are already safe from losing this laptop — GitHub, Neon, Railway, and Vercel all hold live, independent copies. Vercel and Railway were checked directly and both mirror the real production values.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>Firebase native config</b> (<code>google-services.json</code>, <code>GoogleService-Info.plist</code>) is placed locally and gitignored by design (repo may go public) — copy saved separately since the Firebase console is the only other source. Codemagic restores both from secure variables at build time.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>Android signing is done right.</b> A real PKCS12 keystore lives only in Codemagic's vault plus a password saved to a password manager. No local-laptop single point of failure.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>iOS signing is set up.</b> App Store Connect API key in Codemagic, plus an Apple Distribution certificate and App Store provisioning profile for <code>au.fullset.app</code> created via Codemagic's Code Signing Identities. Builds upload to TestFlight automatically.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>Google Search Console set up</b> (2026-10-15): fullset.au verified as a Domain property and <code>https://www.fullset.au/sitemap.xml</code> submitted, status Success.</div></div>
+    <div class="status-row ok"><div class="dot"></div><div class="body"><b>iOS app opens and works</b> (confirmed 2026-10-15) — the launch-crash fix from 2026-09-26 held. The installed build predates the October changes, so a fresh Codemagic build is still needed to bring them to the apps.</div></div>
+    <div class="status-row watch"><div class="dot"></div><div class="body"><b>Domain WHOIS exposure — partially fixed.</b> Registrant email changed to a dedicated address. The registrant name is still exposed; fixing it needs a registrant-entity change to the "FULLSET APP" business name, parked until the item below is resolved.</div></div>
+    <div class="status-row watch"><div class="dot"></div><div class="body"><b>Old dormant company: AD JS ENTERPRISES PTY LTD</b> (ACN 682452142) — being voluntarily deregistered. A hardship cover letter about the outstanding ASIC fee was drafted to be sent by post.</div></div>
+    <div class="status-row watch"><div class="dot"></div><div class="body"><code>OPENAI_API_KEY</code>, <code>SPOTIFY_CLIENT_ID</code>, <code>SPOTIFY_CLIENT_SECRET</code> are unset everywhere — transcription and Spotify discovery are off by choice, not missing config.</div></div>
+  </section>
+
+  <section id="log">
+    <div class="eyebrow">Chronological, condensed</div>
+    <h2>What's shipped</h2>
+    <p class="lede">One entry per unit of work, oldest first, so the shape of the project reads top to bottom.</p>
+
+    <div class="log-entry"><div class="log-date">Early session</div><div class="log-body"><h3>Visual polish pass</h3><p>Footer partner-logo balance, <code>WhatsBeenSaidTeaser</code> leading with a real quote only for transcript-kind results, Team Lists card given a violet glow as Home's first bordered card, Nav drawer restyled with an active-item left border and chevrons removed.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Badge system</div><div class="log-body"><h3>Original team badge redesign</h3><p>Replaced flat crests with a generic shield silhouette plus programmatically generated two/three-tone patterns per club (<code>linearBands</code>, <code>repeatingBands</code>, <code>conicBands</code>) and a dark seam at every colour boundary — original geometry, not copied crests. Colours corrected across several rounds against real reference images.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Home rebuild</div><div class="log-body"><h3>Pill navigation &amp; Latest Episode card</h3><p>Home's feed pills turned into real navigation; Ladder swapped for Judiciary; a Latest Episode card added; the Broncos badge clip-path bug and a leftover placeholder crest on team pages fixed live.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Injuries, first pass</div><div class="log-body"><h3>NRL casualty ward import, then a correction</h3><p>Bulk-imported the full casualty ward (76 players) into <code>Player.currentStatus</code>. A bug then surfaced fake "1h ago" News cards — the import bypassed the real event route's sync logic. Fixed by deleting the wrongly-created Events while keeping the status data intact.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Finals Hub</div><div class="log-body"><h3>Bracket, predictor, injury watch</h3><p>Built to a corrected McIntyre cross-pairing spec after an initial brief had the pairing wrong — flagged before building, then implemented against three named test cases including a no-rematch-before-Grand-Final invariant. Injury Watch data entered and corrected repeatedly against real casualty-ward disputes.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Native scaffolding</div><div class="log-body"><h3>Capacitor wrap for iOS + Android</h3><p>Added Capacitor to the existing web app — bundle ID <code>au.fullset.app</code>, iOS via Swift Package Manager (no CocoaPods), push via <code>@capacitor-firebase/messaging</code> sharing one Firebase project with the web PWA. Fixed a Vite optional-peer-dependency stub that dropped a named export and broke the production build.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>Team-list alerts stop crying wolf</h3><p>24hr/Final team-list stages now diff against the prior stage's roster (<code>apps/api/src/lib/teamListDiff.ts</code>) before pushing a notification — a stage that posts with zero changes no longer fires.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>Weather Impact Flag</h3><p>Manual, admin-entered <code>weatherFlag</code> / <code>weatherNote</code> on <code>Game</code>, shown as a small ☔ badge on fixture cards across Home, Games, and the game detail page.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>League-wide Injuries page — and a real bug caught</h3><p><code>/injuries</code> lists every club's current availability in one place, reusing existing per-player status data. While verifying it, found <code>getFirebaseMessaging()</code> could throw and blank the whole app on browsers where Firebase's support check fails; fixed with a try/catch.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>Round 27 judiciary, confirmed outcomes</h3><p>All 16 charges updated from pending pleas to confirmed results against the official Judiciary Report Results table.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>Real Firebase config placed, backup audit run</h3><p><code>google-services.json</code> and <code>GoogleService-Info.plist</code> dropped into their native project paths, confirmed gitignored. Railway and Vercel checked against local <code>.env</code> files, and this document published as the continuity copy.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-07</div><div class="log-body"><h3>Predictor picks stop being one-way</h3><p>Finals Predictor picks can be toggled off, and a "Reset picks" button clears everything.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Codemagic wired up, real signed Android build succeeded</h3><p>First CI attempts hit three unrelated issues in sequence — billing-plan instance type, Capacitor 8 needing Node ≥22, and Java 21 — each fixed from the real build log. Ended with a signed <code>.aab</code>, plus an <code>android-apk</code> workflow for direct installs.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Finals Week 1 team lists — scraped, published, and cross-checked</h3><p>All 8 clubs' Initial lists (176 players) scraped from NRL.com and published. 16 players flagged OUT/INJURED/SUSPENDED turned out to be named — cleared on the Injuries page (status only, no fake "recovered" news post). Finals Injury Watch full-replaced to match.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Domain privacy: found and half-fixed</h3><p>Registrant name and personal Gmail exposed via <code>.au</code> WHOIS. Email fixed; "FULLSET APP" registered as an ASIC business name as the path to swap the registrant name. The forgotten dormant company AD JS ENTERPRISES surfaced mid-process (see status above).</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Apple Developer enrollment submitted</h3><p>Individual enrollment, $149 AUD, Order W1857463193. Google Play Console deferred until after iOS.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Finals Hub: a way in to the Predictor</h3><p>A violet banner at the top of <code>/finals</code> jumps straight to the Predictor; the <code>#injury-watch</code> deep-link scroll was generalised to cover <code>#predictor</code>.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>Late Mail poller fixed for finals-week naming</h3><p>NRL.com's Finals Week 1 article used <code>nrl-team-lists-finals-week-1</code> and a "NRL Team Lists: Finals Week 1" heading. Both regexes were widened to also accept the <code>finals-week-N</code> form. (This turned out to be too narrow — see 2026-09-25.)</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-08</div><div class="log-body"><h3>News workflow: first live run, plus a script gap closed</h3><p>First pasted-article News item published via <code>scripts/addNews.ts</code>; added an optional <code>team</code> field so league-wide news can surface on a club's page.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-09</div><div class="log-body"><h3>Live-score pages now actually refresh</h3><p><code>GamePage</code>, <code>GamesPage</code>, and <code>NextGameCard</code> poll every 20s (<code>lib/liveGamePolling.ts</code>) while a game is LIVE or about to kick off, stopping at FULL_TIME.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-09</div><div class="log-body"><h3>Brand accent changed to #A855F7</h3><p>Moved from #8B4DFF to #A855F7 with #AE6BFF on hover, via a real <code>brand.hover</code> token across 15 files. Logo, favicons, PWA icons, OG image, brand SVGs and native app icon/splash sources were recolored in follow-ups once they turned out to still be hardcoded to the old purple.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-09</div><div class="log-body"><h3>News feed duplication — real bugs found</h3><p><code>/news</code> never deduped multi-team stories, and the dedup helper keyed on <code>sourceUrl</code> alone, which collapsed separate stories sharing one wrap-up column URL. Now dedupes on <code>sourceUrl+headline</code>, client-side per view.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-14</div><div class="log-body"><h3>Apple Developer Program activated</h3><p>Individual enrollment is live — the wait blocking every iOS step is over.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-14</div><div class="log-body"><h3>Predictor and Injury Watch both broken by the same root bug</h3><p><code>finalsBracket.ts</code> treated QF losers as eliminated (they drop to a semi under McIntyre), hiding Roosters/Warriors from Injury Watch; and the predictor never fell back to real results, leaving semi-finals stuck on TBD. Fixed both.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-18</div><div class="log-body"><h3>Neon hit its free-tier compute cap mid-finals</h3><p>Five background pollers kept the database awake almost constantly. Upgraded to Neon's Launch plan and widened three pollers' intervals (Late Mail safety sweep, podcast discovery and episode auto-poll to 60min).</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-18</div><div class="log-body"><h3>iOS pipeline from zero to TestFlight</h3><p>App Store Connect API key into Codemagic, app registered, automatic signing. "No matching profiles found" was fixed by creating the Apple Distribution certificate and App Store profile by hand — <code>ios_signing</code> only references them. <code>ITSAppUsesNonExemptEncryption</code> added to Info.plist so builds skip the export-compliance prompt. Build number bumped by hand (1→2→3).</p><p>The build installed from TestFlight but crashed on launch. A temporary step was added to <code>codemagic.yaml</code> to print and validate the restored <code>GoogleService-Info.plist</code>.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-18/19</div><div class="log-body"><h3>X API back, Shorts out of Podcasts</h3><p>X API 402 errors traced to exhausted prepaid credit; confirmed fixed after top-up. YouTube Shorts (≤60s) are now filtered out at ingestion in <code>episodeAutoPoller.ts</code>, and 59 existing short episodes were removed.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-20</div><div class="log-body"><h3>Live try list reconciles with NRL.com</h3><p>A disallowed try (Fletcher Sharpe 9', Warriors v Knights) stayed on the game page because the live poller only ever added tries. <code>syncTries</code> now also removes tries NRL.com's match centre has dropped.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-20/22</div><div class="log-body"><h3>Finals content</h3><p>Finals Week 2 and Preliminary Final fixtures added; Preliminary Finals Initial team lists published from NRL.com; Finals Week 2 judiciary results; ongoing Finals Injury Watch changes; and a steady stream of News items through the chat workflow.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-23</div><div class="log-body"><h3>Nav cue, Stats tab, News pills, safe injury imports</h3><p>A fade on the right edge of the top nav shows it scrolls. The Team Stats tab replaced "coming soon" with the real season record from the ladder. News page team pills now sort by recent activity. New <code>scripts/bulkImportInjuries.ts</code> updates player status only and cannot create News items; its first run fixed stale statuses for Sam Walker and Dylan Lucas.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-24</div><div class="log-body"><h3>Railway trial ended — moved to Hobby</h3><p>Upgraded to Railway's Hobby plan before the trial paused the API. A deploy that failed on a transient Neon lock timeout was redeployed green.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-24</div><div class="log-body"><h3>Round 26 stuck as "scheduled"</h3><p>All 8 Round 26 games had final scores but were still marked SCHEDULED, so they showed as upcoming on every team's Fixtures tab. All set to FULL_TIME. A Top Try Scorers list on the Stats tab was built and then removed — the app only has try data from Round 26 onward, so it could never be a season total.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-24/25</div><div class="log-body"><h3>Full Set original articles</h3><p><code>Event</code> gained <code>isOriginalArticle</code>, <code>slug</code> and <code>articleBody</code>. Original articles open at <code>/news/[slug]</code> in the app with a purple "Full Set Original" badge; the admin form gets a toggle, markdown body and slug preview. A Vercel Edge Middleware serves real title/OG tags to link-preview bots (X, Slack, iMessage) since the SPA can't. First article: V'landys as executive chairman, later retitled at the same URL. Workflow documented in <code>CONTRIBUTING-news.md</code>.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-25</div><div class="log-body"><h3>Late Mail poller went silent again — fixed properly</h3><p>The Preliminary Finals 24hr team update never went out. NRL.com named this round "Preliminary Finals" (no number) in both the URL and the heading, so discovery failed and the poller fell back to last week's hardcoded URL, silently all week. The Tuesday link had been sent but was never wired into the poller.</p><p>Fixed: both regexes now accept any <code>nrl-late-mail-</code>/<code>nrl-team-lists-</code> article and any round name. The Tuesday link is pinned in the database and read all week. The poller only accepts an article that covers an upcoming game; otherwise it logs a STALE error and pushes an alert to admin devices, turned on from a new card on <code>/admin</code>. In the installed Home Screen app, the footer's "© Full Set" text links to <code>/admin</code>. The missed 24hr updates for Dolphins and Roosters were then published.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-26</div><div class="log-body"><h3>iOS launch crash — cause found</h3><p><code>GoogleService-Info.plist</code> was restored to disk by Codemagic but never registered in <code>project.pbxproj</code>, so it was never packed into the app. Firebase couldn't find its config at launch and the app crashed. Registered it as a resource and bumped to build 4. The first rebuild failed only because Google's download servers timed out mid-build; a rerun is pending.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-09-26</div><div class="log-body"><h3>Last traces of the old purple removed</h3><p>Three spots still used the old purple written as <code>rgba(139,77,255)</code>, which the earlier hex search missed: the Team Lists card glow, the Finals predictor glow, and the ladder's top-8 tint. All now use the <code>brand-violet</code> token. This log's own accent was updated to #A855F7 too.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Late Sept</div><div class="log-body"><h3>Late Mail writes its own updates</h3><p>A change to a starting side (someone new into the 13) now publishes a 24-hour team update automatically with the full grid, while bench-only shuffles keep the short format. Out-reasons are read from the article, and anything unclear is held back and pushed to admin devices instead of published.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Late Sept</div><div class="log-body"><h3>Social feed: hourly, cheaper, cleaner</h3><p>The X poller runs hourly and asks only for posts newer than the last one seen (<code>since_id</code>), which cuts API spend. Promotional posts are filtered out (<code>lib/socialFilter.ts</code>), and HTML entities like <code>&amp;amp;</code> are decoded before saving; five stored posts were fixed.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-01</div><div class="log-body"><h3>Database moved to Singapore</h3><p>The live database moved from Neon us-east-2 to a new Singapore project (<code>fullset-sg</code>), next to the Railway API, cutting the round trip on every query. The old database stayed as a fallback for a week.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-04</div><div class="log-body"><h3>Grand Final: Roosters 19, Knights 18</h3><p>The Grand Final score didn't sync live because its NRL.com match centre address is different (<code>/grand-final/game-1/</code>); added it. Judiciary and the season's last news followed.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Early Oct</div><div class="log-body"><h3>Off-season mode</h3><p>Two switches in <code>lib/season.ts</code> (<code>IN_SEASON</code>, <code>FINALS_IN_MENU</code>) reshape the menus for summer: Signings takes the Finals tab slot and the computer menu shows Signings, World Cup, News, Teams and Ladder. Home shows a "2027 season" card until the draw is out.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Early Oct</div><div class="log-body"><h3>Signings tracker</h3><p>A <code>Transfer</code> table records every confirmed signing, re-signing, release and retirement, with the story it came from. <code>scripts/addTransfer.ts</code> adds moves; every signing also gets a Signings story and a General News copy (rule in <code>CONTRIBUTING-news.md</code>). Shown at <code>/signings</code>, on Home and on each team page.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Early Oct</div><div class="log-body"><h3>Rugby League World Cup section</h3><p>Fixtures sync from rlwc2026.com, live scores from NRL.com's draw (competition 131, matched by kickoff time), checked every 5 minutes from 3.5 hours before kickoff. Pool A plus the combined Pools B and C table, semi-final and final slots, squads for nine nations (<code>scripts/setWorldCupSquad.ts</code>), nation pages, team lists per game, and SVG flags (emoji flags don't render on Windows). World Cup stories carry a <code>worldCup</code> flag and show on <code>/world-cup</code>. Explainer article: "How the 2026 Rugby League World Cup works".</p></div></div>
+
+    <div class="log-entry"><div class="log-date">Early Oct</div><div class="log-body"><h3>New clubs: Perth Bears and PNG Chiefs</h3><p>Both added as teams with badges; the Chiefs' charcoal badge with a gold, orange and red band was sampled from their logo.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-05</div><div class="log-body"><h3>Deploy blocked by a stuck migration lock</h3><p>A Railway deploy failed (P1002) because a migration run through Neon's connection pooler left its lock behind. Cleared the lock, and Prisma now runs migrations over a direct connection (<code>directUrl</code> = <code>DIRECT_DATABASE_URL</code>, set on Railway too).</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-05</div><div class="log-body"><h3>Real visitor numbers</h3><p>Page views carry an anonymous visitor ID, so admin stats show unique visitors. Any device that has logged into <code>/admin</code> is no longer counted, and views from localhost are ignored.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-09</div><div class="log-body"><h3>Home redesign after a competitor review</h3><p>A score strip at the top shows one game at a time (NRL and World Cup together) with arrows to step through results and fixtures, polling every minute while a game is live; the big match cards were removed. "Latest" became a compact headline list with club-colour bars; non-original stories open a new <code>/story/:id</code> page. A story can be pinned to the top from the admin Update tab (one at a time). World Cup got its own phone tab while the tournament is on (<code>WORLD_CUP_IN_MENU</code>).</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-09</div><div class="log-body"><h3>Lighter theme, then a light mode</h3><p>After feedback that the site was too dark, the background moved from near-black to navy (#0B1533, cards #142048), with a soft purple glow at the top and brighter secondary text. Then an Appearance switch (Dark default, Light, Match my phone) in the More sheet and footer: every neutral is now a CSS variable per theme, so existing classes flip without per-component changes. New UI must use the theme tokens.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-09/10</div><div class="log-body"><h3>Original articles and news</h3><p>"Every NRL club's 2026 Player of the Year" (pinned) and "Peter O'Sullivan: The man who builds contenders", later edited in place to add a "Not a poacher" section. Aitken and Nikorima's Warriors-to-Dolphins moves were checked (both asked for releases) for a reply on X. News items as usual through the chat workflow.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-10</div><div class="log-body"><h3>SEO overhaul</h3><p>Everything now uses www.fullset.au, the real primary domain. <code>middleware.ts</code> writes each page's title, description, canonical, robots and schema.org data into the HTML (plus the story text on news pages) and returns real 404s for missing pages. Every club copy of a story points at the first copy as canonical. The sitemap went from 53 links to every story, team, game and World Cup page. Pages other than Home load on demand (main bundle 500kB+ to 381kB). The "What's Been Said" card on Home now shows the newest World Cup episode.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-13/14</div><div class="log-body"><h3>World Cup team lists: first real run</h3><p>Round 1 lists for all ten nations parsed correctly and matched NRL.com's article player for player. Fixed to show a six-man bench (14–19) like the NRL, picked by jersey number since the official site files 18–19 with the reserves. The poller now checks every 10 minutes around each game's 24-hour mark; the first 24-hour updates (Australia, New Zealand) published on time at 8:15pm Wednesday. The Home score strip became a swipeable row of compact game cards.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-15</div><div class="log-body"><h3>Post Maker</h3><p>A social post builder published as its own page, with the source in <code>brand/post-maker/</code>: full Full Set logo options, with the logo at the bottom only by default.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-16</div><div class="log-body"><h3>World Cup match detail, photos and a theme toggle</h3><p>World Cup games now show try scorers and the live clock from NRL.com's match centre. Final team lists wait for a real change or the last hour, because the official site shows "Confirmed" all week. News stories can carry a photo (<code>addNews.ts</code> <code>media</code>). The top bar gained a sun/moon dark-light toggle.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-18/19</div><div class="log-body"><h3>Social images, World Cup highlights, a poller fix</h3><p>Profile pictures and the X banner moved to the current navy. 7Sport's men's World Cup highlights are added to the Highlights page automatically. A video with no duration (a premiere or live stream) no longer makes the episode poller fail for its whole channel.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-22</div><div class="log-body"><h3>CLAUDE.md added</h3><p>Working notes committed to the repo so that a cloud session knows how Full Set runs without this laptop's chat history.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-24</div><div class="log-body"><h3>Pools B &amp; C tie-break, overseas signings</h3><p>The World Cup Pools B and C ladder uses the official head-to-head tie-break. <code>addTransfer.ts</code> can now record a signing to a club outside the NRL (<code>toLabel</code>).</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-29</div><div class="log-body"><h3>Free agency tracker</h3><p><code>/free-agents</code> lists every player off contract at the end of 2027 (the 2028 market, talks open 1 Nov), built from Zero Tackle and Fox Sports and later checked against Nine. A new <code>FreeAgent</code> table holds tier, position, linked clubs and notes; <code>scripts/setFreeAgents.ts</code> edits it. Players are crossed off automatically by <code>addTransfer.ts</code> entries, matched by name, and deals ending before 2028 don't count. The page has search, club and position filters, a top 60 by tier, an Everyone view, and social graphics (top free agents, still available, one club) anyone can download. It also appears on Home, in the menu, in the sitemap and on the Signings page.</p><p><b>Incident:</b> the full API was started locally for a preview, which starts every poller against the live database. It was stopped and no duplicate rows were found in the last three hours. Rule since then: never run <code>apps/api/src/index.ts</code> locally; preview with a route-only server.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-30</div><div class="log-body"><h3>Home: free agency leads</h3><p>The free agency card moved to the top of Home, under the score strip and above Latest, until 15 December. "Every NRL club's 2026 Player of the Year" was unpinned, so nothing is pinned now.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-10-31</div><div class="log-body"><h3>List corrected from follower comments</h3><p>After the club graphics went on Instagram, followers pointed out three errors. Each was checked and removed: Ben Te Kura (released by the Broncos for the NFL), Salesi Ataata (signed with Hull KR) and Hugo Hart (signed to 2028). The list went from 188 to 185 players. Liam Le Blanc's move to Penrith was also added; his deal ends in 2027, so he stays on the list.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">To 2026-11-02</div><div class="log-body"><h3>News</h3><p>A steady run of market stories through the chat workflow: Walker and the Roosters, Burton and the Bears, Bostock, Best, Brimson and the Chiefs, Kerr to Hull FC, Tabuai-Fidow officially to 2029, Fa'alogo, Wakeham, Wilson, Harrison, the Toowoomba licence bid and Gasnier joining the NRL. CODE's earlier Tabuai-Fidow report was removed once the club confirmed the deal to 2029, and the tracker now links to the club's announcement. Adam Elliott stays off the signings tracker, by the owner's decision.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-02</div><div class="log-body"><h3>Moved to cloud sessions; Railway's notifications fixed</h3><p>Cloud sessions can only make web requests, so a database bridge now sends scripts' database calls through the Railway API (<code>lib/dbBridgeClient.ts</code>, <code>routes/adminDbBridge.ts</code>). The environment holds <code>DB_BRIDGE_URL</code>, <code>ADMIN_JWT_SECRET</code> and <code>RAILWAY_TOKEN</code>, and <code>scripts/railway-logs.cjs</code> reads the live logs. The first story published from the cloud exposed a separate problem: Railway's copy of <code>FIREBASE_SERVICE_ACCOUNT_JSON</code> has real line breaks in its key, so the API couldn't read it and its notifications failed. <code>parseServiceAccount</code> in <code>lib/firebase.ts</code> now handles this, and the missed Eels notification was accepted by Firebase for 2 devices. How long Railway's own pushes had been failing is unknown; those can't be recovered. iOS build number bumped to 6 for a Codemagic build.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-02</div><div class="log-body"><h3>App icons match Instagram</h3><p>The iPhone and Android app icons, the Home Screen web app icon and the PWA icons are rebuilt from the Instagram profile picture (navy with the purple glow) by <code>scripts/app-icons-from-avatar.mjs</code>.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-14</div><div class="log-body"><h3>World Cup team lists: the bench</h3><p>The official site's interchange is trusted once it lists six players, instead of always picking the bench by jersey number.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-18</div><div class="log-body"><h3>Reported vs confirmed deals</h3><p>Owner's rule: a deal is confirmed only once the club announces it. A deal that's only reported in the media goes in the tracker with <code>"reported": true</code> (or <code>reportedTo</code> on the free agency list) and shows with an asterisk, not crossed off. When the club confirms, the same move is run again without <code>reported</code>.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-20</div><div class="log-body"><h3>World Cup wrapped up</h3><p>The World Cup tab and Home cards came off, and the score strip shows NRL games only. The World Cup poller is switched off in <code>apps/api/src/index.ts</code>; the pages stay at the end of More as "World Cup 2026", served from the stored results.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-20</div><div class="log-body"><h3>2027 draw loaded</h3><p><code>scripts/importDraw.ts 2027</code> loaded all 27 rounds (216 games) from NRL.com and can be re-run when games move. Round names repeat each season, so the Games page, its round list and the current round are read within one season, and Late Mail matches this week's meeting of two clubs rather than their latest. Home shows Round 1's games with a countdown to the opener, and Games is back in the computer menu bar. NRL.com lists the two Las Vegas games at midnight Sydney time as a placeholder, so any midnight kick-off shows as "time TBC".</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-20/25</div><div class="log-body"><h3>Social graphics</h3><p>Instagram-size graphics (only that size is needed): the 2027 draw's toughest roads, who each club plays twice, short turnarounds (double-checked against a fresh NRL.com download), game days, frequent flyers and Origin rounds; players signed for 2028 by club, with the PNG Chiefs; and the Chiefs' payroll. The draw graphics also sit on the draw article.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-02/25</div><div class="log-body"><h3>News</h3><p>Around 50 stories through the chat workflow, mostly the 2028 market: the PNG Chiefs' signings (Brimson, Hudson Young, Willison, Mariner, Navale, the Sam Walker offer), Cameron Munster rejecting the Storm and meeting the Bulldogs and Rabbitohs, Matt Burton to the Bears as marquee, Harry Grant and the Titans, Flegler to the Cowboys, Healey to the Dragons, Verrills and Uele to the Roosters, Radley's extension, Bellamy's last season and Tedesco's representative retirement. League news included the 2027 pre-season schedule, rule trials, the hip-drop crackdown and free match footage for creators from 2028.</p></div></div>
+
+    <div class="log-entry"><div class="log-date">2026-11-25</div><div class="log-body"><h3>Session log moved into the repo</h3><p>This log had stopped being updated after 2 Nov because cloud sessions weren't republishing it. Its source now lives in <code>docs/session-log/index.html</code>, updated in the same commit as the work, and the laptop session pulls from GitHub when it starts.</p></div></div>
+
+  </section>
+
+  <section id="open">
+    <div class="eyebrow">Not done yet</div>
+    <h2>Open items</h2>
+    <ul class="open-list">
+      <li><b>Claude Design work:</b> make social post templates (scores, team lists, signings, breaking news for X and Instagram) using the Full Set design system at claude.ai/artifact/RHhNAGfrXuuYK4PKqUSDKj, which holds the logos, profile pictures, link-preview image, colours and type. Updated 2026-10-15 to the current navy and the real logo on its cover. Still to make: a designed X banner and App Store / Play Store screenshots.</li>
+      <li><b>Run a Codemagic build</b> so the iOS and Android apps get everything from October: score strip, light mode, World Cup tab, new Home, free agency.</li>
+      <li><b>Stories still without a link:</b> Harrison "close to" (Titans, Chiefs), the ESPN market roundup, Fa'alogo, Wakeham, Wilson and Mulitalo. Adam Elliott has neither a source nor a link.</li>
+      <li><b>Free agents:</b> Thomas Dellow has no position.</li>
+      <li><b>World Cup squads still to come:</b> Lebanon; Tonga's omitted player; confirm Samoa's "Shawn Blore Anae Ulesese" name.</li>
+      <li><b>Waiting on decisions:</b> font option (recommended: Archivo at a lighter weight); the Manly player in the Nov 1 preview story; whether to revise the O'Sullivan "Not a poacher" section.</li>
+      <li><b>Las Vegas kick-off times:</b> re-run <code>importDraw.ts 2027</code> once the NRL announces them (both Round 1, Sun 28 Feb AEDT).</li>
+      <li><b>Waiting on a decision:</b> hide Home's "Round 1 team lists, 0 of 9 games updated" card until team-list week?</li>
+      <li><b>App Store:</b> a reviewer-style pass on the app (no-connection screen, hide web-only items and the admin link, native share sheet), then the listing, privacy policy page and screenshots.</li>
+      <li><b>Turn on admin alerts on your phone:</b> Home Screen Full Set app → tap "© Full Set" in the footer → log in → Turn on admin alerts.</li>
+      <li><b>iOS push:</b> owner enables Push Notifications on <code>au.fullset.app</code>, creates an APNs key, uploads it to Firebase and refreshes the App Store profile in Codemagic. Then Claude adds the entitlements file (<code>aps-environment</code> production) and bumps to build 7. Not before, or the build fails on the old profile.</li>
+      <li><b>Finals Week 3 judiciary results</b> (Katoa, Knowles, Radley) — charges entered, outcomes pending.</li>
+      <li><b>Automate the iOS build number</b> — still bumped by hand in <code>project.pbxproj</code>.</li>
+      <li><b>Google Play Console</b> — deferred until after iOS.</li>
+      <li><b>AD JS ENTERPRISES PTY LTD deregistration</b> — hardship letter to be posted; then Form 6010.</li>
+      <li><b>Domain registrant name</b> — parked until the item above is closed out.</li>
+      <li><b>Check Neon usage</b> in the dashboard after a week or two to confirm the poller changes cut compute-hour burn.</li>
+    </ul>
+  </section>
+
+  <footer class="colophon">
+    Generated from the working session with Claude Code · condensed, not verbatim — ask Claude to pull
+    exact code, file paths, or full detail on any entry above if it's needed later.
+  </footer>
+
+</div>
+
+</body></html>
