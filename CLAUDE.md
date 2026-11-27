@@ -69,12 +69,15 @@ so read the session log's latest entries and Open items when starting work.
 - **Session log — every session, not optional.** Its source is
   `docs/session-log/index.html` in this repo (the link above is the published
   copy). It went unupdated from 2 Nov to 25 Nov 2026 because sessions skipped it.
-  After any code change, script run (news, tracker, draw…) or decision, before
-  telling the owner you're done:
-  1. Add a short dated entry at the end of the `#log` section (plain language,
-     same style as the others) and update the Open items and the masthead's
-     "Last entry" date. News gets one entry per day or batch, not per story.
-  2. Commit it with the work (or on its own for script-only work) and push.
+  Update it **once a day**, not after every piece of work (owner, 27 Nov 2026).
+  The first time you do any work on a new day (code change, script run,
+  decision), first log the previous day's work if it isn't logged yet; that
+  day's own work is logged the same way the next day. If the owner says they're
+  done for the day, log that day straight away. Each update:
+  1. Add one short dated entry for the day at the end of the `#log` section
+     (plain language, same style as the others) and update the Open items and
+     the masthead's "Last entry" date.
+  2. Commit it on its own and push.
   3. Republish: Artifact publish with `file_path` = that file and
      `url` = https://claude.ai/artifact/Jnp56yzuxDPNYWnsYijDLS (read the url
      first if this session hasn't). Never publish to a new URL.
